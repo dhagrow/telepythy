@@ -5,7 +5,6 @@ monkey.patch_all()
 
 import io
 import sys
-import uuid
 import traceback
 import contextlib
 
