@@ -9,8 +9,8 @@ import uuid
 import traceback
 import contextlib
 
+import sage
 from gevent import queue
-from seer import Server, command
 
 URL = 'tcp://localhost:6336'
 
@@ -20,23 +20,19 @@ def main():
     except KeyboardInterrupt:
         pass
 
-class TeleServer(Server):
+class TeleServer(sage.Server):
     def __init__(self, *args, **kwargs):
         super(TeleServer, self).__init__(*args, **kwargs)
         self._output = queue.Queue()
         self._locals = {'__name__': '__remote__', '__doc__': None}
 
-    @command()
+    @sage.command()
     def evaluate(self, source):
-        # modify source to capture the result
-        result = '__{}__'.format(uuid.uuid1().hex)
-        source = '{} = {}'.format(result, source)
         with capture() as (stdout, stderr):
             try:
                 exec source in self._locals
             except Exception:
                 stderr.write(traceback.format_exc())
-        print(self._locals)
         return stdout.getvalue(), stderr.getvalue()
 
 @contextlib.contextmanager

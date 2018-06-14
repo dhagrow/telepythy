@@ -3,23 +3,25 @@ from __future__ import print_function, unicode_literals
 from gevent import monkey
 monkey.patch_all()
 
-import seer
+import sage
 import gevent
-from prompt_toolkit import prompt
+import prompt_toolkit as pt
 
 URL = 'tcp://localhost:6336'
 
 def main():
-    client = seer.Client(URL)
-    # gevent.spawn(output, client)
+    client = sage.Client(URL)
+
+    session = pt.PromptSession()
 
     while True:
         try:
-            source = prompt('>>> ')
+            source = session.prompt('>>> ')
             stdout, stderr = client.evaluate(source)
-            print(repr(stdout))
-            print(repr(stderr))
+            if stdout: print(stdout, end='')
+            if stderr: print(stderr, end='')
         except KeyboardInterrupt:
+            # XXX: send to remote end
             print('KeyboardInterrupt')
         except EOFError:
             break
