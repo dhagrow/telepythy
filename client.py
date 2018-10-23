@@ -8,27 +8,30 @@ import gevent
 import prompt_toolkit as pt
 
 URL = 'tcp://localhost:6336'
+PS1 = '>>> '
+PS2 = '... '
 
 def main():
-    client = sage.Client(URL)
+    client = sage.Client(URL, retry_count=-1)
 
     session = pt.PromptSession()
+    needs_input = False
+
+    gevent.spawn(output, client)
 
     while True:
         try:
-            source = session.prompt('>>> ')
-            stdout, stderr = client.evaluate(source)
-            if stdout: print(stdout, end='')
-            if stderr: print(stderr, end='')
+            source = session.prompt(PS2 if needs_input else PS1)
+            needs_input = client.evaluate(source)
+            gevent.sleep(0.1)
         except KeyboardInterrupt:
-            # XXX: send to remote end
             print('KeyboardInterrupt')
         except EOFError:
             break
 
 def output(client):
     for line in client.output():
-        print(line)
+        print(line, end='')
 
 if __name__ == '__main__':
     main()
