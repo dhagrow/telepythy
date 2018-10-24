@@ -43,6 +43,10 @@ class TeleServer(sage.Server):
         while True:
             yield self._output_q.get()
 
+    @sage.command()
+    def interrupt(self):
+        self._code.resetbuffer()
+
     def _reset(self):
         self._locals.clear()
         self._locals.update(self._env)
