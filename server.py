@@ -7,10 +7,10 @@ import code
 import contextlib
 
 import sage
-import gevent
 from gevent import queue
 
 URL = 'tcp://localhost:6336'
+OUTPUT_MODES = ('off', 'capture', 'mirror')
 
 def main():
     try:
@@ -20,11 +20,17 @@ def main():
 
 class TeleServer(sage.Server):
     def __init__(self, *args, **kwargs):
+        output_mode = kwargs.pop('output_mode', 'mirror')
         super(TeleServer, self).__init__(*args, **kwargs)
-        self._output = queue.Queue()
+
+        self._output_q = queue.Queue()
+        self._env = {
+            '__name__': '__remote__',
+            '__tele__': Environment(self, output_mode),
+            }
+
         self._locals = {}
         self._code = code.InteractiveConsole(self._locals)
-
         self._reset()
 
     @sage.command()
@@ -34,38 +40,59 @@ class TeleServer(sage.Server):
     @sage.command()
     @sage.command_stream()
     def output(self):
-        for line in self._output:
-            yield line
+        while True:
+            yield self._output_q.get()
 
     def _reset(self):
         self._locals.clear()
-        self._locals.update({
-            '__name__': '__remote__',
-            '__tele__': Environment(self),
-            })
+        self._locals.update(self._env)
 
 class Environment(object):
-    def __init__(self, server):
+    def __init__(self, server, output_mode):
         self._server = server
-        self._stdout = None
-        self._stderr = None
+        self._stdout = sys.__stdout__
+        self._stderr = sys.__stderr__
 
-    def capture_on(self):
-        self._stdout, sys.stdout = sys.stdout, Capture(self._server._output)
-        self._stderr, sys.stderr = sys.stderr, Capture(self._server._output)
+        self._output_mode = None
+        self.output_mode = output_mode
 
-    def capture_off(self):
-        sys.stdout = self._stdout or sys.__stdout__
-        sys.stderr = self._stderr or sys.__stderr__
+    @property
+    def output_mode(self):
+        return self._output_mode
+
+    @output_mode.setter
+    def output_mode(self, mode):
+        q = self._server._output_q
+
+        if mode == self._output_mode:
+            return
+        elif mode == 'off':
+            sys.stdout = self._stdout or sys.__stdout__
+            sys.stderr = self._stderr or sys.__stderr__
+        elif mode == 'capture':
+            self.output_mode = 'off'
+            self._stdout, sys.stdout = sys.stdout, Capture(q)
+            self._stderr, sys.stderr = sys.stderr, Capture(q)
+        elif mode == 'mirror':
+            self.output_mode = 'off'
+            self._stdout, sys.stdout = sys.stdout, Capture(q, sys.stdout)
+            self._stderr, sys.stderr = sys.stderr, Capture(q, sys.stderr)
+        else:
+            err = 'output_mode must be one of: {}'
+            raise ValueError(err.format(', '.join(OUTPUT_MODES)))
+        self._output_mode = mode
 
     def reset(self):
-        self._server._reset()
+        self._server._reset(self._output_mode)
 
 class Capture(object):
-    def __init__(self, q):
+    def __init__(self, q, mirror=None):
         self._q = q
+        self._mirror = mirror
 
     def write(self, s):
+        if self._mirror is not None:
+            self._mirror.write(s)
         if isinstance(s, bytes):
             s = s.decode('utf8')
         self._q.put(s)
