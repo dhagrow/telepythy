@@ -10,9 +10,7 @@ URL = 'tcp://localhost:6336'
 PS1 = '>>> '
 PS2 = '... '
 
-def main():
-    client = sage.Client(URL, retry_count=-1)
-
+def repl(client):
     session = pt.PromptSession()
     needs_input = False
 
@@ -39,6 +37,17 @@ def start_thread(func, *args, **kwargs):
     t.daemon = True
     t.start()
     return t
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', default=URL,
+        help='the server bind URL (default=%(default)s)')
+
+    args = parser.parse_args()
+    client = sage.Client(args.url, retry_count=-1)
+    repl(client)
 
 if __name__ == '__main__':
     try:

@@ -12,12 +12,6 @@ import sage
 URL = 'tcp://localhost:6336'
 OUTPUT_MODES = ('off', 'capture', 'mirror')
 
-def main():
-    try:
-        TeleServer(URL).serve()
-    except KeyboardInterrupt:
-        pass
-
 class TeleServer(sage.Server):
     def __init__(self, *args, **kwargs):
         output_mode = kwargs.pop('output_mode', 'mirror')
@@ -107,5 +101,18 @@ class Capture(object):
     def flush(self):
         pass
 
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', default=URL,
+        help='the server bind URL (default=%(default)s)')
+
+    args = parser.parse_args()
+    TeleServer(args.url).serve()
+
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
