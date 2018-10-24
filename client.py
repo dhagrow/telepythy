@@ -41,4 +41,7 @@ def start_thread(func, *args, **kwargs):
     return t
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
