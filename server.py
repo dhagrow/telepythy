@@ -1,6 +1,7 @@
 import io
 import sys
 import code
+import weakref
 import contextlib
 try:
     import queue
@@ -17,7 +18,7 @@ class TeleServer(sage.Server):
         output_mode = kwargs.pop('output_mode', 'mirror')
         super(TeleServer, self).__init__(*args, **kwargs)
 
-        self._output_q = queue.Queue()
+        self._output = weakref.WeakSet()
         self._env = {
             '__name__': '__remote__',
             '__tele__': Environment(self, output_mode),
@@ -33,9 +34,12 @@ class TeleServer(sage.Server):
 
     @sage.command()
     def output(self):
+        q = queue.Queue()
+        self._output.add(q)
+
         while True:
             try:
-                yield self._output_q.get(timeout=1)
+                yield q.get(timeout=1)
             except queue.Empty:
                 if self.is_client_closed():
                     break
@@ -63,7 +67,7 @@ class Environment(object):
 
     @output_mode.setter
     def output_mode(self, mode):
-        q = self._server._output_q
+        output = self._server._output
 
         if mode == self._output_mode:
             return
@@ -72,12 +76,12 @@ class Environment(object):
             sys.stderr = self._stderr or sys.__stderr__
         elif mode == 'capture':
             self.output_mode = 'off'
-            self._stdout, sys.stdout = sys.stdout, Capture(q)
-            self._stderr, sys.stderr = sys.stderr, Capture(q)
+            self._stdout, sys.stdout = sys.stdout, Capture(output)
+            self._stderr, sys.stderr = sys.stderr, Capture(output)
         elif mode == 'mirror':
             self.output_mode = 'off'
-            self._stdout, sys.stdout = sys.stdout, Capture(q, sys.stdout)
-            self._stderr, sys.stderr = sys.stderr, Capture(q, sys.stderr)
+            self._stdout, sys.stdout = sys.stdout, Capture(output, sys.stdout)
+            self._stderr, sys.stderr = sys.stderr, Capture(output, sys.stderr)
         else:
             err = 'output_mode must be one of: {}'
             raise ValueError(err.format(', '.join(OUTPUT_MODES)))
@@ -87,8 +91,8 @@ class Environment(object):
         self._server._reset(self._output_mode)
 
 class Capture(object):
-    def __init__(self, q, mirror=None):
-        self._q = q
+    def __init__(self, output, mirror=None):
+        self._output = output
         self._mirror = mirror
 
     def write(self, s):
@@ -96,7 +100,8 @@ class Capture(object):
             self._mirror.write(s)
         if isinstance(s, bytes):
             s = s.decode('utf8')
-        self._q.put(s)
+        for q in self._output:
+            q.put(s)
 
     def flush(self):
         pass
