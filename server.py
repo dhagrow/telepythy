@@ -1,13 +1,13 @@
-from gevent import monkey
-monkey.patch_all()
-
 import io
 import sys
 import code
 import contextlib
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 import sage
-from gevent import queue
 
 URL = 'tcp://localhost:6336'
 OUTPUT_MODES = ('off', 'capture', 'mirror')
@@ -38,10 +38,13 @@ class TeleServer(sage.Server):
         return self._code.push(source)
 
     @sage.command()
-    @sage.command_stream()
     def output(self):
         while True:
-            yield self._output_q.get()
+            try:
+                yield self._output_q.get(timeout=1)
+            except queue.Empty:
+                if self.is_client_closed():
+                    break
 
     @sage.command()
     def interrupt(self):
@@ -100,6 +103,9 @@ class Capture(object):
         if isinstance(s, bytes):
             s = s.decode('utf8')
         self._q.put(s)
+
+    def flush(self):
+        pass
 
 if __name__ == '__main__':
     main()
