@@ -1,4 +1,6 @@
+import time
 import threading
+import collections
 
 import sage
 
@@ -6,14 +8,22 @@ from PySide2.QtCore import Qt
 from PySide2 import QtCore, QtGui, QtWidgets
 
 URL = 'tcp://localhost:6336'
+PS1 = '>>> '
+PS2 = '... '
 
 class Window(QtWidgets.QWidget):
+    output_received = QtCore.Signal(str)
+
     def __init__(self, url):
         super().__init__()
 
         self._client = sage.Client(url)
+        self._history_result = collections.OrderedDict()
         self.setup()
 
+        self.append(PS1)
+
+        self.output_received.connect(self.append)
         start_thread(self._output)
 
     def setup(self):
@@ -23,10 +33,11 @@ class Window(QtWidgets.QWidget):
 
         self.output_edit = QtWidgets.QPlainTextEdit()
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 12))
+        self.output_edit.setReadOnly(True)
 
         self.source_edit = TextEdit()
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 12))
-        self.source_edit.submitted.connect(self._client.evaluate)
+        self.source_edit.submitted.connect(self.evaluate)
 
         self.splitter = QtWidgets.QSplitter(Qt.Vertical)
         self.splitter.addWidget(self.output_edit)
@@ -41,17 +52,56 @@ class Window(QtWidgets.QWidget):
 
         self.source_edit.setFocus()
 
+    def evaluate(self, source):
+        self.append(source)
+        self.append('\n')
+        needs_input = self._client.evaluate(source)
+        time.sleep(0.01)
+        self.append(PS2 if needs_input else PS1)
+
+    def append(self, text):
+        self.output_edit.insertPlainText(text)
+        scroll = self.output_edit.verticalScrollBar()
+        scroll.setValue(scroll.maximum())
+
     def _output(self):
         for line in self._client.output():
-            self.output_edit.insertPlainText(line)
+            self.output_received.emit(line)
 
 class TextEdit(QtWidgets.QPlainTextEdit):
     submitted = QtCore.Signal(str)
+    previous = QtCore.Signal()
+
+    def __init__(self):
+        super().__init__()
+
+        self._index = 0
+        self._source = []
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Return:
-            self.submitted.emit(self.toPlainText())
+        key = event.key()
+        mod = event.modifiers()
+
+        if key == Qt.Key_Return:
+            source = self.toPlainText()
+
+            self._index = 0
+            if source.strip():
+                self._source.append(source)
+
+            self.submitted.emit(source)
             self.clear()
+        elif mod & Qt.ControlModifier and key == Qt.Key_Up:
+            if not self._source:
+                return
+
+            self._index -= 1
+            try:
+                source = self._source[self._index]
+            except IndexError:
+                self._index += 1
+            else:
+                self.setPlainText(source)
         else:
             super().keyPressEvent(event)
 
