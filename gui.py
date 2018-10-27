@@ -55,7 +55,9 @@ class Window(QtWidgets.QWidget):
     def evaluate(self, source):
         self.append(source)
         self.append('\n')
-        needs_input = self._client.evaluate(source)
+        needs_input, stdout, stderr = self._client.evaluate(source)
+        if stdout: self.append(stdout)
+        if stderr: self.append(stderr)
         time.sleep(0.01)
         self.append(PS2 if needs_input else PS1)
 

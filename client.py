@@ -19,7 +19,9 @@ def repl(client):
     while True:
         try:
             source = session.prompt(PS2 if needs_input else PS1)
-            needs_input = client.evaluate(source)
+            needs_input, stdout, stderr = client.evaluate(source)
+            if stdout: print(stdout, end='')
+            if stderr: print(stderr, end='')
             time.sleep(0.01)
         except KeyboardInterrupt:
             client.interrupt()
