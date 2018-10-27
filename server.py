@@ -3,6 +3,7 @@ import sys
 import code
 import weakref
 import contextlib
+from collections import abc
 try:
     import queue
 except ImportError:
@@ -19,18 +20,18 @@ class TeleServer(sage.Server):
         super(TeleServer, self).__init__(*args, **kwargs)
 
         self._output = weakref.WeakSet()
-        self._env = {
-            '__name__': '__remote__',
-            '__tele__': Environment(self, output_mode),
-            }
 
+        self._env = Environment(self, output_mode)
         self._locals = {}
-        self._code = code.InteractiveConsole(self._locals)
         self._reset()
+
+        self._code = code.InteractiveConsole(self._locals)
 
     @sage.command()
     def evaluate(self, source):
-        return self._code.push(source)
+        with capture() as (stdout, stderr):
+            needs_input = self._code.push(source)
+        return needs_input, stdout.getvalue(), stderr.getvalue()
 
     @sage.command()
     def output(self):
@@ -52,14 +53,34 @@ class TeleServer(sage.Server):
         self._locals.clear()
         self._locals.update(self._env)
 
-class Environment(object):
+class Environment(abc.MutableMapping):
     def __init__(self, server, output_mode):
+        self._env = {
+            '__name__': '__remote__',
+            '__tele__': self,
+            }
+
         self._server = server
         self._stdout = sys.__stdout__
         self._stderr = sys.__stderr__
 
         self._output_mode = None
         self.output_mode = output_mode
+
+    def __len__(self):
+        return len(self._env)
+
+    def __iter__(self):
+        return iter(self._env)
+
+    def __getitem__(self, key):
+        return self._env[key]
+
+    def __setitem__(self, key, value):
+        self._env[key] = value
+
+    def __delitem__(self, key):
+        del self._env[key]
 
     @property
     def output_mode(self):
@@ -76,12 +97,12 @@ class Environment(object):
             sys.stderr = self._stderr or sys.__stderr__
         elif mode == 'capture':
             self.output_mode = 'off'
-            self._stdout, sys.stdout = sys.stdout, Capture(output)
-            self._stderr, sys.stderr = sys.stderr, Capture(output)
+            self._stdout, sys.stdout = sys.stdout, QueueIO(output)
+            self._stderr, sys.stderr = sys.stderr, QueueIO(output)
         elif mode == 'mirror':
             self.output_mode = 'off'
-            self._stdout, sys.stdout = sys.stdout, Capture(output, sys.stdout)
-            self._stderr, sys.stderr = sys.stderr, Capture(output, sys.stderr)
+            self._stdout, sys.stdout = sys.stdout, QueueIO(output, sys.stdout)
+            self._stderr, sys.stderr = sys.stderr, QueueIO(output, sys.stderr)
         else:
             err = 'output_mode must be one of: {}'
             raise ValueError(err.format(', '.join(OUTPUT_MODES)))
@@ -90,7 +111,19 @@ class Environment(object):
     def reset(self):
         self._server._reset(self._output_mode)
 
-class Capture(object):
+@contextlib.contextmanager
+def capture():
+    out = io.StringIO()
+    err = io.StringIO()
+    org_out, sys.stdout = sys.stdout, out
+    org_err, sys.stderr = sys.stderr, err
+    try:
+        yield out, err
+    finally:
+        sys.stdout = org_out
+        sys.stderr = org_err
+
+class QueueIO(object):
     def __init__(self, output, mirror=None):
         self._output = output
         self._mirror = mirror
