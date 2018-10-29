@@ -78,7 +78,7 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         super().__init__()
 
         self._index = 0
-        self._source = []
+        self._history = []
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -89,21 +89,24 @@ class TextEdit(QtWidgets.QPlainTextEdit):
 
             self._index = 0
             if source.strip():
-                self._source.append(source)
+                self._history.append(source)
 
             self.submitted.emit(source)
             self.clear()
         elif mod & Qt.ControlModifier and key == Qt.Key_Up:
-            if not self._source:
+            if not self._history:
                 return
 
             self._index -= 1
             try:
-                source = self._source[self._index]
+                source = self._history[self._index]
             except IndexError:
                 self._index += 1
             else:
                 self.setPlainText(source)
+                cursor = self.textCursor()
+                cursor.movePosition(QtGui.QTextCursor.End)
+                self.setTextCursor(cursor)
         else:
             super().keyPressEvent(event)
 
