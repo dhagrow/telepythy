@@ -25,13 +25,22 @@ class TeleServer(sage.Server):
         self._locals = {}
         self._reset()
 
-        self._code = code.InteractiveConsole(self._locals)
+        self._code = code.InteractiveInterpreter(self._locals)
 
     @sage.command()
     def evaluate(self, source):
+        if not source.strip():
+            return False, '', ''
+        if not source.endswith('\n'):
+            source += '\n'
         with capture() as (stdout, stderr):
-            needs_input = self._code.push(source)
-        return needs_input, stdout.getvalue(), stderr.getvalue()
+            try:
+                code = compile(source, '<remote>', 'single')
+            except (OverflowError, SyntaxError, ValueError):
+                self._code.showsyntaxerror('<remote>')
+            else:
+                self._code.runcode(code)
+        return False, stdout.getvalue(), stderr.getvalue()
 
     @sage.command()
     def output(self):
