@@ -52,7 +52,7 @@ class Window(QtWidgets.QWidget):
 
         self.source_edit.setFocus()
 
-    def evaluate(self, source):
+    def evaluate(self, source, force):
         self.append(source)
         self.append('\n')
         needs_input, stdout, stderr = self._client.evaluate(source)
@@ -71,8 +71,7 @@ class Window(QtWidgets.QWidget):
             self.output_received.emit(line)
 
 class TextEdit(QtWidgets.QPlainTextEdit):
-    submitted = QtCore.Signal(str)
-    previous = QtCore.Signal()
+    submitted = QtCore.Signal(str, bool)
 
     def __init__(self):
         super().__init__()
@@ -80,35 +79,48 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         self._index = 0
         self._history = []
 
+    def submit(self):
+        source = self.toPlainText()
+
+        self._index = 0
+        if source.strip():
+            self._history.append(source)
+
+        self.submitted.emit(source)
+        self.clear()
+
+    def previous(self):
+        if not self._history:
+            return
+
+        self._index -= 1
+        try:
+            source = self._history[self._index]
+        except IndexError:
+            self._index += 1
+        else:
+            self.setPlainText(source)
+            self.moveCursorPosition(QtGui.QTextCursor.End)
+
+    ## events ##
+
     def keyPressEvent(self, event):
         key = event.key()
         mod = event.modifiers()
 
         if key == Qt.Key_Return:
-            source = self.toPlainText()
-
-            self._index = 0
-            if source.strip():
-                self._history.append(source)
-
-            self.submitted.emit(source)
-            self.clear()
+            self.submit()
         elif mod & Qt.ControlModifier and key == Qt.Key_Up:
-            if not self._history:
-                return
-
-            self._index -= 1
-            try:
-                source = self._history[self._index]
-            except IndexError:
-                self._index += 1
-            else:
-                self.setPlainText(source)
-                cursor = self.textCursor()
-                cursor.movePosition(QtGui.QTextCursor.End)
-                self.setTextCursor(cursor)
+            self.previous()
         else:
             super().keyPressEvent(event)
+
+    ## utils ##
+
+    def moveCursorPosition(self, position):
+        cursor = self.textCursor()
+        cursor.movePosition(position)
+        self.setTextCursor(cursor)
 
 def start_thread(func, *args, **kwargs):
     t = threading.Thread(target=func, args=args, kwargs=kwargs)
