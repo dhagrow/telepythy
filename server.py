@@ -12,7 +12,7 @@ except ImportError:
 import sage
 
 URL = 'tcp://localhost:6336'
-OUTPUT_MODES = ('off', 'capture', 'mirror')
+OUTPUT_MODES = ('local', 'capture', 'mirror')
 
 class TeleServer(sage.Server):
     def __init__(self, *args, **kwargs):
@@ -21,7 +21,7 @@ class TeleServer(sage.Server):
 
         self._output = weakref.WeakSet()
 
-        self._env = Environment(self, output_mode)
+        self._medium = Medium(self, output_mode)
         self._locals = {}
         self._reset()
 
@@ -60,11 +60,11 @@ class TeleServer(sage.Server):
 
     def _reset(self):
         self._locals.clear()
-        self._locals.update(self._env)
+        self._locals.update(self._medium.env)
 
-class Environment(abc.MutableMapping):
+class Medium(object):
     def __init__(self, server, output_mode):
-        self._env = {
+        self.env = {
             '__name__': '__remote__',
             '__tele__': self,
             }
@@ -76,23 +76,16 @@ class Environment(abc.MutableMapping):
         self._output_mode = None
         self.output_mode = output_mode
 
-    def __len__(self):
-        return len(self._env)
-
-    def __iter__(self):
-        return iter(self._env)
-
-    def __getitem__(self, key):
-        return self._env[key]
-
-    def __setitem__(self, key, value):
-        self._env[key] = value
-
-    def __delitem__(self, key):
-        del self._env[key]
-
     @property
     def output_mode(self):
+        """Determines where interpreter output is displayed.
+
+        There are 3 valid modes:
+
+            local   - output is only displayed locally
+            capture - output is only displayed remotely
+            mirror  - output is displayed both locally and remotely
+        """
         return self._output_mode
 
     @output_mode.setter
@@ -101,15 +94,15 @@ class Environment(abc.MutableMapping):
 
         if mode == self._output_mode:
             return
-        elif mode == 'off':
+        elif mode == 'local':
             sys.stdout = self._stdout or sys.__stdout__
             sys.stderr = self._stderr or sys.__stderr__
         elif mode == 'capture':
-            self.output_mode = 'off'
+            self.output_mode = 'local'
             self._stdout, sys.stdout = sys.stdout, QueueIO(output)
             self._stderr, sys.stderr = sys.stderr, QueueIO(output)
         elif mode == 'mirror':
-            self.output_mode = 'off'
+            self.output_mode = 'local'
             self._stdout, sys.stdout = sys.stdout, QueueIO(output, sys.stdout)
             self._stderr, sys.stderr = sys.stderr, QueueIO(output, sys.stderr)
         else:
@@ -118,6 +111,7 @@ class Environment(abc.MutableMapping):
         self._output_mode = mode
 
     def reset(self):
+        """Clears and resets the locals environment."""
         self._server._reset(self._output_mode)
 
 @contextlib.contextmanager
