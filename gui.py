@@ -35,9 +35,9 @@ class Window(QtWidgets.QWidget):
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 12))
         self.output_edit.setReadOnly(True)
 
-        self.source_edit = TextEdit()
+        self.source_edit = TextEdit(self._client)
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 12))
-        self.source_edit.submitted.connect(self.evaluate)
+        self.source_edit.evaluated.connect(self.on_evaluate)
 
         self.splitter = QtWidgets.QSplitter(Qt.Vertical)
         self.splitter.addWidget(self.output_edit)
@@ -52,14 +52,12 @@ class Window(QtWidgets.QWidget):
 
         self.source_edit.setFocus()
 
-    def evaluate(self, source, force):
+    def on_evaluate(self, source, stdout, stderr):
         self.append(source)
         self.append('\n')
-        needs_input, stdout, stderr = self._client.evaluate(source)
         if stdout: self.append(stdout)
         if stderr: self.append(stderr)
-        time.sleep(0.01)
-        self.append(PS2 if needs_input else PS1)
+        self.append(PS1)
 
     def append(self, text):
         self.output_edit.insertPlainText(text)
@@ -71,23 +69,33 @@ class Window(QtWidgets.QWidget):
             self.output_received.emit(line)
 
 class TextEdit(QtWidgets.QPlainTextEdit):
-    submitted = QtCore.Signal(str, bool)
+    evaluated = QtCore.Signal(str, str, str)
 
-    def __init__(self):
+    def __init__(self, client):
         super().__init__()
+
+        self._client = client
 
         self._index = 0
         self._history = []
 
-    def submit(self):
+    def evaluate(self):
         source = self.toPlainText()
+
+        needs_input, stdout, stderr = self._client.evaluate(source, push=False)
+        print((needs_input, stdout, stderr))
+        if needs_input:
+            print('needs input')
+            return False
 
         self._index = 0
         if source.strip():
             self._history.append(source)
 
-        self.submitted.emit(source)
+        self.evaluated.emit(source, stdout, stderr)
         self.clear()
+
+        return True
 
     def previous(self):
         if not self._history:
@@ -109,11 +117,13 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         mod = event.modifiers()
 
         if key == Qt.Key_Return:
-            self.submit()
+            if self.evaluate():
+                return
         elif mod & Qt.ControlModifier and key == Qt.Key_Up:
             self.previous()
-        else:
-            super().keyPressEvent(event)
+            return
+
+        super().keyPressEvent(event)
 
     ## utils ##
 

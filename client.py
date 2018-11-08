@@ -22,7 +22,6 @@ def repl(client):
             needs_input, stdout, stderr = client.evaluate(source)
             if stdout: print(stdout, end='')
             if stderr: print(stderr, end='')
-            time.sleep(0.01)
         except KeyboardInterrupt:
             client.interrupt()
             needs_input = False
