@@ -35,9 +35,19 @@ class Window(QtWidgets.QWidget):
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 12))
         self.output_edit.setReadOnly(True)
 
+        palette = self.output_edit.palette()
+        palette.setColor(QtGui.QPalette.Base, '#333')
+        palette.setColor(QtGui.QPalette.Text, Qt.white)
+        self.output_edit.setPalette(palette)
+
         self.source_edit = TextEdit(self._client)
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 12))
         self.source_edit.evaluated.connect(self.on_evaluate)
+
+        palette = self.source_edit.palette()
+        palette.setColor(QtGui.QPalette.Base, '#333')
+        palette.setColor(QtGui.QPalette.Text, Qt.white)
+        self.source_edit.setPalette(palette)
 
         self.splitter = QtWidgets.QSplitter(Qt.Vertical)
         self.splitter.addWidget(self.output_edit)
@@ -45,6 +55,7 @@ class Window(QtWidgets.QWidget):
         self.splitter.setStretchFactor(0, 2)
 
         self.layout = QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(2, 2, 2, 2)
         self.layout.addWidget(self.splitter)
 
         self.addAction(self.action_quit)
