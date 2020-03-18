@@ -14,10 +14,10 @@ PS2 = '... '
 class Window(QtWidgets.QWidget):
     output_received = QtCore.Signal(str)
 
-    def __init__(self, url):
+    def __init__(self, client):
         super().__init__()
 
-        self._client = sage.Client(url)
+        self._client = client
         self._history_result = collections.OrderedDict()
         self.setup()
 
@@ -139,9 +139,18 @@ def start_thread(func, *args, **kwargs):
     return t
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', default=URL,
+        help='the server bind URL (default=%(default)s)')
+
+    args = parser.parse_args()
+    client = sage.Client(args.url, retry_count=-1)
+
     app = QtWidgets.QApplication()
 
-    win = Window(URL)
+    win = Window(client)
     win.show()
 
     app.exec_()
