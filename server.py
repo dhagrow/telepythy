@@ -3,7 +3,6 @@ import sys
 import code
 import weakref
 import contextlib
-from collections import abc
 try:
     import queue
 except ImportError:
@@ -17,11 +16,13 @@ OUTPUT_MODES = ('local', 'capture', 'mirror')
 class TeleServer(sage.Server):
     def __init__(self, *args, **kwargs):
         output_mode = kwargs.pop('output_mode', 'mirror')
+        loc = kwargs.pop('locals', {})
         super(TeleServer, self).__init__(*args, **kwargs)
 
         self._output = weakref.WeakSet()
 
-        self._medium = Medium(self, output_mode)
+        self._medium = Medium(self, output_mode, loc)
+
         self._locals = {}
         self._reset()
 
@@ -61,11 +62,12 @@ class TeleServer(sage.Server):
         self._locals.update(self._medium.env)
 
 class Medium(object):
-    def __init__(self, server, output_mode):
+    def __init__(self, server, output_mode, loc):
         self.env = {
             '__name__': '__remote__',
             '__tele__': self,
             }
+        self.env.update(loc)
 
         self._server = server
         self._stdout = sys.__stdout__
