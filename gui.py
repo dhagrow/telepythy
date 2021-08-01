@@ -16,10 +16,10 @@ _rx_indent = re.compile(r'^(\s*)')
 class Window(QtWidgets.QWidget):
     output_received = QtCore.Signal(str)
 
-    def __init__(self, client):
+    def __init__(self, service):
         super().__init__()
 
-        self._client = client
+        self._svc = service
         self._history_result = collections.OrderedDict()
         self.setup()
 
@@ -42,7 +42,7 @@ class Window(QtWidgets.QWidget):
         palette.setColor(QtGui.QPalette.Text, Qt.white)
         self.output_edit.setPalette(palette)
 
-        self.source_edit = TextEdit(self._client)
+        self.source_edit = TextEdit(self._svc)
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 13))
         self.source_edit.evaluated.connect(self.on_evaluate)
 
@@ -78,7 +78,7 @@ class Window(QtWidgets.QWidget):
         scroll.setValue(scroll.maximum())
 
     def _output(self):
-        for line in self._client.output():
+        for line in self._svc.output():
             self.output_received.emit(line)
 
 class TextEdit(QtWidgets.QPlainTextEdit):
@@ -223,10 +223,11 @@ def main():
 
     args = parser.parse_args()
     client = sage.Client(args.url, retry_count=-1)
+    svc = client.service('tele')
 
     app = QtWidgets.QApplication()
 
-    win = Window(client)
+    win = Window(svc)
     win.show()
 
     app.exec_()

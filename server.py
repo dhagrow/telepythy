@@ -13,15 +13,13 @@ import sage
 URL = 'tcp://localhost:6336'
 OUTPUT_MODES = ('local', 'capture', 'mirror')
 
-class TeleServer(sage.Server):
-    def __init__(self, *args, **kwargs):
-        output_mode = kwargs.pop('output_mode', 'mirror')
-        loc = kwargs.pop('locals', {})
-        super(TeleServer, self).__init__(*args, **kwargs)
+class TeleService(sage.Service):
+    _name_ = 'tele'
 
+    def __init__(self, loc=None, output_mode=None):
         self._output = weakref.WeakSet()
 
-        self._medium = Medium(self, output_mode, loc)
+        self._medium = Medium(self, output_mode, loc or {})
 
         self._locals = {}
         self._reset()
@@ -50,8 +48,10 @@ class TeleServer(sage.Server):
             try:
                 yield q.get(timeout=1)
             except queue.Empty:
-                if self.is_client_closed():
-                    break
+                pass
+                # XXX: solution for this?
+                # if self.is_client_closed():
+                #     break
 
     @sage.command()
     def interrupt(self):
@@ -150,7 +150,10 @@ def main():
         help='the server bind URL (default=%(default)s)')
 
     args = parser.parse_args()
-    TeleServer(args.url).serve()
+
+    s = sage.Server(args.url)
+    s.add_service(TeleService())
+    s.serve()
 
 if __name__ == '__main__':
     try:
