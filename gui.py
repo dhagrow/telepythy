@@ -2,10 +2,10 @@ import re
 import threading
 import collections
 
-import sage
-
 from PySide2.QtCore import Qt
 from PySide2 import QtCore, QtGui, QtWidgets
+
+from client import Client
 
 URL = 'tcp://localhost:6336'
 PS1 = '>>> '
@@ -13,25 +13,39 @@ PS2 = '... '
 
 _rx_indent = re.compile(r'^(\s*)')
 
-class Window(QtWidgets.QWidget):
+class Window(QtWidgets.QMainWindow):
     output_received = QtCore.Signal(str)
+    status_connected = QtCore.Signal(tuple)
+    status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, service):
+    def __init__(self, address):
         super().__init__()
 
-        self._svc = service
-        self._history_result = collections.OrderedDict()
+        self._address = address
+        self._client = None
+
         self.setup()
 
-        self.append(PS1)
+        self._history_result = collections.OrderedDict()
+        self._prompt_pos = 0
+
+        self.append_prompt()
+
+        # signals
+
+        self.action_quit.triggered.connect(self.close)
+
+        self.source_edit.executed.connect(self.execute)
 
         self.output_received.connect(self.append)
+        self.status_connected.connect(self._set_connected)
+        self.status_disconnected.connect(self._set_disconnected)
+
         start_thread(self._output)
 
     def setup(self):
         self.action_quit = QtWidgets.QAction()
         self.action_quit.setShortcut(QtGui.QKeySequence.Quit)
-        self.action_quit.triggered.connect(self.close)
 
         self.output_edit = QtWidgets.QPlainTextEdit()
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 13))
@@ -42,74 +56,115 @@ class Window(QtWidgets.QWidget):
         palette.setColor(QtGui.QPalette.Text, Qt.white)
         self.output_edit.setPalette(palette)
 
-        self.source_edit = TextEdit(self._svc)
+        self.source_edit = TextEdit()
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 13))
-        self.source_edit.evaluated.connect(self.on_evaluate)
 
         palette = self.source_edit.palette()
         palette.setColor(QtGui.QPalette.Base, '#333')
         palette.setColor(QtGui.QPalette.Text, Qt.white)
         self.source_edit.setPalette(palette)
 
-        self.splitter = QtWidgets.QSplitter(Qt.Vertical)
-        self.splitter.addWidget(self.output_edit)
-        self.splitter.addWidget(self.source_edit)
-        self.splitter.setStretchFactor(0, 2)
+        self.bottom_dock = QtWidgets.QDockWidget()
+        self.bottom_dock.setWidget(self.source_edit)
+        self.bottom_dock.setTitleBarWidget(QtWidgets.QWidget())
+        self.bottom_dock.setFeatures(self.bottom_dock.DockWidgetVerticalTitleBar)
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.setContentsMargins(2, 2, 2, 2)
-        self.layout.addWidget(self.splitter)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.bottom_dock)
 
         self.addAction(self.action_quit)
-        self.setLayout(self.layout)
+        self.setCentralWidget(self.output_edit)
 
         self.source_edit.setFocus()
+        self._set_disconnected()
 
-    def on_evaluate(self, source, stdout, stderr):
-        self.append(source)
-        self.append('\n')
-        if stdout: self.append(stdout)
-        if stderr: self.append(stderr)
-        self.append(PS1)
+    def execute(self, source):
+        self.append_source(source)
+
+        if self._client is None:
+            self._client = Client(self._address)
+
+        try:
+            needs_input = self._client.evaluate(source)
+        except Exception as e:
+            self.status_disconnected.emit(str(e))
+        else:
+            if not needs_input:
+                self.source_edit.clear()
+
+    def append_prompt(self, prompt=PS1):
+        cur = self.output_edit.textCursor()
+        print('prompt1', cur.position())
+        cur.insertText(PS1)
+        self._prompt_pos = cur.position()
+        print('prompt2', cur.position())
+
+    def append_source(self, source):
+        insert = self.output_edit.insertPlainText
+        lines = source.splitlines()
+        insert(lines[0] + '\n')
+        for line in lines[1:]:
+            insert(PS2)
+            insert(line + '\n')
+        self.append_prompt()
 
     def append(self, text):
+        print('append0', repr(text))
         self.output_edit.insertPlainText(text)
         scroll = self.output_edit.verticalScrollBar()
         scroll.setValue(scroll.maximum())
 
+        cur = self.output_edit.textCursor()
+        print('append1', cur.position())
+        cur.setPosition(self._prompt_pos)
+        print('append2', cur.position())
+        cur.movePosition(cur.PreviousCharacter, cur.KeepAnchor, len(PS1))
+        cur.removeSelectedText()
+        print('append3', cur.position())
+
+        self.append_prompt()
+
     def _output(self):
-        for line in self._svc.output():
-            self.output_received.emit(line)
+        addr = self._address
+        client = None
+
+        while True:
+            try:
+                if client is None:
+                    client = Client(addr, timeout=3)
+                for line in client.output():
+                    self.status_connected.emit(addr)
+                    if line is not None:
+                        self.output_received.emit(line)
+            except Exception as e:
+                client = None
+                self.status_disconnected.emit(str(e))
+
+    def _set_connected(self, address):
+        msg = 'connected: {}:{}'.format(*address)
+        self.statusBar().showMessage(msg)
+
+    def _set_disconnected(self, error=None):
+        e = error and ': {}'.format(error) or ''
+        msg = 'not connected{}'.format(e)
+        self.statusBar().showMessage(msg)
 
 class TextEdit(QtWidgets.QPlainTextEdit):
-    evaluated = QtCore.Signal(str, str, str)
+    executed = QtCore.Signal(str)
 
-    def __init__(self, client):
+    def __init__(self):
         super().__init__()
-
-        self._client = client
 
         self._index = 0
         self._history = []
 
-    def evaluate(self):
+    def clear(self):
         source = self.toPlainText()
-
-        needs_input, stdout, stderr = self._client.evaluate(source, push=False)
-        if needs_input:
-            return False
-        if '\n' in stderr and stderr.rstrip().rsplit('\n', 1)[1].startswith('SyntaxError'):
-            print(stderr)
-            return True
 
         self._index = 0
         if source.strip():
             self._history.append(source)
 
-        self.evaluated.emit(source, stdout, stderr)
-        self.clear()
-
-        return True
+        super().clear()
 
     def previous(self):
         if not self._history:
@@ -132,11 +187,12 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         ctrl = mod & Qt.ControlModifier
 
         if key == Qt.Key_Return:
-            # only evaluate when all of the following are true:
+            # only execute when all of the following are true:
             # - there is only one line
             # - the text cursor is at the end of the text
             # - the last character is not a space
-            # evaluation can be forced by holding control
+            # - the last non-space character is not a colon
+            # execution can be forced by holding control
             cursor = self.textCursor()
             block = cursor.block()
             text = block.text()
@@ -144,13 +200,12 @@ class TextEdit(QtWidgets.QPlainTextEdit):
             one_line = self.blockCount() == 1
             at_end = cursor.atEnd()
             no_space = text and text[-1] != ' '
+            text_s = text.rstrip()
+            new_scope = text_s and (text_s[-1] == ':')
 
-            if ctrl or (one_line and at_end and no_space):
-                if self.evaluate():
-                    return
-                else:
-                    self.insertPlainText('\n' + (' ' * 4))
-                    return
+            if ctrl or (one_line and at_end and no_space and not new_scope):
+                self.executed.emit(self.toPlainText())
+                return
             else:
                 spaces = self.block_indent(block)
                 self.insertPlainText('\n' + (' ' * spaces))
@@ -218,16 +273,14 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--url', default=URL,
-        help='the server bind URL (default=%(default)s)')
+    parser.add_argument('-H', '--host', default='localhost')
+    parser.add_argument('-P', '--port', required=True)
 
     args = parser.parse_args()
-    client = sage.Client(args.url, retry_count=-1)
-    svc = client.service('tele')
 
     app = QtWidgets.QApplication()
 
-    win = Window(svc)
+    win = Window((args.host, args.port))
     win.show()
 
     app.exec_()

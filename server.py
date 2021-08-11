@@ -1,45 +1,62 @@
-import io
 import sys
 import code
 import weakref
-import contextlib
 try:
     import queue
 except ImportError:
     import Queue as queue
 
-import sage
+import sockio
 
-URL = 'tcp://localhost:6336'
-OUTPUT_MODES = ('local', 'capture', 'mirror')
+import logs
 
-class TeleService(sage.Service):
-    _name_ = 'tele'
+OUTPUT_MODES = ('local', 'remote', 'mirror')
 
+log = logs.get(__name__)
+
+class Service(object):
     def __init__(self, loc=None, output_mode=None):
         self._output = weakref.WeakSet()
 
-        self._medium = Medium(self, output_mode, loc or {})
+        self._medium = Context(self, output_mode, loc or {})
 
         self._locals = {}
         self._reset()
 
         self._code = code.InteractiveConsole(self._locals)
 
-    @sage.command()
-    def evaluate(self, source, push=True):
+    def handle(self, sock):
+        while True:
+            msg = sock.recvmsg()
+            if not msg:
+                break
+
+            cmd = msg['cmd']
+            data = msg.get('data', '')
+            data = data and ': ' + repr(data)
+            log.debug('cmd: %s%s', cmd, data)
+
+            if cmd == 'evaluate':
+                needs_input = self.evaluate(msg['data'])
+                sock.sendmsg(needs_input)
+            elif cmd == 'output':
+                for line in self.output():
+                    sock.sendmsg(line)
+            elif cmd == 'interrupt':
+                self.interrupt()
+            else:
+                raise ValueError(cmd)
+
+    def evaluate(self, source, push=False):
         if push:
             run = self._code.push
         else:
             run = self._code.runsource
             source += '\n'
 
-        with capture() as (stdout, stderr):
-            needs_input = run(source)
+        needs_input = run(source)
+        return needs_input
 
-        return needs_input, stdout.getvalue(), stderr.getvalue()
-
-    @sage.command()
     def output(self):
         q = queue.Queue()
         self._output.add(q)
@@ -48,12 +65,8 @@ class TeleService(sage.Service):
             try:
                 yield q.get(timeout=1)
             except queue.Empty:
-                pass
-                # XXX: solution for this?
-                # if self.is_client_closed():
-                #     break
+                yield
 
-    @sage.command()
     def interrupt(self):
         self._code.resetbuffer()
 
@@ -61,20 +74,18 @@ class TeleService(sage.Service):
         self._locals.clear()
         self._locals.update(self._medium.env)
 
-class Medium(object):
+class Context(object):
     def __init__(self, server, output_mode, loc):
         self.env = {
             '__name__': '__remote__',
-            '__tele__': self,
+            '__context__': self,
             }
         self.env.update(loc)
 
         self._server = server
-        self._stdout = sys.__stdout__
-        self._stderr = sys.__stderr__
 
         self._output_mode = None
-        self.output_mode = output_mode
+        self.output_mode = output_mode or 'remote'
 
     @property
     def output_mode(self):
@@ -82,9 +93,9 @@ class Medium(object):
 
         There are 3 valid modes:
 
-            local   - output is only displayed locally
-            capture - output is only displayed remotely
-            mirror  - output is displayed both locally and remotely
+            local  - output is only displayed locally
+            remote - output is only displayed remotely
+            mirror - output is displayed both locally and remotely
         """
         return self._output_mode
 
@@ -92,19 +103,17 @@ class Medium(object):
     def output_mode(self, mode):
         output = self._server._output
 
-        if mode == self._output_mode:
+        if mode and mode == self._output_mode:
             return
         elif mode == 'local':
-            sys.stdout = self._stdout or sys.__stdout__
-            sys.stderr = self._stderr or sys.__stderr__
-        elif mode == 'capture':
-            self.output_mode = 'local'
-            self._stdout, sys.stdout = sys.stdout, QueueIO(output)
-            self._stderr, sys.stderr = sys.stderr, QueueIO(output)
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+        elif mode == 'remote':
+            sys.stdout = QueueIO(output)
+            sys.stderr = QueueIO(output)
         elif mode == 'mirror':
-            self.output_mode = 'local'
-            self._stdout, sys.stdout = sys.stdout, QueueIO(output, sys.stdout)
-            self._stderr, sys.stderr = sys.stderr, QueueIO(output, sys.stderr)
+            sys.stdout = QueueIO(output, sys.__stdout__)
+            sys.stderr = QueueIO(output, sys.__stderr__)
         else:
             err = 'output_mode must be one of: {}'
             raise ValueError(err.format(', '.join(OUTPUT_MODES)))
@@ -112,19 +121,12 @@ class Medium(object):
 
     def reset(self):
         """Clears and resets the locals environment."""
-        self._server._reset(self._output_mode)
+        self._server._reset()
 
-@contextlib.contextmanager
-def capture():
-    out = io.StringIO()
-    err = io.StringIO()
-    org_out, sys.stdout = sys.stdout, out
-    org_err, sys.stderr = sys.stderr, err
-    try:
-        yield out, err
-    finally:
-        sys.stdout = org_out
-        sys.stderr = org_err
+    def __str__(self):
+        return "{}(output_mode='{}', env={})".format(
+            self.__class__.__name__, self.output_mode, self.env,
+            )
 
 class QueueIO(object):
     def __init__(self, output, mirror=None):
@@ -140,20 +142,22 @@ class QueueIO(object):
             q.put(s)
 
     def flush(self):
-        pass
+        if self._mirror is not None:
+            self._mirror.flush()
 
 def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-u', '--url', default=URL,
-        help='the server bind URL (default=%(default)s)')
+    parser.add_argument('-H', '--host', default='localhost')
+    parser.add_argument('-P', '--port', default=0, type=int)
 
     args = parser.parse_args()
 
-    s = sage.Server(args.url)
-    s.add_service(TeleService())
-    s.serve()
+    logs.init(2)
+
+    svc = Service()
+    sockio.serve((args.host, args.port), svc.handle)
 
 if __name__ == '__main__':
     try:
