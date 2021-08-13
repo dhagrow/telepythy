@@ -1,14 +1,16 @@
+# from __future__ import print_function
+
 import sys
 import code
+import pprint
 import weakref
 try:
     import queue
 except ImportError:
     import Queue as queue
 
-import sockio
-
-import logs
+from . import sockio
+from . import logs
 
 OUTPUT_MODES = ('local', 'remote', 'mirror')
 
@@ -16,14 +18,18 @@ log = logs.get(__name__)
 
 class Service(object):
     def __init__(self, loc=None, output_mode=None):
+        sys.displayhook = self.displayhook
+
         self._output = weakref.WeakSet()
 
-        self._medium = Context(self, output_mode, loc or {})
+        self._ctx = Context(self, output_mode, loc or {})
 
         self._locals = {}
+        self._result_cnt = 0
+        self._result_limit = 30
         self._reset()
 
-        self._code = code.InteractiveConsole(self._locals)
+        self._code = code.InteractiveInterpreter(self._locals)
 
     def handle(self, sock):
         while True:
@@ -47,15 +53,10 @@ class Service(object):
             else:
                 raise ValueError(cmd)
 
-    def evaluate(self, source, push=False):
-        if push:
-            run = self._code.push
-        else:
-            run = self._code.runsource
-            source += '\n'
-
-        needs_input = run(source)
-        return needs_input
+    def evaluate(self, source):
+        # XXX symbol catches output?
+        return self._code.runsource(source)
+        # return self._code.runsource(source, symbol='exec')
 
     def output(self):
         q = queue.Queue()
@@ -70,9 +71,22 @@ class Service(object):
     def interrupt(self):
         self._code.resetbuffer()
 
+    def displayhook(self, value):
+        self._locals['_'] = value
+        self._locals['_{}'.format(self._result_cnt)] = value
+
+        print('{}: {}'.format(self._result_cnt, pprint.pformat(value)))
+
+        self._result_cnt += 1
+
+        # remove old results
+        for i in range(max(0, self._result_cnt-self._result_limit)):
+            self._locals.pop('_{}'.format(i), None)
+
     def _reset(self):
         self._locals.clear()
-        self._locals.update(self._medium.env)
+        self._locals.update(self._ctx.env)
+        self._result_cnt = 0
 
 class Context(object):
     def __init__(self, server, output_mode, loc):

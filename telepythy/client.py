@@ -5,7 +5,7 @@ import threading
 import prompt_toolkit as pt
 from prompt_toolkit.patch_stdout import patch_stdout
 
-import sockio
+from . import sockio
 
 URL = 'tcp://localhost:6336'
 PS1 = '>>> '

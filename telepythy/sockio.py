@@ -5,7 +5,7 @@ import socket
 import struct
 import threading
 
-import logs
+from . import logs
 
 BACKLOG = socket.SOMAXCONN
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE

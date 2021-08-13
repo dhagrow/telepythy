@@ -5,7 +5,8 @@ import collections
 from PySide2.QtCore import Qt
 from PySide2 import QtCore, QtGui, QtWidgets
 
-from client import Client
+from .client import Client
+from .history import History
 
 URL = 'tcp://localhost:6336'
 PS1 = '>>> '
@@ -34,14 +35,14 @@ class Window(QtWidgets.QMainWindow):
         # signals
 
         self.action_quit.triggered.connect(self.close)
-
-        self.source_edit.executed.connect(self.execute)
+        self.source_edit.evaluation_requested.connect(self.evaluate)
 
         self.output_received.connect(self.append)
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
-        start_thread(self._output)
+        self._stop_output = threading.Event()
+        self._output_thread = start_thread(self._output)
 
     def setup(self):
         self.action_quit = QtWidgets.QAction()
@@ -56,7 +57,7 @@ class Window(QtWidgets.QMainWindow):
         palette.setColor(QtGui.QPalette.Text, Qt.white)
         self.output_edit.setPalette(palette)
 
-        self.source_edit = TextEdit()
+        self.source_edit = SourceEdit()
         self.source_edit.setFont(QtGui.QFont('Fira Mono', 13))
 
         palette = self.source_edit.palette()
@@ -66,7 +67,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.bottom_dock = QtWidgets.QDockWidget()
         self.bottom_dock.setWidget(self.source_edit)
-        self.bottom_dock.setTitleBarWidget(QtWidgets.QWidget())
+        self.bottom_dock.setTitleBarWidget(QtWidgets.QWidget(self.bottom_dock))
         self.bottom_dock.setFeatures(self.bottom_dock.DockWidgetVerticalTitleBar)
 
         self.addDockWidget(Qt.BottomDockWidgetArea, self.bottom_dock)
@@ -77,7 +78,7 @@ class Window(QtWidgets.QMainWindow):
         self.source_edit.setFocus()
         self._set_disconnected()
 
-    def execute(self, source):
+    def evaluate(self, source):
         self.append_source(source)
 
         if self._client is None:
@@ -93,48 +94,59 @@ class Window(QtWidgets.QMainWindow):
 
     def append_prompt(self, prompt=PS1):
         cur = self.output_edit.textCursor()
-        print('prompt1', cur.position())
         cur.insertText(PS1)
         self._prompt_pos = cur.position()
-        print('prompt2', cur.position())
 
     def append_source(self, source):
+        if not source:
+            return
+
         insert = self.output_edit.insertPlainText
         lines = source.splitlines()
         insert(lines[0] + '\n')
+
+        # XXX: remove trailing empty lines
+
         for line in lines[1:]:
             insert(PS2)
             insert(line + '\n')
+
         self.append_prompt()
 
     def append(self, text):
-        print('append0', repr(text))
         self.output_edit.insertPlainText(text)
         scroll = self.output_edit.verticalScrollBar()
         scroll.setValue(scroll.maximum())
 
         cur = self.output_edit.textCursor()
-        print('append1', cur.position())
         cur.setPosition(self._prompt_pos)
-        print('append2', cur.position())
         cur.movePosition(cur.PreviousCharacter, cur.KeepAnchor, len(PS1))
         cur.removeSelectedText()
-        print('append3', cur.position())
 
         self.append_prompt()
+
+    def stop_output(self, timeout=None):
+        self._stop_output.set()
+        self._output_thread.join(timeout)
 
     def _output(self):
         addr = self._address
         client = None
+        stop = self._stop_output
 
-        while True:
+        while not stop.is_set():
             try:
                 if client is None:
                     client = Client(addr, timeout=3)
+
                 for line in client.output():
+                    if stop.is_set():
+                        break
+
                     self.status_connected.emit(addr)
                     if line is not None:
                         self.output_received.emit(line)
+
             except Exception as e:
                 client = None
                 self.status_disconnected.emit(str(e))
@@ -148,36 +160,51 @@ class Window(QtWidgets.QMainWindow):
         msg = 'not connected{}'.format(e)
         self.statusBar().showMessage(msg)
 
-class TextEdit(QtWidgets.QPlainTextEdit):
-    executed = QtCore.Signal(str)
+class SourceEdit(QtWidgets.QPlainTextEdit):
+    evaluation_requested = QtCore.Signal(str)
 
     def __init__(self):
         super().__init__()
 
-        self._index = 0
-        self._history = []
-
-    def clear(self):
-        source = self.toPlainText()
-
-        self._index = 0
-        if source.strip():
-            self._history.append(source)
-
-        super().clear()
+        self._history = History()
+        self._current = None
 
     def previous(self):
         if not self._history:
             return
 
-        self._index -= 1
-        try:
-            source = self._history[self._index]
-        except IndexError:
-            self._index += 1
-        else:
+        match = self.toPlainText()
+        if self._current is None:
+            self._current = match
+
+        source = self._history.previous(match)
+        if source:
             self.setPlainText(source)
             self.moveCursorPosition(QtGui.QTextCursor.End)
+
+    def next(self):
+        if not self._history:
+            return
+
+        match = self.toPlainText()
+        source = self._history.next(match)
+        if source:
+            self.setPlainText(source)
+        else:
+            self.setPlainText(self._current)
+        self.moveCursorPosition(QtGui.QTextCursor.End)
+
+    def reset(self):
+        self._history.reset()
+        self._current = None
+
+    def clear(self):
+        self.reset()
+
+        source = self.toPlainText()
+        self._history.append(source)
+
+        super().clear()
 
     ## events ##
 
@@ -187,12 +214,12 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         ctrl = mod & Qt.ControlModifier
 
         if key == Qt.Key_Return:
-            # only execute when all of the following are true:
+            # only evaluate when all of the following are true:
             # - there is only one line
             # - the text cursor is at the end of the text
             # - the last character is not a space
             # - the last non-space character is not a colon
-            # execution can be forced by holding control
+            # evaluation can be forced by holding control
             cursor = self.textCursor()
             block = cursor.block()
             text = block.text()
@@ -204,15 +231,23 @@ class TextEdit(QtWidgets.QPlainTextEdit):
             new_scope = text_s and (text_s[-1] == ':')
 
             if ctrl or (one_line and at_end and no_space and not new_scope):
-                self.executed.emit(self.toPlainText())
+                source = self.toPlainText()
+                if source:
+                    self.evaluation_requested.emit(source)
                 return
             else:
                 spaces = self.block_indent(block)
+                if new_scope:
+                    spaces += 4
                 self.insertPlainText('\n' + (' ' * spaces))
                 return
 
         elif ctrl and key == Qt.Key_Up:
             self.previous()
+            return
+
+        elif ctrl and key == Qt.Key_Down:
+            self.next()
             return
 
         elif key == Qt.Key_Tab:
@@ -227,6 +262,8 @@ class TextEdit(QtWidgets.QPlainTextEdit):
                     cursor.KeepAnchor, 4)
                 cursor.deleteChar()
                 return
+
+        self.reset()
 
         super().keyPressEvent(event)
 
@@ -283,7 +320,12 @@ def main():
     win = Window((args.host, args.port))
     win.show()
 
-    app.exec_()
+    try:
+        app.exec_()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        win.stop_output(timeout=1)
 
 if __name__ == '__main__':
     main()
