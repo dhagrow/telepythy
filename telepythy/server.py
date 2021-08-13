@@ -4,6 +4,7 @@ import sys
 import code
 import pprint
 import weakref
+import traceback
 try:
     import queue
 except ImportError:
@@ -25,7 +26,8 @@ class Service(object):
         self._ctx = Context(self, output_mode, loc or {})
 
         self._locals = {}
-        self._result_cnt = 0
+        self._last_result = None
+        self._result_count = 0
         self._result_limit = 30
         self._reset()
 
@@ -54,9 +56,23 @@ class Service(object):
                 raise ValueError(cmd)
 
     def evaluate(self, source):
-        # XXX symbol catches output?
-        return self._code.runsource(source)
-        # return self._code.runsource(source, symbol='exec')
+        needs_input = self._code.runsource(source + '\n')
+
+        if self._last_result is not None:
+            value, self._last_result = self._last_result, None
+
+            self._locals['_'] = value
+            self._locals['_{}'.format(self._result_count)] = value
+
+            print('{}: {}'.format(self._result_count, pprint.pformat(value)))
+
+            self._result_count += 1
+
+            # remove old results
+            for i in range(max(0, self._result_count-self._result_limit)):
+                self._locals.pop('_{}'.format(i), None)
+
+        return needs_input
 
     def output(self):
         q = queue.Queue()
@@ -72,21 +88,12 @@ class Service(object):
         self._code.resetbuffer()
 
     def displayhook(self, value):
-        self._locals['_'] = value
-        self._locals['_{}'.format(self._result_cnt)] = value
-
-        print('{}: {}'.format(self._result_cnt, pprint.pformat(value)))
-
-        self._result_cnt += 1
-
-        # remove old results
-        for i in range(max(0, self._result_cnt-self._result_limit)):
-            self._locals.pop('_{}'.format(i), None)
+        self._last_result = value
 
     def _reset(self):
         self._locals.clear()
         self._locals.update(self._ctx.env)
-        self._result_cnt = 0
+        self._result_count = 0
 
 class Context(object):
     def __init__(self, server, output_mode, loc):
@@ -168,7 +175,7 @@ def main():
 
     args = parser.parse_args()
 
-    logs.init(2)
+    logs.init(2, log_exceptions=False)
 
     svc = Service()
     sockio.serve((args.host, args.port), svc.handle)

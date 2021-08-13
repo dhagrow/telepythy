@@ -97,6 +97,9 @@ class Window(QtWidgets.QMainWindow):
         cur.insertText(PS1)
         self._prompt_pos = cur.position()
 
+        scroll = self.output_edit.verticalScrollBar()
+        scroll.setValue(scroll.maximum())
+
     def append_source(self, source):
         if not source:
             return
@@ -115,8 +118,6 @@ class Window(QtWidgets.QMainWindow):
 
     def append(self, text):
         self.output_edit.insertPlainText(text)
-        scroll = self.output_edit.verticalScrollBar()
-        scroll.setValue(scroll.maximum())
 
         cur = self.output_edit.textCursor()
         cur.setPosition(self._prompt_pos)
