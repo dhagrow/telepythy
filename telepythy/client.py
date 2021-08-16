@@ -1,11 +1,10 @@
 from __future__ import print_function, unicode_literals
 
-import threading
-
 import prompt_toolkit as pt
 from prompt_toolkit.patch_stdout import patch_stdout
 
 from . import sockio
+from .threads import start_thread
 
 URL = 'tcp://localhost:6336'
 PS1 = '>>> '
@@ -91,12 +90,6 @@ class Repl(object):
         msg = '<ansired>  </ansired> not connected{}'.format(e)
         self._status = pt.HTML(msg)
         self._session.app.invalidate()
-
-def start_thread(func, *args, **kwargs):
-    t = threading.Thread(target=func, args=args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
 
 def main():
     import argparse

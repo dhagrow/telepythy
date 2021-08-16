@@ -3,9 +3,9 @@ import json
 import errno
 import socket
 import struct
-import threading
 
 from . import logs
+from .threads import start_thread
 
 BACKLOG = socket.SOMAXCONN
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
@@ -88,12 +88,6 @@ class SockIO(object):
             if e.errno not in (errno.ENOTCONN,):
                 raise
         self._sock.close()
-
-def start_thread(func, *args, **kwargs):
-    t = threading.Thread(target=func, args=args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
 
 class SockIOError(Exception):
     pass

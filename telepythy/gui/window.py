@@ -7,10 +7,11 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from ..client import Client
-from .highlighter import PygmentsHighlighter
+from ..threads import start_thread
 
 from .source_edit import SourceEdit
 from .style_widget import StyleWidget
+from .highlighter import PygmentsHighlighter
 
 PS1 = '>>> '
 PS2 = '... '
@@ -192,9 +193,3 @@ class Window(QtWidgets.QMainWindow):
         e = error and ': {}'.format(error) or ''
         msg = 'not connected{}'.format(e)
         self.statusBar().showMessage(msg)
-
-def start_thread(func, *args, **kwargs):
-    t = threading.Thread(target=func, args=args, kwargs=kwargs)
-    t.daemon = True
-    t.start()
-    return t
