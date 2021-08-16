@@ -1,14 +1,15 @@
 from __future__ import print_function
 
+import ast
 import sys
 import code
 import pprint
 import weakref
+import traceback
 try:
     import queue
 except ImportError:
     import Queue as queue
-from contextlib import redirect_stdout
 
 from . import sockio
 from . import logs
@@ -45,8 +46,7 @@ class Service(object):
             log.debug('cmd: %s%s', cmd, data)
 
             if cmd == 'evaluate':
-                needs_input = self.evaluate(msg['data'])
-                sock.sendmsg(needs_input)
+                self.evaluate(msg['data'])
             elif cmd == 'output':
                 for line in self.output():
                     sock.sendmsg(line)
@@ -56,9 +56,16 @@ class Service(object):
                 raise ValueError(cmd)
 
     def evaluate(self, source):
-        # run
-        with redirect_stdout(sys.stdout):
-            needs_input = self._code.runsource(source, symbol='exec')
+        fname = '<telepythy>'
+        mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
+        inter = ast.Interactive(mod.body)
+        codeob = compile(inter, fname, 'single')
+        log.info('codeob: %s', codeob)
+
+        try:
+            exec(codeob, self._locals)
+        except:
+            traceback.print_exc()
 
         if self._last_result is not None:
             value, self._last_result = self._last_result, None
@@ -73,8 +80,6 @@ class Service(object):
             # remove old results
             for i in range(max(0, self._result_count-self._result_limit)):
                 self._locals.pop('_{}'.format(i), None)
-
-        return needs_input
 
     def output(self):
         q = queue.Queue()

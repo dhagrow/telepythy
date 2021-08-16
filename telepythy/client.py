@@ -16,7 +16,6 @@ class Client(object):
 
     def evaluate(self, source):
         self._client.sendmsg({'cmd': 'evaluate', 'data': source})
-        return self._client.recvmsg()
 
     def output(self):
         c = self._client
