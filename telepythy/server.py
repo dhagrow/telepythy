@@ -1,14 +1,14 @@
-# from __future__ import print_function
+from __future__ import print_function
 
 import sys
 import code
 import pprint
 import weakref
-import traceback
 try:
     import queue
 except ImportError:
     import Queue as queue
+from contextlib import redirect_stdout
 
 from . import sockio
 from . import logs
@@ -18,12 +18,12 @@ OUTPUT_MODES = ('local', 'remote', 'mirror')
 log = logs.get(__name__)
 
 class Service(object):
-    def __init__(self, loc=None, output_mode=None):
+    def __init__(self, locs=None, output_mode=None):
         sys.displayhook = self.displayhook
 
         self._output = weakref.WeakSet()
 
-        self._ctx = Context(self, output_mode, loc or {})
+        self._ctx = Context(self, output_mode, locs or {})
 
         self._locals = {}
         self._last_result = None
@@ -56,7 +56,9 @@ class Service(object):
                 raise ValueError(cmd)
 
     def evaluate(self, source):
-        needs_input = self._code.runsource(source + '\n')
+        # run
+        with redirect_stdout(sys.stdout):
+            needs_input = self._code.runsource(source, symbol='exec')
 
         if self._last_result is not None:
             value, self._last_result = self._last_result, None
@@ -166,6 +168,9 @@ class QueueIO(object):
         if self._mirror is not None:
             self._mirror.flush()
 
+def serve(address, locs=None, output_mode=None):
+    sockio.serve(address, Service(locs, output_mode).handle)
+
 def main():
     import argparse
 
@@ -177,8 +182,7 @@ def main():
 
     logs.init(2, log_exceptions=False)
 
-    svc = Service()
-    sockio.serve((args.host, args.port), svc.handle)
+    serve((args.host, args.port))
 
 if __name__ == '__main__':
     try:
