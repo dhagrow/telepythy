@@ -14,6 +14,7 @@ except ImportError:
     import Queue as queue
 
 from . import logs
+from . import utils
 from . import sockio
 from .threads import start_thread
 
@@ -251,14 +252,14 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-H', '--host', default='localhost')
-    parser.add_argument('-P', '--port', default=0, type=int)
+    parser.add_argument('-s', '--serve', default='localhost:7357',
+        help='<interface>:<port> to bind the server to (default: %(default)s)')
 
     args = parser.parse_args()
 
     logs.init(2, log_exceptions=False)
 
-    serve((args.host, args.port))
+    serve(utils.parse_address(args.serve))
 
 if __name__ == '__main__':
     try:

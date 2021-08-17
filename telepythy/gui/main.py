@@ -4,13 +4,14 @@ from PySide2 import QtGui, QtWidgets
 import qdarkstyle
 
 from .. import logs
+from .. import utils
 
 from .window import Window
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-H', '--host', default='localhost')
-    parser.add_argument('-P', '--port', required=True)
+    parser.add_argument('-c', '--connect', default='localhost:7357',
+        help='<host>:<port> of the server to connect to (default: %(default)s)')
 
     args = parser.parse_args()
 
@@ -22,7 +23,7 @@ def main():
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside2'))
     app.setWindowIcon(QtGui.QIcon('res/telepathy.svg'))
 
-    win = Window((args.host, args.port))
+    win = Window(utils.parse_address(args.connect))
     win.setWindowTitle('telepythy')
     win.resize(800, 800)
     win.show()
