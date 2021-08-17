@@ -3,6 +3,8 @@ import argparse
 from PySide2 import QtGui, QtWidgets
 import qdarkstyle
 
+from .. import logs
+
 from .window import Window
 
 def main():
@@ -11,6 +13,10 @@ def main():
     parser.add_argument('-P', '--port', required=True)
 
     args = parser.parse_args()
+
+    logs.init(2)
+    # manage third-party loggers
+    logs.get('qdarkstyle').setLevel(logs.WARNING)
 
     app = QtWidgets.QApplication()
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside2'))
@@ -26,7 +32,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        win.stop_output(timeout=1)
+        win.stop_events(timeout=1)
 
 if __name__ == '__main__':
     try:

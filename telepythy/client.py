@@ -3,28 +3,49 @@ from __future__ import print_function, unicode_literals
 import prompt_toolkit as pt
 from prompt_toolkit.patch_stdout import patch_stdout
 
+from . import logs
 from . import sockio
 from .threads import start_thread
 
-URL = 'tcp://localhost:6336'
 PS1 = '>>> '
 PS2 = '... '
+
+log = logs.get(__name__)
 
 class Client(object):
     def __init__(self, address, timeout=None):
         self._client = sockio.connect(address, timeout)
 
     def evaluate(self, source):
-        self._client.sendmsg({'cmd': 'evaluate', 'data': source})
+        self._sendcmd('evaluate', source)
 
-    def output(self):
+    def events(self):
         c = self._client
-        c.sendmsg({'cmd': 'output'})
+        self._sendcmd('events')
         while True:
-            yield c.recvmsg()
+            event = c.recvmsg()
+
+            if event:
+                name = event['evt']
+                if name == 'done':
+                    log.debug('evt: done')
+                elif name == 'output':
+                    log.debug('out: %r', event['data']['text'][:100])
+                else:
+                    data = event.get('data', '')
+                    data = data and ': ' + repr(data)
+                    log.debug('evt: %s%s', event['evt'], data)
+
+            yield event
 
     def interrupt(self):
-        self._client.sendmsg({'cmd': 'interrupt'})
+        self._sendcmd('interrupt')
+
+    def _sendcmd(self, cmd, data=None):
+        msg = {'cmd': cmd}
+        if data is not None:
+            msg['data'] = data
+        self._client.sendmsg(msg)
 
 class Repl(object):
     def __init__(self, address):
@@ -71,7 +92,7 @@ class Repl(object):
             try:
                 if client is None:
                     client = Client(addr, timeout=3)
-                for line in client.output():
+                for line in client.events():
                     self._set_connected(addr)
                     if line is not None:
                         print(line, end='')

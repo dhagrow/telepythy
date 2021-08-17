@@ -6,6 +6,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
+from .. import logs
 from ..client import Client
 from ..threads import start_thread
 
@@ -16,8 +17,11 @@ from .highlighter import PygmentsHighlighter
 PS1 = '>>> '
 PS2 = '... '
 
+log = logs.get(__name__)
+
 class Window(QtWidgets.QMainWindow):
     output_received = QtCore.Signal(str)
+    output_complete = QtCore.Signal()
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
@@ -30,13 +34,12 @@ class Window(QtWidgets.QMainWindow):
         self.setup()
 
         self._history_result = collections.OrderedDict()
-        self._prompt_pos = 0
 
         self.append_prompt()
         self._set_disconnected()
 
-        self._stop_output = threading.Event()
-        self._output_thread = start_thread(self._output)
+        self._stop_events = threading.Event()
+        self._event_thread = start_thread(self._events)
 
     def setup(self):
         self.setup_actions()
@@ -103,6 +106,7 @@ class Window(QtWidgets.QMainWindow):
         self.source_edit.evaluation_requested.connect(self.evaluate)
 
         self.output_received.connect(self.append)
+        self.output_complete.connect(self.append_prompt)
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
@@ -118,20 +122,15 @@ class Window(QtWidgets.QMainWindow):
             self._client = Client(self._address)
 
         try:
-            needs_input = self._client.evaluate(source)
+            self._client.evaluate(source)
         except Exception as e:
             self.status_disconnected.emit(str(e))
+            logs.exception('evaluation error')
         else:
-            if not needs_input:
-                self.source_edit.clear()
+            self.source_edit.clear()
 
     def append_prompt(self, prompt=PS1):
-        cur = self.output_edit.textCursor()
-        cur.insertText(prompt)
-        self._prompt_pos = cur.position()
-
-        scroll = self.output_edit.verticalScrollBar()
-        scroll.setValue(scroll.maximum())
+        self.append(prompt)
 
     def append_source(self, source):
         if not source:
@@ -147,39 +146,44 @@ class Window(QtWidgets.QMainWindow):
             insert(PS2)
             insert(line + '\n')
 
-        self.append_prompt()
+        self.scroll_to_bottom()
 
     def append(self, text):
         self.output_edit.insertPlainText(text)
+        self.scroll_to_bottom()
 
-        cur = self.output_edit.textCursor()
-        cur.setPosition(self._prompt_pos)
-        cur.movePosition(cur.PreviousCharacter, cur.KeepAnchor, len(PS1))
-        cur.removeSelectedText()
+    def scroll_to_bottom(self):
+        scroll = self.output_edit.verticalScrollBar()
+        scroll.setValue(scroll.maximum())
 
-        self.append_prompt()
+    def stop_events(self, timeout=None):
+        self._stop_events.set()
+        self._event_thread.join(timeout)
 
-    def stop_output(self, timeout=None):
-        self._stop_output.set()
-        self._output_thread.join(timeout)
-
-    def _output(self):
+    def _events(self):
         addr = self._address
-        client = None
-        stop = self._stop_output
+        stop = self._stop_events
+        emit_output = self.output_received.emit
 
+        client = None
         while not stop.is_set():
             try:
                 if client is None:
                     client = Client(addr, timeout=3)
 
-                for line in client.output():
+                for event in client.events():
                     if stop.is_set():
                         break
-
                     self.status_connected.emit(addr)
-                    if line is not None:
-                        self.output_received.emit(line)
+                    if event is None:
+                        continue
+
+                    name = event['evt']
+                    if name == 'done':
+                        self.output_complete.emit()
+                    elif name == 'output':
+                        text = event['data']['text']
+                        emit_output(text)
 
             except Exception as e:
                 client = None
