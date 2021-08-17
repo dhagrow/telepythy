@@ -12,14 +12,14 @@ class StyleWidget(QtWidgets.QWidget):
         self.setup()
 
     def setup(self):
-        self.layout = QtWidgets.QVBoxLayout()
+        self.layout = QtWidgets.QFormLayout()
         self.setLayout(self.layout)
 
         self.output_combo = QtWidgets.QComboBox()
-        self.layout.addWidget(self.output_combo)
+        self.layout.addRow('output style', self.output_combo)
 
         self.source_combo = QtWidgets.QComboBox()
-        self.layout.addWidget(self.source_combo)
+        self.layout.addRow('source style', self.source_combo)
 
         for style in sorted(styles.get_all_styles()):
             self.output_combo.addItem(style)
