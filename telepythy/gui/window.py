@@ -12,7 +12,7 @@ from ..threads import start_thread
 
 from .source_edit import SourceEdit
 from .style_widget import StyleWidget
-from .kernel_widget import KernelWidget
+from .interpreter_widget import InterpreterWidget
 from .highlighter import PygmentsHighlighter
 
 PS1 = '>>> '
@@ -48,7 +48,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_style_widget()
-        self.setup_kernel_widget()
+        self.setup_interpreter_widget()
         self.setup_signals()
 
         self.source_edit.setFocus()
@@ -56,8 +56,7 @@ class Window(QtWidgets.QMainWindow):
         self.output_highlighter.set_style('gruvbox-dark')
         self.source_highlighter.set_style('gruvbox-dark')
 
-    def config(self):
-        self.kernel_chooser.set_python_exec('/usr/bin/env python')
+        self.interpreter_chooser.set_python_exec('/usr/bin/env python')
 
     def setup_actions(self):
         self.action_quit = QtWidgets.QAction()
@@ -73,14 +72,14 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
 
-    def setup_kernel_widget(self):
-        self.kernel_chooser = KernelWidget()
+    def setup_interpreter_widget(self):
+        self.interpreter_chooser = InterpreterWidget()
 
-        self.kernel_dock = QtWidgets.QDockWidget('kernels')
-        self.kernel_dock.setWidget(self.kernel_chooser)
-        self.kernel_dock.setVisible(False)
+        self.interpreter_dock = QtWidgets.QDockWidget('interpreters')
+        self.interpreter_dock.setWidget(self.interpreter_chooser)
+        self.interpreter_dock.setVisible(False)
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.kernel_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
 
     def setup_output_edit(self):
         self.output_edit = QtWidgets.QPlainTextEdit()

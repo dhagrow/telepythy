@@ -38,13 +38,11 @@ class Client(object):
 
             yield event
 
-    def interrupt(self):
-        self._sendcmd('interrupt')
-
     def _sendcmd(self, cmd, data=None):
         msg = {'cmd': cmd}
         if data is not None:
             msg['data'] = data
+        log.debug('cmd: %s', cmd)
         self._client.sendmsg(msg)
 
 class Repl(object):

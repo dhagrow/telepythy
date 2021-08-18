@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtWidgets
 
-class KernelWidget(QtWidgets.QWidget):
-    kernel_changed = QtCore.Signal(str)
+class InterpreterWidget(QtWidgets.QWidget):
+    interpreter_changed = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -17,7 +17,7 @@ class KernelWidget(QtWidgets.QWidget):
         self.setup_actions()
 
     def setup_actions(self):
-        self.python_exec_edit.textChanged.connect(self.kernel_changed)
+        self.python_exec_edit.textChanged.connect(self.interpreter_changed)
 
     def set_python_exec(self, path):
         self.python_exec_edit.setText(path)
