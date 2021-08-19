@@ -1,2 +1,2 @@
 PYTHONPATH=$(dirname "$0")
-python -m telepythy.gui.main "$@"
+python -m telepythy.gui "$@"

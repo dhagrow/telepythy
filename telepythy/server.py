@@ -9,7 +9,6 @@ except ImportError:
     import Queue as queue
 
 from . import logs
-from . import utils
 from . import sockio
 from . import introspect
 from .threads import start_thread
@@ -152,22 +151,3 @@ class Context(object):
 
 def serve(address, locs=None, output_mode=None):
     sockio.serve(address, Service(locs, output_mode).handle)
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--serve', default='localhost:7357',
-        help='<interface>:<port> to bind the server to (default: %(default)s)')
-
-    args = parser.parse_args()
-
-    logs.init(2, log_exceptions=False)
-
-    serve(utils.parse_address(args.serve))
-
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
