@@ -19,6 +19,9 @@ class Client(object):
     def evaluate(self, source):
         self._sendcmd('evaluate', source)
 
+    def complete(self, prefix):
+        self._sendcmd('complete', prefix)
+
     def events(self):
         c = self._client
         self._sendcmd('events')
@@ -33,7 +36,7 @@ class Client(object):
                     log.debug('out: %r', event['data']['text'][:100])
                 else:
                     data = event.get('data', '')
-                    data = data and ': ' + repr(data)
+                    data = data and ': ' + repr(data)[:100]
                     log.debug('evt: %s%s', event['evt'], data)
 
             yield event
@@ -42,7 +45,7 @@ class Client(object):
         msg = {'cmd': cmd}
         if data is not None:
             msg['data'] = data
-        log.debug('cmd: %s', cmd)
+        log.debug('cmd: %s: %s', cmd, data)
         self._client.sendmsg(msg)
 
 class Repl(object):

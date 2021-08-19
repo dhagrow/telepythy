@@ -7,22 +7,22 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from .. import logs
+from .. import utils
 from ..client import Client
 from ..threads import start_thread
 
 from .source_edit import SourceEdit
+from .output_edit import OutputEdit
 from .style_widget import StyleWidget
 from .interpreter_widget import InterpreterWidget
 from .highlighter import PygmentsHighlighter
-
-PS1 = '>>> '
-PS2 = '... '
 
 log = logs.get(__name__)
 
 class Window(QtWidgets.QMainWindow):
     output_received = QtCore.Signal(str)
     output_complete = QtCore.Signal()
+    completion_received = QtCore.Signal(list)
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
@@ -35,10 +35,10 @@ class Window(QtWidgets.QMainWindow):
         self.setup()
         self.config()
 
+        self._connected = False
         self._history_result = collections.OrderedDict()
 
-        self.append_prompt()
-        self._set_disconnected()
+        self._set_disconnected(force=True)
 
         self._stop_events = threading.Event()
         self._event_thread = start_thread(self._events)
@@ -53,6 +53,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.source_edit.setFocus()
 
+    def config(self):
         self.output_highlighter.set_style('gruvbox-dark')
         self.source_highlighter.set_style('gruvbox-dark')
 
@@ -62,6 +63,10 @@ class Window(QtWidgets.QMainWindow):
         self.action_quit = QtWidgets.QAction()
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
+
+        self.action_clear = QtWidgets.QAction()
+        self.action_clear.setShortcut('Ctrl+l')
+        self.addAction(self.action_clear)
 
     def setup_style_widget(self):
         self.style_chooser = StyleWidget()
@@ -82,7 +87,7 @@ class Window(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
 
     def setup_output_edit(self):
-        self.output_edit = QtWidgets.QPlainTextEdit()
+        self.output_edit = OutputEdit()
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 13))
         self.output_edit.setReadOnly(True)
 
@@ -117,10 +122,14 @@ class Window(QtWidgets.QMainWindow):
 
     def setup_signals(self):
         self.action_quit.triggered.connect(self.close)
-        self.source_edit.evaluation_requested.connect(self.evaluate)
+        self.action_clear.triggered.connect(self.clear_output)
 
-        self.output_received.connect(self.append)
-        self.output_complete.connect(self.append_prompt)
+        self.source_edit.evaluation_requested.connect(self.evaluate)
+        self.source_edit.completion_requested.connect(self.complete)
+
+        self.output_received.connect(self.output_edit.append)
+        self.output_complete.connect(self.output_edit.append_prompt)
+        self.completion_received.connect(self.source_edit.show_completer)
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
@@ -130,7 +139,7 @@ class Window(QtWidgets.QMainWindow):
             self.source_highlighter.set_style)
 
     def evaluate(self, source):
-        self.append_source(source)
+        self.output_edit.append_source(source)
 
         if self._client is None:
             self._client = Client(self._address)
@@ -143,32 +152,18 @@ class Window(QtWidgets.QMainWindow):
         else:
             self.source_edit.clear()
 
-    def append_prompt(self, prompt=PS1):
-        self.append(prompt)
+    def complete(self, context):
+        if self._client is None:
+            self._client = Client(self._address)
 
-    def append_source(self, source):
-        if not source:
-            return
+        try:
+            self._client.complete(context)
+        except Exception as e:
+            self.status_disconnected.emit(str(e))
+            logs.exception('completion error')
 
-        insert = self.output_edit.insertPlainText
-        lines = source.splitlines()
-        insert(lines[0] + '\n')
-
-        # XXX: remove trailing empty lines
-
-        for line in lines[1:]:
-            insert(PS2)
-            insert(line + '\n')
-
-        self.scroll_to_bottom()
-
-    def append(self, text):
-        self.output_edit.insertPlainText(text)
-        self.scroll_to_bottom()
-
-    def scroll_to_bottom(self):
-        scroll = self.output_edit.verticalScrollBar()
-        scroll.setValue(scroll.maximum())
+    def clear_output(self):
+        print('clear')
 
     def stop_events(self, timeout=None):
         self._stop_events.set()
@@ -198,16 +193,27 @@ class Window(QtWidgets.QMainWindow):
                     elif name == 'output':
                         text = event['data']['text']
                         emit_output(text)
+                    elif name == 'completion':
+                        matches = event['data']['matches']
+                        self.completion_received.emit(matches)
 
             except Exception as e:
                 client = None
                 self.status_disconnected.emit(str(e))
 
     def _set_connected(self, address):
+        if self._connected:
+            return
+        self._connected = True
+
         msg = 'connected: {}:{}'.format(*address)
         self.statusBar().showMessage(msg)
 
-    def _set_disconnected(self, error=None):
+    def _set_disconnected(self, error=None, force=False):
+        if not self._connected and not force:
+            return
+        self._connected = False
+
         e = error and ': {}'.format(error) or ''
         msg = 'not connected{}'.format(e)
         self.statusBar().showMessage(msg)

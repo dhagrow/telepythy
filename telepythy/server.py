@@ -1,13 +1,8 @@
 from __future__ import print_function
 
-import ast
 import sys
-import code
-import pprint
+import socket
 import weakref
-import threading
-import traceback
-import collections
 try:
     import queue
 except ImportError:
@@ -16,34 +11,23 @@ except ImportError:
 from . import logs
 from . import utils
 from . import sockio
+from . import introspect
 from .threads import start_thread
 
 OUTPUT_MODES = ('local', 'remote', 'mirror')
 
 log = logs.get(__name__)
 
-try:
-    range = xrange
-except NameError:
-    pass
-
 class Service(object):
     def __init__(self, locs=None, filename=None, output_mode=None):
-        sys.displayhook = self.displayhook
-
+        self._locals = {}
+        self._is_evaluating = False
         self._event_queues = weakref.WeakSet()
 
+        self._code = introspect.Code(self._locals, filename)
         self._ctx = Context(self, output_mode, locs or {})
 
-        self._locals = {}
-        self._filename = filename or '<telepythy>'
-        self._is_evaluating = False
-        self._last_result = None
-        self._result_count = 0
-        self._result_limit = 30
-        self._reset()
-
-        self._code = code.InteractiveInterpreter(self._locals)
+        self.reset()
 
     def handle(self, sock):
         try:
@@ -62,53 +46,27 @@ class Service(object):
                         self.recv_input(msg['data'] + '\n')
                     else:
                         start_thread(self.evaluate, msg['data'])
+                elif cmd == 'complete':
+                    self.complete(msg['data'])
                 elif cmd == 'events':
                     for event in self.events():
                         sock.sendmsg(event)
-                elif cmd == 'interrupt':
-                    self.interrupt()
                 else:
-                    raise ValueError(cmd)
-        except Exception as e:
+                    log.error('unknown command: %s', cmd)
+        except socket.error as e:
             log.warning('socket error: %s', e)
 
     def evaluate(self, source):
-        fname = self._filename
-
         self._is_evaluating = True
         try:
-            mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
-            inter = ast.Interactive(mod.body)
-            codeob = compile(inter, fname, 'single')
-
-            try:
-                exec(codeob, self._locals)
-            except:
-                traceback.print_exc()
-
-            self._store_result()
-
+            self._code.evaluate(source)
         finally:
             self._is_evaluating = False
             self.add_event('done')
 
-    def _store_result(self):
-        if self._last_result is None:
-            return
-
-        # pop
-        result, self._last_result = self._last_result, None
-
-        self._locals['_'] = result
-        self._locals['_{}'.format(self._result_count)] = result
-
-        print('{}: {}'.format(self._result_count, pprint.pformat(result)))
-
-        self._result_count += 1
-
-        # remove old results
-        for i in range(max(0, self._result_count-self._result_limit)):
-            self._locals.pop('_{}'.format(i), None)
+    def complete(self, prefix):
+        matches = self._code.complete(prefix)
+        self.add_event('completion', matches=matches)
 
     def recv_input(self, text):
         sys.stdin.write(text)
@@ -133,15 +91,9 @@ class Service(object):
         for q in self._event_queues:
             q.put(event)
 
-    def interrupt(self):
-        self._code.resetbuffer()
-
-    def displayhook(self, value):
-        self._last_result = value
-
-    def _reset(self):
-        self._locals.clear()
-        self._locals.update(self._ctx.env)
+    def reset(self):
+        self._code.reset()
+        self._code.locals.update(self._ctx.env)
         self._result_count = 0
 
 class Context(object):
@@ -153,8 +105,6 @@ class Context(object):
         self.env.update(loc)
 
         self._service = service
-
-        sys.stdin = InputIO()
 
         self._output_mode = None
         self.output_mode = output_mode or 'remote'
@@ -181,11 +131,11 @@ class Context(object):
             sys.stdout = sys.__stdout__
             sys.stderr = sys.__stderr__
         elif mode == 'remote':
-            sys.stdout = OutputIO(svc)
-            sys.stderr = OutputIO(svc)
+            sys.stdout = introspect.OutputIO(svc)
+            sys.stderr = introspect.OutputIO(svc)
         elif mode == 'mirror':
-            sys.stdout = OutputIO(svc, sys.__stdout__)
-            sys.stderr = OutputIO(svc, sys.__stderr__)
+            sys.stdout = introspect.OutputIO(svc, sys.__stdout__)
+            sys.stderr = introspect.OutputIO(svc, sys.__stderr__)
         else:
             err = 'output_mode must be one of: {}'
             raise ValueError(err.format(', '.join(OUTPUT_MODES)))
@@ -199,51 +149,6 @@ class Context(object):
         return "{}(output_mode='{}', env={})".format(
             self.__class__.__name__, self.output_mode, self.env,
             )
-
-class InputIO:
-    def __init__(self):
-        self._buffer = collections.deque()
-        self._ready = threading.Event()
-
-    def read(self, size):
-        buf = self._buffer
-        ready = self._ready
-
-        while True:
-            if len(buf) < size:
-                ready.wait()
-                ready.clear()
-                continue
-            return ''.join(buf.popleft() for _ in range(size))
-
-    def readline(self):
-        buf = []
-        while True:
-            c = self.read(1)
-            if c == '\n':
-                return ''.join(buf)
-            else:
-                buf.append(c)
-
-    def write(self, data):
-        self._buffer.extend(data)
-        self._ready.set()
-
-class OutputIO(object):
-    def __init__(self, service, mirror=None):
-        self._service = service
-        self._mirror = mirror
-
-    def write(self, s):
-        if self._mirror is not None:
-            self._mirror.write(s)
-        if isinstance(s, bytes):
-            s = s.decode('utf8')
-        self._service.add_event('output', text=s)
-
-    def flush(self):
-        if self._mirror is not None:
-            self._mirror.flush()
 
 def serve(address, locs=None, output_mode=None):
     sockio.serve(address, Service(locs, output_mode).handle)

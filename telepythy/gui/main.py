@@ -1,3 +1,6 @@
+import faulthandler
+faulthandler.enable()
+
 import argparse
 
 from PySide2 import QtGui, QtWidgets

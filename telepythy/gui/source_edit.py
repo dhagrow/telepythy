@@ -1,20 +1,97 @@
 import re
+import contextlib
 
 from PySide2.QtCore import Qt
 from PySide2 import QtCore, QtGui, QtWidgets
 
+from . import document
 from .history import History
+
+COMPLETER_KEYS = frozenset([
+    Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab])
 
 _rx_indent = re.compile(r'^(\s*)')
 
+# match dotted identifiers
+_rx_dotted_ident = re.compile(r'.*[^\w.](.*)')
+
+def get_completion_context(line):
+    # the '!' is a hack because I can't figure out how to match when there is
+    # no non-word/dot char
+    match = _rx_dotted_ident.match('!' + line)
+    return match and match.group(1)
+
 class SourceEdit(QtWidgets.QPlainTextEdit):
     evaluation_requested = QtCore.Signal(str)
+    completion_requested = QtCore.Signal(str)
 
     def __init__(self):
         super().__init__()
 
         self._history = History()
         self._current = None
+
+        doc = document.TextDocument(self)
+        self.setDocument(doc)
+
+        self.completer_model = QtGui.QStandardItemModel()
+        self.completer = QtWidgets.QCompleter(self.completer_model, self)
+        self.completer.setWidget(self)
+        self.completer.setCompletionMode(self.completer.PopupCompletion)
+        self.completer.activated[QtCore.QModelIndex].connect(self.complete)
+
+        self.textChanged.connect(self.refresh_completer)
+
+    def show_completer(self, matches):
+        if not matches:
+            return
+
+        model = self.completer_model
+        model.clear()
+        for match in matches:
+            item = QtGui.QStandardItem(match)
+            model.appendRow(item)
+
+        first = model.item(0).index()
+        if len(matches) == 1:
+            self.complete(first)
+            return
+
+        popup = self.completer.popup()
+        popup.setCurrentIndex(first)
+
+        # popup size
+        rect = self.cursorRect()
+        scrollbar = popup.verticalScrollBar()
+        rect.setWidth(popup.sizeHintForColumn(0) + scrollbar.sizeHint().width())
+
+        self.completer.complete(rect)
+
+    def refresh_completer(self):
+        # if not self.completer.popup().isVisible():
+        #     return
+        ident = self.completion_context().split('.')[-1]
+        self.completer.setCompletionPrefix(ident)
+
+        popup = self.completer.popup()
+        item = self.completer_model.item(0)
+        if item:
+            popup.setCurrentIndex(item.index())
+
+    def complete(self, index):
+        match = index.data()
+        ident = self.completion_context().split('.')[-1]
+        text = match[len(ident):]
+
+        self.insertPlainText(text)
+        self.completer_model.clear()
+
+    def completion_context(self):
+        cur = self.textCursor()
+        cur.movePosition(cur.StartOfLine, cur.KeepAnchor)
+        sel = cur.selectedText()
+
+        return get_completion_context(sel)
 
     def previous(self):
         if not self._history:
@@ -27,7 +104,7 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         source = self._history.previous(match)
         if source:
             self.setPlainText(source)
-            self.moveCursorPosition(QtGui.QTextCursor.End)
+            self.move_cursor_position(QtGui.QTextCursor.End)
 
     def next(self):
         if not self._history:
@@ -39,7 +116,7 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
             self.setPlainText(source)
         else:
             self.setPlainText(self._current)
-        self.moveCursorPosition(QtGui.QTextCursor.End)
+        self.move_cursor_position(QtGui.QTextCursor.End)
 
     def reset(self):
         self._history.reset()
@@ -59,6 +136,13 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         key = event.key()
         mod = event.modifiers()
         ctrl = mod & Qt.ControlModifier
+
+        if self.completer.popup().isVisible():
+            if key in COMPLETER_KEYS:
+                event.ignore()
+                return
+
+        self.ensureCursorVisible()
 
         if key == Qt.Key_Return:
             # only evaluate when all of the following are true:
@@ -89,16 +173,27 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
                 self.insertPlainText('\n' + (' ' * spaces))
                 return
 
+        elif key == Qt.Key_Tab:
+            cursor = self.textCursor()
+            if not cursor.hasSelection():
+                ctx = self.completion_context()
+                if ctx:
+                    self.completion_requested.emit(ctx)
+                    return
+
+            self.indent()
+            return
+
+        elif key == Qt.Key_Backtab:
+            self.dedent()
+            return
+
         elif ctrl and key == Qt.Key_Up:
             self.previous()
             return
 
         elif ctrl and key == Qt.Key_Down:
             self.next()
-            return
-
-        elif key == Qt.Key_Tab:
-            self.insertPlainText(' ' * 4)
             return
 
         elif key == Qt.Key_Backspace:
@@ -111,10 +206,56 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
                 return
 
         self.reset()
-
         super().keyPressEvent(event)
 
     ## utils ##
+
+    def indent(self):
+        doc = self.document()
+        cursor = self.textCursor()
+        block = cursor.block()
+        indent = 4
+        with cursor_edit(cursor):
+            if cursor.hasSelection():
+                start = cursor.selectionStart()
+                end = cursor.selectionEnd()
+                for block in reversed(doc.blocks(doc.findBlock(end))):
+                    blockEnd = block.position() + block.length() - 1
+                    if blockEnd < start:
+                        break
+                    offset = doc.blockIndentation(block) % indent
+                    cursor.setPosition(block.position())
+                    cursor.insertText(' ' * (indent - offset))
+            else:
+                offset = doc.blockIndentation(block) % indent
+                cursor.setPosition(block.position())
+                cursor.insertText(' ' * (indent - offset))
+
+    def dedent(self):
+        doc = self.document()
+        indent = 4
+        cursor = self.textCursor()
+        with cursor_edit(cursor):
+            if cursor.hasSelection():
+                start = cursor.selectionStart()
+                end = cursor.selectionEnd()
+                blocks = reversed(doc.blocks(doc.findBlock(end)))
+            else:
+                start = 0
+                blocks = [cursor.block()]
+
+            for block in blocks:
+                blockEnd = block.position() + block.length() - 1
+                if blockEnd < start:
+                    break
+
+                blockIndent = doc.blockIndentation(block)
+                offset = blockIndent % indent
+
+                cursor.setPosition(block.position() + blockIndent)
+                n = min(cursor.columnNumber(), indent - offset)
+                cursor.movePosition(cursor.PreviousCharacter, cursor.KeepAnchor, n)
+                cursor.removeSelectedText()
 
     def blocks(self, start=None):
         return BlockIterator(start or self.firstVisibleBlock())
@@ -126,10 +267,22 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
                 return len(spaces)
         return 0
 
-    def moveCursorPosition(self, position):
+    def move_cursor_position(self, position):
         cursor = self.textCursor()
         cursor.movePosition(position)
         self.setTextCursor(cursor)
+
+    def scroll_to_bottom(self):
+        scroll = self.verticalScrollBar()
+        scroll.setValue(scroll.maximum())
+
+@contextlib.contextmanager
+def cursor_edit(cursor):
+    cursor.beginEditBlock()
+    try:
+        yield cursor
+    finally:
+        cursor.endEditBlock()
 
 class BlockIterator:
     def __init__(self, start):
