@@ -1,11 +1,16 @@
-☐ "interpreter" selection @high
-☐ gui exception capturing @high
-☐ completion @low
-☐ folding @low
-☐ configuration @low
-☐ distribution @low
-☐ review dreampie settings/features @low
-☐ clear output_edit (ctrl+l)
+general:
+    ☐ review dreampie settings/features @low
+
+gui:
+    ☐ "interpreter" selection @high
+    ☐ gui exception capturing @high
+    ☐ don't capture bugs when there is no connection
+    ☐ completion @low
+    ☐ folding @low
+    ☐ configuration @low
+    ☐ distribution @low
+    ☐ clear output_edit (ctrl+l)
+    ☐ embedded documentation
 
 Archive:
   ✔ interactive input @high @done(21-08-16 22:52)

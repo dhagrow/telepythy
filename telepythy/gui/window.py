@@ -43,6 +43,16 @@ class Window(QtWidgets.QMainWindow):
         self._stop_events = threading.Event()
         self._event_thread = start_thread(self._events)
 
+    ## config ##
+
+    def config(self):
+        self.output_highlighter.set_style('gruvbox-dark')
+        self.source_highlighter.set_style('gruvbox-dark')
+
+        self.interpreter_chooser.set_python_exec('/usr/bin/env python')
+
+    ## setup ##
+
     def setup(self):
         self.setup_actions()
         self.setup_output_edit()
@@ -53,12 +63,6 @@ class Window(QtWidgets.QMainWindow):
 
         self.source_edit.setFocus()
 
-    def config(self):
-        self.output_highlighter.set_style('gruvbox-dark')
-        self.source_highlighter.set_style('gruvbox-dark')
-
-        self.interpreter_chooser.set_python_exec('/usr/bin/env python')
-
     def setup_actions(self):
         self.action_quit = QtWidgets.QAction()
         self.action_quit.setShortcut('Ctrl+q')
@@ -67,24 +71,6 @@ class Window(QtWidgets.QMainWindow):
         self.action_clear = QtWidgets.QAction()
         self.action_clear.setShortcut('Ctrl+l')
         self.addAction(self.action_clear)
-
-    def setup_style_widget(self):
-        self.style_chooser = StyleWidget()
-
-        self.style_dock = QtWidgets.QDockWidget('styles')
-        self.style_dock.setWidget(self.style_chooser)
-        self.style_dock.setVisible(False)
-
-        self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
-
-    def setup_interpreter_widget(self):
-        self.interpreter_chooser = InterpreterWidget()
-
-        self.interpreter_dock = QtWidgets.QDockWidget('interpreters')
-        self.interpreter_dock.setWidget(self.interpreter_chooser)
-        self.interpreter_dock.setVisible(False)
-
-        self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
 
     def setup_output_edit(self):
         self.output_edit = OutputEdit()
@@ -120,6 +106,24 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.BottomDockWidgetArea, self.bottom_dock)
 
+    def setup_style_widget(self):
+        self.style_chooser = StyleWidget()
+
+        self.style_dock = QtWidgets.QDockWidget('styles')
+        self.style_dock.setWidget(self.style_chooser)
+        self.style_dock.setVisible(False)
+
+        self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
+
+    def setup_interpreter_widget(self):
+        self.interpreter_chooser = InterpreterWidget()
+
+        self.interpreter_dock = QtWidgets.QDockWidget('interpreters')
+        self.interpreter_dock.setWidget(self.interpreter_chooser)
+        self.interpreter_dock.setVisible(False)
+
+        self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
+
     def setup_signals(self):
         self.action_quit.triggered.connect(self.close)
         self.action_clear.triggered.connect(self.clear_output)
@@ -137,6 +141,8 @@ class Window(QtWidgets.QMainWindow):
             self.output_highlighter.set_style)
         self.style_chooser.source_style_changed.connect(
             self.source_highlighter.set_style)
+
+    ## work ##
 
     def evaluate(self, source):
         self.output_edit.append_source(source)
@@ -164,6 +170,8 @@ class Window(QtWidgets.QMainWindow):
 
     def clear_output(self):
         print('clear')
+
+    ## events ##
 
     def stop_events(self, timeout=None):
         self._stop_events.set()
@@ -200,6 +208,8 @@ class Window(QtWidgets.QMainWindow):
             except Exception as e:
                 client = None
                 self.status_disconnected.emit(str(e))
+
+    ## status ##
 
     def _set_connected(self, address):
         if self._connected:
