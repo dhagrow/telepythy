@@ -3,9 +3,10 @@ import json
 import errno
 import socket
 import struct
+import threading
 
 from . import logs
-from .threads import start_thread
+from .utils import start_thread
 
 BACKLOG = socket.SOMAXCONN
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
@@ -13,32 +14,54 @@ CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 log = logs.get(__name__)
 
 def connect(address, timeout=None):
+    log.debug('connecting: %s:%s', *address)
     sock = socket.create_connection(address, timeout)
+    log.info('connected: %s:%s', *address)
     return SockIO(sock)
 
-def serve(address, handler, timeout=None, accept_timeout=None, backlog=None):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(accept_timeout)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(address)
-    s.listen(backlog or BACKLOG)
+def start_server(address, handler, timeout=None, accept_timeout=1, backlog=None):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(accept_timeout)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(address)
+    sock.listen(backlog or BACKLOG)
 
-    log.info('listening: %s:%s', *s.getsockname())
+    host, port = sock.getsockname()
+    log.info('listening: %s:%s', host, port)
 
-    while True:
+    stop = threading.Event()
+    t = start_thread(serve, sock, handler, stop, timeout)
+    return (ServerThread(t, stop), host, port)
+
+def serve(sock, handler, stop, timeout=None):
+    while not stop.is_set():
         try:
-            sock, addr = s.accept()
+            s, addr = sock.accept()
         except socket.timeout:
             continue
-        sock.settimeout(timeout)
+        s.settimeout(timeout)
 
         log.info('connected: %s:%s', *addr)
-        start_thread(handler, SockIO(sock))
+        start_thread(handler, SockIO(s))
+
+class ServerThread(object):
+    def __init__(self, thread, stop):
+        self._thread = thread
+        self._stop = stop
+
+    def stop(self):
+        self._stop.set()
+
+    def join(self):
+        self._thread.join()
 
 class SockIO(object):
     def __init__(self, sock, chunk_size=None):
         self._sock = sock
         self._chunk_size = chunk_size or CHUNK_SIZE
+
+    def settimeout(self, t):
+        self._sock.settimeout(t)
 
     def sendmsg(self, msg):
         data = json.dumps(msg).encode('utf8')

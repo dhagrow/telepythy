@@ -40,7 +40,7 @@ class Code(object):
             codeob = compile(inter, fname, 'single')
 
             exec(codeob, self.locals)
-        except:
+        except Exception:
             traceback.print_exc()
 
         self._store_result()

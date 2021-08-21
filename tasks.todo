@@ -4,7 +4,9 @@ general:
 gui:
     ☐ "interpreter" selection @high
     ☐ gui exception capturing @high
-    ☐ don't capture bugs when there is no connection
+    ☐ output performance @high
+    ☐ don't capture errors when there is no connection
+    ☐ unix ports @low
     ☐ completion @low
     ☐ folding @low
     ☐ configuration @low
@@ -13,4 +15,5 @@ gui:
     ☐ embedded documentation
 
 Archive:
+  ✔ -q flag to silence all logging @done(21-08-21 12:22) @project(general)
   ✔ interactive input @high @done(21-08-16 22:52)

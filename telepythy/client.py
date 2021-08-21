@@ -5,7 +5,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 
 from . import logs
 from . import sockio
-from .threads import start_thread
+from .utils import start_thread
 
 PS1 = '>>> '
 PS2 = '... '

@@ -4,20 +4,15 @@ PS1 = '>>> '
 PS2 = '... '
 
 class OutputEdit(QtWidgets.QPlainTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def append(self, text):
+        self.insertPlainText(text)
+        self.scroll_to_bottom()
 
+    def append_session(self):
+        if self.blockCount() > 1:
+            self.append('\n')
+        self.append('[new session]\n')
         self.append_prompt()
-
-    def toSource(self):
-        def collect():
-            text = self.toPlainText()
-            for line in text.splitlines():
-                if line.startswith(PS1):
-                    yield line[len(PS1):]
-                elif line.startswith(PS2):
-                    yield line[len(PS2):]
-        return '\n'.join(collect())
 
     def append_prompt(self, prompt=PS1):
         self.append(prompt)
@@ -38,9 +33,15 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
 
         self.scroll_to_bottom()
 
-    def append(self, text):
-        self.insertPlainText(text)
-        self.scroll_to_bottom()
+    def toSource(self):
+        def collect():
+            text = self.toPlainText()
+            for line in text.splitlines():
+                if line.startswith(PS1):
+                    yield line[len(PS1):]
+                elif line.startswith(PS2):
+                    yield line[len(PS2):]
+        return '\n'.join(collect())
 
     def scroll_to_bottom(self):
         scroll = self.verticalScrollBar()

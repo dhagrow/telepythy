@@ -11,7 +11,7 @@ except ImportError:
 from . import logs
 from . import sockio
 from . import introspect
-from .threads import start_thread
+from .utils import start_thread
 
 OUTPUT_MODES = ('local', 'remote', 'mirror')
 
@@ -31,7 +31,10 @@ class Service(object):
     def handle(self, sock):
         try:
             while True:
-                msg = sock.recvmsg()
+                try:
+                    msg = sock.recvmsg()
+                except sockio.ReceiveInterrupted:
+                    break
                 if not msg:
                     break
 
@@ -148,6 +151,3 @@ class Context(object):
         return "{}(output_mode='{}', env={})".format(
             self.__class__.__name__, self.output_mode, self.env,
             )
-
-def serve(address, locs=None, output_mode=None):
-    sockio.serve(address, Service(locs, output_mode).handle)

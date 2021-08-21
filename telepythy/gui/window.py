@@ -1,3 +1,4 @@
+import queue
 import threading
 import collections
 
@@ -7,9 +8,6 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from .. import logs
-from .. import utils
-from ..client import Client
-from ..threads import start_thread
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
@@ -20,36 +18,40 @@ from .highlighter import PygmentsHighlighter
 log = logs.get(__name__)
 
 class Window(QtWidgets.QMainWindow):
+    output_started = QtCore.Signal()
+    output_stopped = QtCore.Signal()
     output_received = QtCore.Signal(str)
-    output_complete = QtCore.Signal()
     completion_received = QtCore.Signal(list)
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, address):
+    def __init__(self, config, interpreter):
         super().__init__()
 
-        self._address = address
-        self._client = None
-
         self.setup()
-        self.config()
+        self.config(config)
 
         self._connected = False
         self._history_result = collections.OrderedDict()
 
         self._set_disconnected(force=True)
 
+        self._commands = queue.Queue()
         self._stop_events = threading.Event()
-        self._event_thread = start_thread(self._events)
+
+        self._interpreter = interpreter
+        interpreter.add_handler(self._handle_events)
+        interpreter.add_handler(self._handle_work)
 
     ## config ##
 
-    def config(self):
+    def config(self, config):
         self.output_highlighter.set_style('gruvbox-dark')
         self.source_highlighter.set_style('gruvbox-dark')
 
         self.interpreter_chooser.set_python_exec('/usr/bin/env python')
+
+        self.resize(config['window.size'])
 
     ## setup ##
 
@@ -59,6 +61,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_source_edit()
         self.setup_style_widget()
         self.setup_interpreter_widget()
+        self.setup_statusbar()
         self.setup_signals()
 
         self.source_edit.setFocus()
@@ -68,6 +71,10 @@ class Window(QtWidgets.QMainWindow):
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
 
+        self.action_restart = QtWidgets.QAction()
+        self.action_restart.setShortcut('Ctrl+F6')
+        self.addAction(self.action_restart)
+
         self.action_clear = QtWidgets.QAction()
         self.action_clear.setShortcut('Ctrl+l')
         self.addAction(self.action_clear)
@@ -76,6 +83,7 @@ class Window(QtWidgets.QMainWindow):
         self.output_edit = OutputEdit()
         self.output_edit.setFont(QtGui.QFont('Fira Mono', 13))
         self.output_edit.setReadOnly(True)
+        self.output_edit.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
 
         self.output_highlighter = PygmentsHighlighter(
             self.output_edit.document(), PythonConsoleLexer())
@@ -124,16 +132,35 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
 
+    def setup_statusbar(self):
+        bar = self.statusBar()
+
+        style = QtWidgets.QApplication.style()
+        icon = style.standardIcon(QtWidgets.QStyle.SP_DialogYesButton)
+        self._status_pixmap_connected = icon.pixmap(16)
+        icon = style.standardIcon(QtWidgets.QStyle.SP_DialogNoButton)
+        self._status_pixmap_disconnected = icon.pixmap(16)
+
+        self.status_label = QtWidgets.QLabel()
+        bar.addPermanentWidget(self.status_label)
+
+        self.status_icon = QtWidgets.QLabel()
+        bar.addPermanentWidget(self.status_icon)
+
     def setup_signals(self):
         self.action_quit.triggered.connect(self.close)
+        self.action_restart.triggered.connect(self.restart)
         self.action_clear.triggered.connect(self.clear_output)
 
         self.source_edit.evaluation_requested.connect(self.evaluate)
         self.source_edit.completion_requested.connect(self.complete)
 
+        self.output_started.connect(self.output_edit.append_session)
+        self.output_stopped.connect(self.output_edit.append_prompt)
         self.output_received.connect(self.output_edit.append)
-        self.output_complete.connect(self.output_edit.append_prompt)
+
         self.completion_received.connect(self.source_edit.show_completer)
+
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
@@ -142,72 +169,78 @@ class Window(QtWidgets.QMainWindow):
         self.style_chooser.source_style_changed.connect(
             self.source_highlighter.set_style)
 
-    ## work ##
+    ## events ##
 
-    def evaluate(self, source):
-        self.output_edit.append_source(source)
+    def closeEvent(self, event):
+        self._stop_events.set()
 
-        if self._client is None:
-            self._client = Client(self._address)
+    ## actions ##
 
-        try:
-            self._client.evaluate(source)
-        except Exception as e:
-            self.status_disconnected.emit(str(e))
-            logs.exception('evaluation error')
-        else:
-            self.source_edit.clear()
-
-    def complete(self, context):
-        if self._client is None:
-            self._client = Client(self._address)
-
-        try:
-            self._client.complete(context)
-        except Exception as e:
-            self.status_disconnected.emit(str(e))
-            logs.exception('completion error')
+    def restart(self):
+        self._interpreter.restart()
 
     def clear_output(self):
         print('clear')
 
+    ## commands ##
+
+    def evaluate(self, source):
+        self._commands.put(('evaluate', source))
+        self.output_edit.append_source(source)
+        self.source_edit.clear()
+
+    def complete(self, context):
+        self._commands.put(('complete', context))
+
+    def _handle_work(self, ctl):
+        stop = self._stop_events
+
+        while not stop.is_set():
+            cmd, data = self._commands.get()
+
+            try:
+                if cmd == 'stop':
+                    break
+                elif cmd == 'evaluate':
+                    ctl.evaluate(data)
+                elif cmd == 'complete':
+                    ctl.complete(data)
+                else:
+                    assert False, cmd
+            except Exception as e:
+                self.status_disconnected.emit(str(e))
+                raise
+
     ## events ##
 
-    def stop_events(self, timeout=None):
-        self._stop_events.set()
-        self._event_thread.join(timeout)
-
-    def _events(self):
-        addr = self._address
+    def _handle_events(self, ctl):
         stop = self._stop_events
-        emit_output = self.output_received.emit
 
-        client = None
-        while not stop.is_set():
-            try:
-                if client is None:
-                    client = Client(addr, timeout=3)
+        self.output_started.emit()
 
-                for event in client.events():
-                    if stop.is_set():
-                        break
-                    self.status_connected.emit(addr)
-                    if event is None:
-                        continue
+        try:
+            for event in ctl.events():
+                if stop.is_set():
+                    break
 
-                    name = event['evt']
-                    if name == 'done':
-                        self.output_complete.emit()
-                    elif name == 'output':
-                        text = event['data']['text']
-                        emit_output(text)
-                    elif name == 'completion':
-                        matches = event['data']['matches']
-                        self.completion_received.emit(matches)
+                self.status_connected.emit(self._interpreter._address)
+                if event is None:
+                    continue
 
-            except Exception as e:
-                client = None
-                self.status_disconnected.emit(str(e))
+                name = event['evt']
+                if name == 'done':
+                    self.output_stopped.emit()
+                elif name == 'output':
+                    text = event['data']['text']
+                    self.output_received.emit(text)
+                elif name == 'completion':
+                    matches = event['data']['matches']
+                    self.completion_received.emit(matches)
+
+        except Exception as e:
+            self._commands.put(('stop', None))
+            self.status_disconnected.emit(str(e))
+            raise
 
     ## status ##
 
@@ -217,7 +250,8 @@ class Window(QtWidgets.QMainWindow):
         self._connected = True
 
         msg = 'connected: {}:{}'.format(*address)
-        self.statusBar().showMessage(msg)
+        self.status_label.setText(msg)
+        self.status_icon.setPixmap(self._status_pixmap_connected)
 
     def _set_disconnected(self, error=None, force=False):
         if not self._connected and not force:
@@ -226,4 +260,5 @@ class Window(QtWidgets.QMainWindow):
 
         e = error and ': {}'.format(error) or ''
         msg = 'not connected{}'.format(e)
-        self.statusBar().showMessage(msg)
+        self.status_label.setText(msg)
+        self.status_icon.setPixmap(self._status_pixmap_disconnected)
