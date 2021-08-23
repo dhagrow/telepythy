@@ -15,7 +15,7 @@ Telepythy is a Python shell inspired by [DreamPie][1] with some notable addition
 
 ## Motivation
 
-As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, but have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016. I looked into creating a fork to add the features I was interested in, but the effort to modernize (aka Python 3) an unfamiliar and complex code-base was too daunting for me.
+As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, but have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (aka Python 3) an unfamiliar and complex code-base was too daunting for me.
 
 Of course, [Jupyter][3] exists and is very powerful. But I have always found the workflow awkward. I don't really want a shareable code notebook. I want a prototyping and debugging tool.
 
