@@ -17,13 +17,15 @@ def parse_address(address):
 
 def start_thread(func, *args, **kwargs):
     def thread(func, *args, **kwargs):
-        log.debug('thread started (%s): %s', threading.get_ident(), func.__name__)
+        ident = threading.current_thread().ident
+
+        log.debug('thread started (%s): %s', ident, func.__name__)
         try:
             return func(*args, **kwargs)
         except Exception:
             log.exception('unexpected thread error')
         finally:
-            log.debug('thread stopped (%s): %s', threading.get_ident(), func.__name__)
+            log.debug('thread stopped (%s): %s', ident, func.__name__)
 
     t = threading.Thread(target=thread, args=(func,) + args, kwargs=kwargs)
     t.daemon = True

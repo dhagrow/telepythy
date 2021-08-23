@@ -77,6 +77,8 @@ class Service(object):
         q = queue.Queue()
         self._event_queues.add(q)
 
+        self.add_event('start', version=sys.version)
+
         while True:
             try:
                 yield q.get(timeout=1)

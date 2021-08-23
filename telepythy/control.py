@@ -20,7 +20,7 @@ def get_control(config, profile=None, connect=None, serve=None, verbose=0, quiet
         profile = profile or 'default'
 
         try:
-            sec = config.section(('interpreter', profile), create=False)
+            sec = config.section(('profile', profile), create=False)
         except KeyError:
             # must be a command
             command = profile
@@ -77,8 +77,6 @@ class Control(object):
 
         handle = self._handle_event
         address = self._address
-
-        handle('start')
 
         proxy = ServiceProxy(sock)
 

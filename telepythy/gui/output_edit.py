@@ -8,10 +8,11 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         self.insertPlainText(text)
         self.scroll_to_bottom()
 
-    def append_session(self):
+    def append_session(self, version):
         if self.blockCount() > 1:
             self.append('\n')
-        self.append('[new session]\n')
+        self.append('<new session>\n')
+        self.append(version + '\n')
         self.append_prompt()
 
     def append_prompt(self, prompt=PS1):
