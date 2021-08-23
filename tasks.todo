@@ -6,12 +6,14 @@ gui:
     ☐ output performance @high
     ☐ fix basic completion @high
     ☐ gui exception capturing @high
-    ☐ don't capture errors when there is no connection
+    ☐ code to execute on startup @low
     ☐ unix ports @low
     ☐ folding @low
     ☐ distribution @low
+    ☐ code snippets @low
     ☐ clear output_edit (ctrl+l)
     ☐ embedded documentation
+    ☐ don't capture errors when there is no connection
 
 control:
     ☐ shutdown server after 2 connections are received

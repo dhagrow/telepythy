@@ -11,8 +11,8 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
     def append_session(self, version):
         if self.blockCount() > 1:
             self.append('\n')
-        self.append('<new session>\n')
-        self.append(version + '\n')
+        tpl = '<div style="background: #444;">{}</p><p></p>'
+        self.appendHtml(tpl.format(version))
         self.append_prompt()
 
     def append_prompt(self, prompt=PS1):
@@ -26,7 +26,7 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         lines = source.splitlines()
         insert(lines[0] + '\n')
 
-        # XXX: remove trailing empty lines
+        # TODO: remove trailing empty lines
 
         for line in lines[1:]:
             insert(PS2)
