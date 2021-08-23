@@ -44,7 +44,7 @@ def main():
     # this hacky section ensures that the option that is set passes either a
     # value, or ''
     # the other options will pass None
-    manager = control.Manager(cfg,
+    ctl = control.get_control(cfg,
         (args.profile or '') if args.profile is not False else None,
         (args.connect or '') if args.connect is not False else None,
         (args.serve or '') if args.serve is not False else None,
@@ -54,7 +54,7 @@ def main():
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='qtpy'))
     app.setWindowIcon(QtGui.QIcon('res/telepathy.svg'))
 
-    win = Window(cfg, manager)
+    win = Window(cfg, ctl)
     win.setWindowTitle('Telepythy')
     win.show()
 

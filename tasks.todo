@@ -1,19 +1,25 @@
+
 general:
     ☐ review dreampie settings/features @low
 
 gui:
     ☐ "interpreter" selection @high
-    ☐ gui exception capturing @high
     ☐ output performance @high
+    ☐ fix basic completion @high
+    ☐ gui exception capturing @high
     ☐ don't capture errors when there is no connection
     ☐ unix ports @low
-    ☐ completion @low
     ☐ folding @low
-    ☐ configuration @low
     ☐ distribution @low
     ☐ clear output_edit (ctrl+l)
     ☐ embedded documentation
 
+control:
+    ☐ shutdown server after 2 connections are received
+
 Archive:
+  ✔ clientcontrol manual restart has weird behavior @done(21-08-23 09:16) @project(bugs)
+  ✔ completion @low @done(21-08-22 22:15) @project(gui)
+  ✔ configuration @low @done(21-08-22 22:04) @project(gui)
   ✔ -q flag to silence all logging @done(21-08-21 12:22) @project(general)
   ✔ interactive input @high @done(21-08-16 22:52)

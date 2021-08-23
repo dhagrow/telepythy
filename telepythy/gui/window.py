@@ -25,15 +25,13 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, manager):
+    def __init__(self, config, control):
         super().__init__()
 
         self.setup()
         self.config(config)
 
-        self._manager = manager
-        self._control = manager.get_control()
-        self.setup_control()
+        self.setup_control(control)
 
         self._connected = False
         self._history_result = collections.OrderedDict()
@@ -52,8 +50,8 @@ class Window(QtWidgets.QMainWindow):
 
     ## setup ##
 
-    def setup_control(self):
-        ctl = self._control
+    def setup_control(self, control):
+        self._control = ctl = control
 
         ctl.register(None, lambda address: self.status_connected.emit(address))
         ctl.register('start', lambda _: self.output_started.emit())
@@ -69,10 +67,12 @@ class Window(QtWidgets.QMainWindow):
             self.completion_received.emit(matches)
         ctl.register('completion', completion)
 
-        def error(exc):
-            log.debug('totally normal events error: %s', exc)
-            self.status_disconnected.emit(str(exc))
+        def error(err):
+            log.debug('totally normal events error: %s', err)
+            self.status_disconnected.emit(err)
         ctl.register('error', error)
+
+        ctl.init()
 
     def setup(self):
         self.setup_actions()
@@ -216,12 +216,21 @@ class Window(QtWidgets.QMainWindow):
     ## commands ##
 
     def evaluate(self, source):
-        self._control.evaluate(source)
-        self.output_edit.append_source(source)
-        self.source_edit.clear()
+        try:
+            self._control.evaluate(source)
+        except Exception as e:
+            log.debug('totally normal evaluate error: %s', e)
+            self.status_disconnected.emit(str(e))
+        else:
+            self.output_edit.append_source(source)
+            self.source_edit.clear()
 
     def complete(self, context):
-        self._control.complete(context)
+        try:
+            self._control.complete(context)
+        except Exception as e:
+            log.debug('totally normal complete error: %s', e)
+            self.status_disconnected.emit(str(e))
 
    ## status ##
 
