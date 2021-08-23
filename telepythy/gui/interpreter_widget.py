@@ -1,4 +1,4 @@
-from PySide2 import QtCore, QtWidgets
+from qtpy import QtCore, QtWidgets
 
 class InterpreterWidget(QtWidgets.QWidget):
     interpreter_changed = QtCore.Signal(str)

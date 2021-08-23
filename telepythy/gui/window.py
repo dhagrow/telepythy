@@ -1,13 +1,13 @@
-import queue
 import threading
 import collections
 
-from PySide2.QtCore import Qt
-from PySide2 import QtCore, QtGui, QtWidgets
+from qtpy.QtCore import Qt
+from qtpy import QtCore, QtGui, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
 from .. import logs
+from .. import utils
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
@@ -25,23 +25,20 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, interpreter):
+    def __init__(self, config, manager):
         super().__init__()
 
         self.setup()
         self.config(config)
 
+        self._manager = manager
+        self._control = manager.get_control()
+        self.setup_control()
+
         self._connected = False
         self._history_result = collections.OrderedDict()
 
         self._set_disconnected(force=True)
-
-        self._commands = queue.Queue()
-        self._stop_events = threading.Event()
-
-        self._interpreter = interpreter
-        interpreter.add_handler(self._handle_events)
-        interpreter.add_handler(self._handle_work)
 
     ## config ##
 
@@ -55,27 +52,50 @@ class Window(QtWidgets.QMainWindow):
 
     ## setup ##
 
+    def setup_control(self):
+        ctl = self._control
+
+        ctl.register(None, lambda address: self.status_connected.emit(address))
+        ctl.register('start', lambda _: self.output_started.emit())
+        ctl.register('done', lambda _: self.output_stopped.emit())
+
+        def output(event):
+            text = event['data']['text']
+            self.output_received.emit(text)
+        ctl.register('output', output)
+
+        def completion(event):
+            matches = event['data']['matches']
+            self.completion_received.emit(matches)
+        ctl.register('completion', completion)
+
+        def error(exc):
+            log.debug('totally normal events error: %s', exc)
+            self.status_disconnected.emit(str(exc))
+        ctl.register('error', error)
+
     def setup(self):
         self.setup_actions()
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_style_widget()
         self.setup_interpreter_widget()
+        self.setup_menubar()
         self.setup_statusbar()
         self.setup_signals()
 
         self.source_edit.setFocus()
 
     def setup_actions(self):
-        self.action_quit = QtWidgets.QAction()
+        self.action_quit = QtWidgets.QAction('Quit')
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
 
-        self.action_restart = QtWidgets.QAction()
+        self.action_restart = QtWidgets.QAction('Restart')
         self.action_restart.setShortcut('Ctrl+F6')
         self.addAction(self.action_restart)
 
-        self.action_clear = QtWidgets.QAction()
+        self.action_clear = QtWidgets.QAction('Clear')
         self.action_clear.setShortcut('Ctrl+l')
         self.addAction(self.action_clear)
 
@@ -132,6 +152,14 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.interpreter_dock)
 
+    def setup_menubar(self):
+        bar = self.menuBar()
+
+        menu = bar.addMenu('File')
+        menu.addAction(self.action_clear)
+        menu.addAction(self.action_restart)
+        menu.addAction(self.action_quit)
+
     def setup_statusbar(self):
         bar = self.statusBar()
 
@@ -172,12 +200,15 @@ class Window(QtWidgets.QMainWindow):
     ## events ##
 
     def closeEvent(self, event):
-        self._stop_events.set()
+        self._control.shutdown()
 
     ## actions ##
 
+    def stop(self):
+        self._control.stop()
+
     def restart(self):
-        self._interpreter.restart()
+        self._control.restart()
 
     def clear_output(self):
         print('clear')
@@ -185,64 +216,14 @@ class Window(QtWidgets.QMainWindow):
     ## commands ##
 
     def evaluate(self, source):
-        self._commands.put(('evaluate', source))
+        self._control.evaluate(source)
         self.output_edit.append_source(source)
         self.source_edit.clear()
 
     def complete(self, context):
-        self._commands.put(('complete', context))
+        self._control.complete(context)
 
-    def _handle_work(self, ctl):
-        stop = self._stop_events
-
-        while not stop.is_set():
-            cmd, data = self._commands.get()
-
-            try:
-                if cmd == 'stop':
-                    break
-                elif cmd == 'evaluate':
-                    ctl.evaluate(data)
-                elif cmd == 'complete':
-                    ctl.complete(data)
-                else:
-                    assert False, cmd
-            except Exception as e:
-                self.status_disconnected.emit(str(e))
-                raise
-
-    ## events ##
-
-    def _handle_events(self, ctl):
-        stop = self._stop_events
-
-        self.output_started.emit()
-
-        try:
-            for event in ctl.events():
-                if stop.is_set():
-                    break
-
-                self.status_connected.emit(self._interpreter._address)
-                if event is None:
-                    continue
-
-                name = event['evt']
-                if name == 'done':
-                    self.output_stopped.emit()
-                elif name == 'output':
-                    text = event['data']['text']
-                    self.output_received.emit(text)
-                elif name == 'completion':
-                    matches = event['data']['matches']
-                    self.completion_received.emit(matches)
-
-        except Exception as e:
-            self._commands.put(('stop', None))
-            self.status_disconnected.emit(str(e))
-            raise
-
-    ## status ##
+   ## status ##
 
     def _set_connected(self, address):
         if self._connected:

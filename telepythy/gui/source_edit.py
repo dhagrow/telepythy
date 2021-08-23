@@ -1,8 +1,8 @@
 import re
 import contextlib
 
-from PySide2.QtCore import Qt
-from PySide2 import QtCore, QtGui, QtWidgets
+from qtpy.QtCore import Qt
+from qtpy import QtCore, QtGui, QtWidgets
 
 from . import document
 from .history import History

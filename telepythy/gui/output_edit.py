@@ -1,4 +1,4 @@
-from PySide2 import QtWidgets
+from qtpy import QtWidgets
 
 PS1 = '>>> '
 PS2 = '... '
@@ -33,7 +33,7 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
 
         self.scroll_to_bottom()
 
-    def toSource(self):
+    def extract_source(self):
         def collect():
             text = self.toPlainText()
             for line in text.splitlines():

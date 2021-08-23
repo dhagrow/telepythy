@@ -1,15 +1,36 @@
 import sys
 from logging import *
 
+try:
+    import colorlog
+except ImportError:
+    colorlog = None
+
+LOG_COLORS = {
+    'DEBUG'   : 'reset',
+    'INFO'    : 'white',
+    'WARNING' : 'yellow',
+    'ERROR'   : 'red',
+    'CRITICAL': 'bold_red,bg_black',
+    }
+
 get = getLogger
 log = get(__name__)
 
-def init(debug_level=0, mode=None, log_exceptions=True):
+def init(debug_level=0, quiet=False, mode=None, log_exceptions=True):
     """Initializes simple logging defaults."""
+    if quiet:
+        disable(CRITICAL)
+        return
+
     root_log = get()
 
     fmt = '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
-    formatter = Formatter(fmt)
+    if colorlog:
+        formatter = colorlog.ColoredFormatter('%(log_color)s' + fmt,
+            log_colors=LOG_COLORS)
+    else:
+        formatter = Formatter(fmt)
 
     handler = StreamHandler()
     handler.setFormatter(formatter)

@@ -5,6 +5,8 @@ from . import utils
 from . import sockio
 from . import service
 
+log = logs.get(__name__)
+
 def main():
     parser = argparse.ArgumentParser('telepythy')
 
@@ -19,10 +21,12 @@ def main():
 
     parser.add_argument('-v', '--verbose', action='count',
         default=0, help='enable verbose output (-vv for more)')
+    parser.add_argument('-q', '--quiet', action='store_true',
+        help='disable all output')
 
     args = parser.parse_args()
 
-    logs.init(args.verbose, mode='svc', log_exceptions=False)
+    logs.init(args.verbose, args.quiet, mode='svc', log_exceptions=False)
 
     # serve unless connect is set
     if args.connect is not False:
@@ -34,7 +38,10 @@ def connect(address, locs=None, output_mode=None):
     svc = service.Service(locs, output_mode)
 
     def _connect(svc, address):
-        svc.handle(sockio.connect(address))
+        try:
+            svc.handle(sockio.connect(address))
+        except sockio.error as e:
+            log.error('connection failed: %s', e)
 
     threads = []
     t = utils.start_thread(_connect, svc, address)

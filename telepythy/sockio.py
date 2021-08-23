@@ -11,6 +11,8 @@ from .utils import start_thread
 BACKLOG = socket.SOMAXCONN
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 
+error = socket.error
+
 log = logs.get(__name__)
 
 def connect(address, timeout=None):

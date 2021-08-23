@@ -3,12 +3,12 @@ faulthandler.enable()
 
 import argparse
 
-from PySide2 import QtGui, QtWidgets
+from qtpy import QtGui, QtWidgets
 import qdarkstyle
 
 from .. import logs
 from .. import utils
-from .. import interpreter
+from .. import control
 
 from . import config
 from .window import Window
@@ -37,50 +37,31 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.quiet:
-        logs.init(args.verbose, mode='ctl')
+    logs.init(args.verbose, args.quiet, mode='ctl')
 
     cfg = config.init(args.config)
 
-    inter = load_interpreter(args, cfg)
+    # this hacky section ensures that the option that is set passes either a
+    # value, or ''
+    # the other options will pass None
+    manager = control.Manager(cfg,
+        (args.profile or '') if args.profile is not False else None,
+        (args.connect or '') if args.connect is not False else None,
+        (args.serve or '') if args.serve is not False else None,
+        args.verbose, args.quiet)
 
     app = QtWidgets.QApplication()
-    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='pyside2'))
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='qtpy'))
     app.setWindowIcon(QtGui.QIcon('res/telepathy.svg'))
 
-    win = Window(cfg, inter)
-    win.setWindowTitle('telepythy')
+    win = Window(cfg, manager)
+    win.setWindowTitle('Telepythy')
     win.show()
 
     try:
         app.exec_()
     except KeyboardInterrupt:
         pass
-    finally:
-        inter.stop()
-
-def load_interpreter(args, cfg):
-    inter = interpreter.Interpreter()
-    if args.connect is not False:
-        inter.connect(utils.parse_address(args.connect or utils.DEFAULT_ADDR))
-
-    elif args.serve is not False:
-        inter.serve(utils.parse_address(args.serve or utils.DEFAULT_ADDR))
-
-    else:
-        inter.serve(utils.parse_address(utils.DEFAULT_ADDR))
-
-        profile = args.profile or 'default'
-        sec = cfg.section('interpreter')
-        try:
-            cmd = sec[profile]
-        except KeyError:
-            # must be a command
-            inter.start(profile, args.verbose, args.quiet)
-        else:
-            inter.start(cmd, args.verbose, args.quiet)
-
-    return inter
 
 if __name__ == '__main__':
     try:

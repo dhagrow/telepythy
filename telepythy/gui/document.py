@@ -1,5 +1,5 @@
 import re
-from PySide2 import QtGui, QtWidgets
+from qtpy import QtGui, QtWidgets
 
 rx_indent = re.compile('^[ ]*')
 
