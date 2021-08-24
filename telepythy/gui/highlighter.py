@@ -1,3 +1,5 @@
+# from: https://github.com/jupyter/qtconsole/blob/master/qtconsole/pygments_highlighter.py
+
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
@@ -250,4 +252,3 @@ class PygmentsHighlighter(QtGui.QSyntaxHighlighter):
                       int(color[2:4], base=16),
                       int(color[4:6], base=16))
         return qcolor
-
