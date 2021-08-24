@@ -49,16 +49,18 @@ class Code(object):
         matches = []
 
         if '.' not in prefix:
+            prefix_0 = prefix and prefix[0]
+
             for kw in keyword.kwlist:
-                if kw.startswith(prefix):
+                if kw.startswith(prefix_0):
                     matches.append(kw)
 
             for name in self.locals.keys():
-                if name.startswith(prefix):
+                if name.startswith(prefix_0):
                     matches.append(name)
 
             for name in self.locals['__builtins__'].keys():
-                if name.startswith(prefix):
+                if name.startswith(prefix_0):
                     matches.append(name)
 
         else:
@@ -77,8 +79,10 @@ class Code(object):
                 except AttributeError:
                     return []
 
+            prefix_0 = prefix and prefix[0]
+
             for name in dir(obj):
-                if name.startswith(prefix):
+                if name.startswith(prefix_0):
                     matches.append(name)
 
         return sorted(matches, key=match_sort_key)

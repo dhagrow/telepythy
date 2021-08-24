@@ -38,7 +38,7 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         self.completer = QtWidgets.QCompleter(self.completer_model, self)
         self.completer.setWidget(self)
         self.completer.setCompletionMode(self.completer.PopupCompletion)
-        self.completer.activated[QtCore.QModelIndex].connect(self.complete)
+        self.completer.activated.connect(self.complete)
 
         self.textChanged.connect(self.refresh_completer)
 
@@ -78,8 +78,7 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         if item:
             popup.setCurrentIndex(item.index())
 
-    def complete(self, index):
-        match = index.data()
+    def complete(self, match):
         ident = self.completion_context().split('.')[-1]
         text = match[len(ident):]
 
