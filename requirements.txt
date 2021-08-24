@@ -1,11 +1,9 @@
-backports.functools-lru-cache==1.6.4
-colorama==0.4.4
-colorlog==5.0.1
-funcsigs==1.0.2
-msgpack==1.0.2
-prompt-toolkit==2.0.10
--e ../sage
-scandir==1.10.0
+appdirs==1.4.4
+attrdict==2.0.1
+Pygments==2.10.0
+PySide2==5.14.1
+QDarkStyle==3.0.2
+QtPy==1.10.0
+shiboken2==5.14.1
 six==1.16.0
-temporenc==0.1.0
-wcwidth==0.2.5
+toml==0.10.2

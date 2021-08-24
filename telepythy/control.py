@@ -20,7 +20,7 @@ def get_control(config, profile=None, connect=None, serve=None, verbose=0, quiet
         profile = profile or 'default'
 
         try:
-            sec = config.section(('profile', profile), create=False)
+            sec = config.profile[profile]
         except KeyError:
             # must be a command
             command = profile

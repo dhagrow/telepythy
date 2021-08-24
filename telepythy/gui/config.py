@@ -1,24 +1,34 @@
-import profig
-from qtpy import QtCore
+import toml
+import appdirs
+from attrdict import AttrDict
 
-DEFAULT_PATH = profig.get_source('telepythy.cfg', 'user')
+DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg')
 DEFAULT_INTERPRETER = 'python'
 
 def init(path=None):
-    cfg = profig.Config(path or DEFAULT_PATH)
+    path = path or DEFAULT_PATH
 
-    cfg.init('profile.default.command', DEFAULT_INTERPRETER)
+    defaults = AttrDict({
+        'profile': {'default': {'command': DEFAULT_INTERPRETER}},
+        'startup': {'source': ''},
+        'style': {
+            'output': 'gruvbox-dark',
+            'source': 'gruvbox-dark',
+            },
+        'window': {
+            'size': [800, 800],
+            'view': {
+                'menu': True,
+                },
+            },
+        })
 
-    sec = cfg.section('style')
-    sec.init('output', 'gruvbox-dark')
-    sec.init('source', 'gruvbox-dark')
+    try:
+        with open(path) as f:
+            cfg = toml.load(f)
+    except FileNotFoundError:
+        with open(path, 'w') as f:
+            toml.dump(defaults, f)
+        cfg = {}
 
-    sec = cfg.section('window')
-    sec.init('size', QtCore.QSize(800, 800))
-
-    sec = sec.section('view')
-    sec.init('menu', True)
-
-    cfg.sync()
-
-    return cfg
+    return defaults + cfg

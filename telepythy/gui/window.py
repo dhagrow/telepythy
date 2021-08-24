@@ -44,33 +44,33 @@ class Window(QtWidgets.QMainWindow):
         self._config = config
 
         # menus
-        self.menuBar().setVisible(config['window.view.menu'])
-        self.action_toggle_menu.setChecked(config['window.view.menu'])
+        view_menu = config.window.view.menu
+        self.menuBar().setVisible(view_menu)
+        self.action_toggle_menu.setChecked(view_menu)
 
         self.action_toggle_source_title.setChecked(False)
 
         # profiles
         menu = self.profile_menu
         group = QtWidgets.QActionGroup(menu)
-        for sec in config.section('profile').sections():
-            action = group.addAction(sec.name)
+        for name in config.profile:
+            action = group.addAction(name)
             action.setCheckable(True)
 
-            if sec.name == 'default':
+            if name == 'default':
                 action.setChecked(True)
 
             menu.addAction(action)
 
         # editors
-        sec = config.section('style')
-        self.output_highlighter.set_style(sec['output'])
-        self.source_highlighter.set_style(sec['source'])
+        sec = config.style
+        self.output_highlighter.set_style(sec.output)
+        self.source_highlighter.set_style(sec.source)
 
         # docks
-        sec = config.section('profile.default')
-        self.interpreter_chooser.set_python_exec(sec['command'])
+        self.interpreter_chooser.set_python_exec(config.profile.default.command)
 
-        self.resize(config['window.size'])
+        self.resize(*config.window.size)
 
     ## setup ##
 
