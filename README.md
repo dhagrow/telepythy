@@ -13,6 +13,14 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 * UI requires Python 3 on Linux/Windows/OSX (tested: 3.6/3.9 on Linux/Windows)
 * Embeddable service supports Python 2 and 3 on all platforms (tested: 2.7/3.6/3.9 on Linux/Windows)
 
+## Screenshots
+
+**Linux/I3**<br>
+<img src="res/screenshot_0.png" width="500"/><br>
+**Windows**
+<br>
+<img src="res/screenshot_1.png" width="500" align="top"/>
+
 ## Motivation
 
 As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers. However, I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) an unfamiliar and complex code-base was too daunting for me.
