@@ -33,7 +33,7 @@ def start_server(address, handler, timeout=None, accept_timeout=1, backlog=None)
 
     stop = threading.Event()
     t = start_thread(serve, sock, handler, stop, timeout)
-    return (ServerThread(t, stop), host, port)
+    return (ServerThread(t, stop), (host, port))
 
 def serve(sock, handler, stop, timeout=None):
     while not stop.is_set():
@@ -62,17 +62,12 @@ class SockIO(object):
         self._sock = sock
         self._chunk_size = chunk_size or CHUNK_SIZE
 
-    def settimeout(self, t):
-        self._sock.settimeout(t)
-
     def sendmsg(self, msg):
         data = json.dumps(msg).encode('utf8')
         self.send(data)
 
     def recvmsg(self):
         data = self.recv()
-        if not data:
-            raise ReceiveInterrupted()
         return json.loads(data.decode('utf8'))
 
     def send(self, data):
@@ -82,10 +77,7 @@ class SockIO(object):
         self._sock.sendall(data)
 
     def recv(self):
-        try:
-            return b''.join(self.recviter())
-        except ReceiveInterrupted:
-            return b''
+        return b''.join(self.recviter())
 
     def recviter(self):
         buf = b''.join(self.recvsize(4))
@@ -104,6 +96,9 @@ class SockIO(object):
                 raise ReceiveInterrupted()
             pos += len(chunk)
             yield chunk
+
+    def settimeout(self, t):
+        self._sock.settimeout(t)
 
     def close(self):
         try:

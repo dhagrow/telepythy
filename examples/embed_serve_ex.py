@@ -2,13 +2,13 @@ import time
 import signal
 import itertools
 
-from telepythy.server import serve
+from telepythy import serve
 from telepythy import logs
 
 logs.init(2)
 
 def handler(signum, frame):
-    serve(('0.0.0.0', 5556), locals())
+    serve(('0.0.0.0', 7357), locals())
 
 signal.signal(signal.SIGUSR1, handler)
 

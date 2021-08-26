@@ -1,4 +1,3 @@
-import threading
 import collections
 
 from qtpy.QtCore import Qt
@@ -7,12 +6,10 @@ from qtpy import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from .. import logs
-from .. import control
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
 from .style_widget import StyleWidget
-from .interpreter_widget import InterpreterWidget
 from .highlighter import PygmentsHighlighter
 
 log = logs.get(__name__)
@@ -25,13 +22,16 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, control):
+    def __init__(self, config, manager, profile):
         super().__init__()
 
-        self.setup()
-        self.config(config)
+        self._manager = manager
+        self._control = None
+        self._profiles = {}
 
-        self.setup_control(control)
+        self.setup()
+        self.config(config, profile)
+        self.set_profile(profile)
 
         self._connected = False
         self._history_result = collections.OrderedDict()
@@ -40,7 +40,7 @@ class Window(QtWidgets.QMainWindow):
 
     ## config ##
 
-    def config(self, config):
+    def config(self, config, profile):
         self._config = config
 
         # style
@@ -62,57 +62,19 @@ class Window(QtWidgets.QMainWindow):
         for name in config.profile:
             action = group.addAction(name)
             action.setCheckable(True)
-
-            if name == 'default':
-                action.setChecked(True)
-
+            action.setChecked(name == profile)
             menu.addAction(action)
-
-        # editors
-        sec = config.style
-        self.output_highlighter.set_style(sec.output)
-        self.source_highlighter.set_style(sec.source)
-
-        # docks
-        self.interpreter_chooser.set_python_exec(config.profile.default.command)
+            self._profiles[name] = action
 
         self.resize(*config.window.size)
 
     ## setup ##
-
-    def setup_control(self, control):
-        self._control = ctl = control
-
-        ctl.register(None, lambda address: self.status_connected.emit(address))
-        def start(event):
-            version = event['data']['version']
-            self.output_started.emit(version)
-        ctl.register('start', start)
-        ctl.register('done', lambda _: self.output_stopped.emit())
-
-        def output(event):
-            text = event['data']['text']
-            self.output_received.emit(text)
-        ctl.register('output', output)
-
-        def completion(event):
-            matches = event['data']['matches']
-            self.completion_received.emit(matches)
-        ctl.register('completion', completion)
-
-        def error(err):
-            log.debug('totally normal events error: %s', err)
-            self.status_disconnected.emit(err)
-        ctl.register('error', error)
-
-        ctl.init()
 
     def setup(self):
         self.setup_actions()
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_style_widget()
-        self.setup_profile_widget()
         self.setup_menus()
         self.setup_menubar()
         self.setup_statusbar()
@@ -125,19 +87,19 @@ class Window(QtWidgets.QMainWindow):
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
 
+        self.action_interrupt = QtWidgets.QAction('Interrupt')
+        self.action_interrupt.setShortcut('Ctrl+c')
+        self.addAction(self.action_interrupt)
+
         self.action_restart = QtWidgets.QAction('Restart')
         self.action_restart.setShortcut('Ctrl+F6')
         self.addAction(self.action_restart)
-
-        self.action_clear = QtWidgets.QAction('Clear')
-        self.action_clear.setShortcut('Ctrl+l')
-        self.addAction(self.action_clear)
 
         self.action_toggle_menu = QtWidgets.QAction('Menu')
         self.action_toggle_menu.setCheckable(True)
         self.action_toggle_menu.setChecked(True)
 
-        self.action_toggle_source_title = QtWidgets.QAction('Source Title')
+        self.action_toggle_source_title = QtWidgets.QAction('Source Titlebar')
         self.action_toggle_source_title.setCheckable(True)
         self.action_toggle_source_title.setChecked(True)
 
@@ -183,37 +145,26 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
 
-    def setup_profile_widget(self):
-        self.interpreter_chooser = InterpreterWidget()
-
-        self.profile_dock = QtWidgets.QDockWidget('Profiles')
-        self.profile_dock.setWidget(self.interpreter_chooser)
-        self.profile_dock.setVisible(False)
-
-        self.addDockWidget(Qt.RightDockWidgetArea, self.profile_dock)
-
     def setup_menus(self):
-        self.file_menu = QtWidgets.QMenu('File', self)
-        self.file_menu.addAction(self.action_clear)
-        self.file_menu.addAction(self.action_restart)
-        self.file_menu.addAction(self.action_quit)
+        self.main_menu = QtWidgets.QMenu('Main', self)
+        self.main_menu.addAction(self.action_restart)
+        self.main_menu.addAction(self.action_quit)
 
         self.view_menu = QtWidgets.QMenu('View', self)
         self.view_menu.addAction(self.action_toggle_menu)
         self.view_menu.addAction(self.style_dock.toggleViewAction())
-        self.view_menu.addAction(self.profile_dock.toggleViewAction())
         self.view_menu.addAction(self.action_toggle_source_title)
 
         self.profile_menu = QtWidgets.QMenu('Profile', self)
 
         self.status_menu = QtWidgets.QMenu()
-        self.status_menu.addMenu(self.file_menu)
+        self.status_menu.addMenu(self.main_menu)
         self.status_menu.addMenu(self.view_menu)
         self.status_menu.addMenu(self.profile_menu)
 
     def setup_menubar(self):
         bar = self.menuBar()
-        bar.addMenu(self.file_menu)
+        bar.addMenu(self.main_menu)
         bar.addMenu(self.view_menu)
         bar.addMenu(self.profile_menu)
 
@@ -229,12 +180,8 @@ class Window(QtWidgets.QMainWindow):
         self.menu_button.setIcon(QtGui.QIcon('res/menu.svg'))
         self.menu_button.setMenu(self.status_menu)
         self.menu_button.setStyleSheet('::menu-indicator{ image: none; }')
+        self.menu_button.setFlat(True)
         bar.addWidget(self.menu_button)
-
-        self.profile_button = QtWidgets.QPushButton('default')
-        self.profile_button.setMenu(self.profile_menu)
-        self.profile_button.setStyleSheet('::menu-indicator{ image: none; }')
-        bar.addPermanentWidget(self.profile_button)
 
         self.status_label = QtWidgets.QLabel()
         bar.addPermanentWidget(self.status_label)
@@ -242,10 +189,16 @@ class Window(QtWidgets.QMainWindow):
         self.status_icon = QtWidgets.QLabel()
         bar.addPermanentWidget(self.status_icon)
 
+        self.profile_button = QtWidgets.QPushButton('default')
+        self.profile_button.setMenu(self.profile_menu)
+        self.profile_button.setStyleSheet('::menu-indicator{ image: none; }')
+        self.profile_button.setFlat(True)
+        bar.addPermanentWidget(self.profile_button)
+
     def setup_signals(self):
         self.action_quit.triggered.connect(self.close)
+        self.action_interrupt.triggered.connect(self.interrupt)
         self.action_restart.triggered.connect(self.restart)
-        self.action_clear.triggered.connect(self.clear_output)
         self.action_toggle_menu.toggled.connect(self.menuBar().setVisible)
 
         def source_toggle(checked):
@@ -261,7 +214,7 @@ class Window(QtWidgets.QMainWindow):
         self.source_edit.evaluation_requested.connect(self.evaluate)
         self.source_edit.completion_requested.connect(self.complete)
 
-        self.output_started.connect(self.output_edit.append_session)
+        self.output_started.connect(self.start_session)
         self.output_stopped.connect(self.output_edit.append_prompt)
         self.output_received.connect(self.output_edit.append)
 
@@ -286,10 +239,39 @@ class Window(QtWidgets.QMainWindow):
     ## actions ##
 
     def set_profile(self, name):
-        self._control.shutdown()
+        action = self._profiles[name]
 
-        ctl = control.get_control(self._config, name)
-        self.setup_control(ctl)
+        if self._control:
+            self._control.shutdown()
+
+        self._control = ctl = self._manager.get_control(name)
+
+        ctl.register(None, lambda address: self.status_connected.emit(address))
+        def start(event):
+            version = event['data']['version']
+            self.output_started.emit(version)
+        ctl.register('start', start)
+        ctl.register('done', lambda _: self.output_stopped.emit())
+
+        def output(event):
+            text = event['data']['text']
+            self.output_received.emit(text)
+        ctl.register('output', output)
+
+        def completion(event):
+            matches = event['data']['matches']
+            self.completion_received.emit(matches)
+        ctl.register('completion', completion)
+
+        def error(err):
+            log.debug('totally normal events error: %s', err)
+            self.status_disconnected.emit(err)
+        ctl.register('error', error)
+
+        ctl.init()
+
+        self.profile_menu.setActiveAction(action)
+        self.profile_button.setText(name)
 
     def stop(self):
         self._control.stop()
@@ -297,10 +279,14 @@ class Window(QtWidgets.QMainWindow):
     def restart(self):
         self._control.restart()
 
-    def clear_output(self):
-        print('clear')
-
     ## commands ##
+
+    def start_session(self, version):
+        self.output_edit.append_session(version)
+
+        source = self._config.startup.source
+        if source:
+            self._control.evaluate(source, notify=False)
 
     def evaluate(self, source):
         try:
@@ -310,7 +296,14 @@ class Window(QtWidgets.QMainWindow):
             self.status_disconnected.emit(str(e))
         else:
             self.output_edit.append_source(source)
-            self.source_edit.clear()
+            self.source_edit.next_cell()
+
+    def interrupt(self):
+        try:
+            self._control.interrupt()
+        except Exception as e:
+            log.debug('totally normal interrupt error: %s', e)
+            self.status_disconnected.emit(str(e))
 
     def complete(self, context):
         try:
@@ -319,7 +312,7 @@ class Window(QtWidgets.QMainWindow):
             log.debug('totally normal complete error: %s', e)
             self.status_disconnected.emit(str(e))
 
-   ## status ##
+    ## status ##
 
     def _set_connected(self, address):
         if self._connected:

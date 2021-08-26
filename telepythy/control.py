@@ -13,34 +13,41 @@ TIMEOUT = 5
 
 log = logs.get(__name__)
 
-def get_control(config, profile=None, connect=None, serve=None, verbose=0, quiet=False):
-    command = None
+class Manager:
+    def __init__(self, config, verbose=0, quiet=False):
+        self._config = config
+        self._verbose = verbose
+        self._quiet = quiet
 
-    if profile is not None or (connect is None and serve is None):
-        profile = profile or 'default'
+    def get_control(self, profile=None, connect=None, serve=None):
+        command = None
 
-        try:
-            sec = config.profile[profile]
-        except KeyError:
-            # must be a command
-            command = profile
-        else:
-            command = sec.get('command')
-            connect = sec.get('connect')
-            serve = sec.get('serve')
+        if profile is not None or (connect is None and serve is None):
+            profile = profile or 'default'
 
-    if command is not None:
-        return ProcessControl(('localhost', 0), command, verbose, quiet)
+            try:
+                sec = self._config.profile[profile]
+            except KeyError:
+                # must be a command
+                command = profile
+            else:
+                command = sec.get('command')
+                connect = sec.get('connect')
+                serve = sec.get('serve')
 
-    elif connect is not None:
-        addr = utils.parse_address(connect or utils.DEFAULT_ADDR)
-        return ClientControl(addr)
+        if command is not None:
+            return ProcessControl(('localhost', 0), command,
+                self._verbose, self._quiet)
 
-    elif serve is not None:
-        addr = utils.parse_address(serve or utils.DEFAULT_ADDR)
-        return ServerControl(addr)
+        elif connect is not None:
+            addr = utils.parse_address(connect or utils.DEFAULT_ADDR)
+            return ClientControl(addr)
 
-    assert False, 'invalid control init'
+        elif serve is not None:
+            addr = utils.parse_address(serve or utils.DEFAULT_ADDR)
+            return ServerControl(addr)
+
+        assert False, 'invalid control init'
 
 class Control(object):
     def __init__(self, address):
@@ -60,8 +67,11 @@ class Control(object):
 
     ## commands ##
 
-    def evaluate(self, source):
-        self.get_work_proxy().evaluate(source)
+    def evaluate(self, source, notify=True):
+        self.get_work_proxy().evaluate(source, notify)
+
+    def interrupt(self):
+        self.get_work_proxy().interrupt()
 
     def complete(self, prefix):
         self.get_work_proxy().complete(prefix)
@@ -81,7 +91,7 @@ class Control(object):
         proxy = ServiceProxy(sock)
 
         try:
-            for event in proxy.events():
+            for event in proxy.events(stop):
                 if stop.is_set():
                     break
                 if event is None:
@@ -92,7 +102,7 @@ class Control(object):
         except Exception as e:
             if stop.is_set():
                 return
-            handle('error', str(e))
+            handle('error', repr(e))
             self.restart()
 
     def _handle_event(self, name, event=None):
@@ -109,13 +119,9 @@ class Control(object):
     ## sockets ##
 
     def _set_sockets(self, sock):
-        if not self._work_socket:
-            self._work_socket = sock
-            self._work_event.set()
-        elif not self._events_thread:
-            self._events_thread = utils.start_thread(self._events, sock)
-        else:
-            assert False, 'third connection'
+        self._work_socket = sock
+        self._work_event.set()
+        self._events_thread = utils.start_thread(self._events, sock)
 
     def restart(self):
         with self._restart_lock:
@@ -155,7 +161,6 @@ class ClientControl(Control):
                     break
 
         utils.start_thread(connect, self._address)
-        utils.start_thread(connect, self._address)
 
     def _restart(self):
         super()._restart()
@@ -174,10 +179,9 @@ class ServerControl(Control):
         self.serve()
 
     def serve(self):
-        t, host, port = sockio.start_server(self._address, self._set_sockets)
-        self._server_thread = t
-        # replace in case a port was generated (port=0)
-        self._address = (host, port)
+        # replace address in case a port was generated (port=0)
+        self._server_thread, self._address = sockio.start_server(
+            self._address, self._set_sockets)
 
     def shutdown(self):
         if self._server_thread:
@@ -240,17 +244,20 @@ class ServiceProxy(object):
     def __init__(self, sock):
         self._sock = sock
 
-    def evaluate(self, source):
-        self._sendcmd('evaluate', source)
+    def evaluate(self, source, notify=True):
+        self._sendcmd('evaluate', {'source': source, 'notify': notify})
+
+    def interrupt(self):
+        self._sendcmd('interrupt')
 
     def complete(self, prefix):
         self._sendcmd('complete', prefix)
 
-    def events(self):
-        c = self._sock
-        self._sendcmd('events')
-        while True:
-            event = c.recvmsg()
+    def events(self, stop):
+        sock = self._sock
+
+        while not stop.is_set():
+            event = sock.recvmsg()
 
             if event:
                 name = event['evt']

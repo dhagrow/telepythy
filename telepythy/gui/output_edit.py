@@ -5,14 +5,18 @@ PS2 = '... '
 
 class OutputEdit(QtWidgets.QPlainTextEdit):
     def append(self, text):
-        self.insertPlainText(text)
+        cur = self.textCursor()
+        cur.movePosition(cur.End)
+        cur.insertText(text)
         self.scroll_to_bottom()
 
     def append_session(self, version):
+        cur = self.textCursor()
+        cur.movePosition(cur.End)
         if self.blockCount() > 1:
-            self.append('\n')
-        tpl = '<div style="background: #444;">{}</p><p></p>'
-        self.appendHtml(tpl.format(version))
+            cur.insertText('\n')
+        tpl = '<div style="background: darkred;">{}</p><p></p>'
+        cur.insertHtml(tpl.format(version))
         self.append_prompt()
 
     def append_prompt(self, prompt=PS1):
@@ -22,7 +26,9 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         if not source:
             return
 
-        insert = self.insertPlainText
+        cur = self.textCursor()
+        cur.movePosition(cur.End)
+        insert = cur.insertText
         lines = source.splitlines()
         insert(lines[0] + '\n')
 

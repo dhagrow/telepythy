@@ -21,6 +21,20 @@ def get_completion_context(line):
     match = _rx_dotted_ident.match('!' + line)
     return match and match.group(1)
 
+# required to let ctrl+c through (when no text is selected)
+class EventFilter(QtCore.QObject):
+    def eventFilter(self, obj, event):
+        if isinstance(event, QtGui.QKeyEvent):
+            key = event.key()
+            mod = event.modifiers()
+            ctrl = mod & Qt.ControlModifier
+
+            if ctrl and key == Qt.Key_C:
+                if not obj.textCursor().hasSelection():
+                    return True
+
+        return super().eventFilter(obj, event)
+
 class SourceEdit(QtWidgets.QPlainTextEdit):
     evaluation_requested = QtCore.Signal(str)
     completion_requested = QtCore.Signal(str)
@@ -31,6 +45,8 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         self._history = History()
         self._current = None
 
+        self.installEventFilter(EventFilter(self))
+
         doc = document.TextDocument(self)
         self.setDocument(doc)
 
@@ -38,7 +54,7 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         self.completer = QtWidgets.QCompleter(self.completer_model, self)
         self.completer.setWidget(self)
         self.completer.setCompletionMode(self.completer.PopupCompletion)
-        self.completer.activated.connect(self.complete)
+        self.completer.activated[str].connect(self.complete)
 
         self.textChanged.connect(self.refresh_completer)
 
@@ -46,26 +62,25 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         if not matches:
             return
 
+        completer = self.completer
         model = self.completer_model
+
         model.clear()
         for match in matches:
             item = QtGui.QStandardItem(match)
             model.appendRow(item)
 
-        first = model.item(0).index()
-        if len(matches) == 1:
-            self.complete(first)
+        if completer.completionCount() == 1:
+            self.complete(completer.currentCompletion())
             return
 
-        popup = self.completer.popup()
-        popup.setCurrentIndex(first)
-
         # popup size
+        popup = completer.popup()
         rect = self.cursorRect()
         scrollbar = popup.verticalScrollBar()
         rect.setWidth(popup.sizeHintForColumn(0) + scrollbar.sizeHint().width())
 
-        self.completer.complete(rect)
+        completer.complete(rect)
 
     def refresh_completer(self):
         # if not self.completer.popup().isVisible():
@@ -73,12 +88,13 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         ident = self.completion_context().split('.')[-1]
         self.completer.setCompletionPrefix(ident)
 
-        popup = self.completer.popup()
-        item = self.completer_model.item(0)
-        if item:
-            popup.setCurrentIndex(item.index())
+        # popup = self.completer.popup()
+        # item = self.completer_model.item(0)
+        # if item:
+        #     popup.setCurrentIndex(item.index())
 
     def complete(self, match):
+        print(match)
         ident = self.completion_context().split('.')[-1]
         text = match[len(ident):]
 
@@ -118,16 +134,28 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         self.move_cursor_position(QtGui.QTextCursor.End)
 
     def reset(self):
+        # clear history browsing state
         self._history.reset()
         self._current = None
 
+    def setPlainText(self, text):
+        """Overridden to prevent clearing undo history."""
+        self.clear()
+        self.insertPlainText(text)
+
     def clear(self):
+        cur = self.textCursor()
+        cur.movePosition(cur.Start)
+        cur.movePosition(cur.End, cur.KeepAnchor)
+        cur.deleteChar()
+
+    def next_cell(self):
         self.reset()
 
         source = self.toPlainText()
         self._history.append(source)
 
-        super().clear()
+        self.clear()
 
     ## events ##
 

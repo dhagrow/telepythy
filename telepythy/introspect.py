@@ -1,9 +1,14 @@
+import os
 import ast
 import sys
+import signal
 import pprint
 import keyword
+import itertools
+import linecache
 import traceback
 import threading
+import contextlib
 import collections
 
 from . import logs
@@ -18,11 +23,14 @@ except NameError:
 class Code(object):
     def __init__(self, locs=None, filename=None):
         self.locals = locs
-        self.filename = filename or '<telepythy>'
+        self.filename = filename or 'telepythy'
 
+        self._run_lock = threading.Lock()
         self._last_result = None
         self._result_count = 0
         self._result_limit = 30
+
+        self._block_counter = itertools.count()
 
         self.init()
         self.reset()
@@ -32,18 +40,33 @@ class Code(object):
         sys.displayhook = self.displayhook
 
     def evaluate(self, source):
-        fname = self.filename
+        block = next(self._block_counter)
+        fname = '<{}:{}>'.format(self.filename, block)
 
-        try:
-            mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
-            inter = ast.Interactive(mod.body)
-            codeob = compile(inter, fname, 'single')
+        # technique from: https://stackoverflow.com/questions/47183305/file-string-traceback-with-line-preview
+        # (size, mtime, lines, fullname)
+        linecache.cache[fname] = (
+            len(source), None, source.splitlines(True), fname)
 
-            exec(codeob, self.locals)
-        except Exception:
-            traceback.print_exc()
+        with self.running():
+            try:
+                mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
+                inter = ast.Interactive(mod.body)
+                codeob = compile(inter, fname, 'single')
 
-        self._store_result()
+                exec(codeob, self.locals)
+            except Exception:
+                traceback.print_exc()
+            except KeyboardInterrupt:
+                traceback.print_exc()
+
+            self._store_result()
+
+    def interrupt(self):
+        if self._run_lock.locked():
+            os.kill(os.getpid(), signal.SIGINT)
+        else:
+            log.debug('nothing to interrupt')
 
     def complete(self, prefix):
         matches = []
@@ -110,6 +133,17 @@ class Code(object):
 
     def displayhook(self, value):
         self._last_result = value
+
+    @contextlib.contextmanager
+    def running(self):
+        # ctx = self.locals['__context__']
+        with self._run_lock:
+            yield
+            # ctx.output_mode = 'remote'
+            # try:
+            #     yield
+            # finally:
+            #     ctx.output_mode = 'local'
 
     def reset(self):
         self.locals.clear()

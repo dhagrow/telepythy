@@ -2,7 +2,6 @@ import argparse
 
 from . import logs
 from . import utils
-from . import sockio
 from . import service
 
 log = logs.get(__name__)
@@ -28,34 +27,15 @@ def main():
 
     logs.init(args.verbose, args.quiet, mode='svc', log_exceptions=False)
 
+    svc = service.Service()
+
     # serve unless connect is set
     if args.connect is not False:
-        connect(utils.parse_address(args.connect or utils.DEFAULT_ADDR))
+        addr = utils.parse_address(args.connect or utils.DEFAULT_ADDR)
+        svc.connect(addr)
     else:
-        serve(utils.parse_address(args.serve or utils.DEFAULT_ADDR))
-
-def connect(address, locs=None, output_mode=None):
-    svc = service.Service(locs, output_mode)
-
-    def _connect(svc, address):
-        try:
-            svc.handle(sockio.connect(address))
-        except sockio.error as e:
-            log.error('connection failed: %s', e)
-
-    threads = []
-    t = utils.start_thread(_connect, svc, address)
-    threads.append(t)
-    t = utils.start_thread(_connect, svc, address)
-    threads.append(t)
-
-    for t in threads:
-        t.join()
-
-def serve(address, locs=None, output_mode=None):
-    t, _, _ = sockio.start_server(
-        address, service.Service(locs, output_mode).handle)
-    t.join()
+        addr = utils.parse_address(args.serve or utils.DEFAULT_ADDR)
+        svc.serve(addr)
 
 if __name__ == '__main__':
     try:

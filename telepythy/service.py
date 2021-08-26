@@ -1,89 +1,149 @@
 from __future__ import print_function
 
 import sys
-import socket
-import weakref
+import threading
 try:
     import queue
 except ImportError:
     import Queue as queue
 
 from . import logs
+from . import utils
 from . import sockio
 from . import introspect
-from .utils import start_thread
 
 OUTPUT_MODES = ('local', 'remote', 'mirror')
 
 log = logs.get(__name__)
 
+def serve(address, locs=None):
+    Service(locs).serve(address)
+
+def connect(address, locs=None):
+    Service(locs).connect(address)
+
 class Service(object):
-    def __init__(self, locs=None, filename=None, output_mode=None):
+    def __init__(self, locs=None, filename=None):
         self._locals = {}
         self._is_evaluating = False
-        self._event_queues = weakref.WeakSet()
+
+        self._stop = threading.Event()
+        self._events = queue.Queue()
+        self.code_queue = queue.Queue()
 
         self._code = introspect.Code(self._locals, filename)
-        self._ctx = Context(self, output_mode, locs or {})
+        self._ctx = Context(self, locs or {})
 
         self.reset()
 
-    def handle(self, sock):
-        try:
-            while True:
-                try:
-                    msg = sock.recvmsg()
-                except sockio.ReceiveInterrupted:
-                    break
-                if not msg:
-                    break
+    ## execution ##
 
-                cmd = msg['cmd']
-                data = msg.get('data', '')
-                data = data and ': ' + repr(data)
-                log.debug('cmd: %s%s', cmd, data)
+    def connect(self, address):
+        def _connect(svc, address):
+            try:
+                raise SystemExit()
+                svc.handle(sockio.connect(address))
+            except sockio.error as e:
+                log.error('connection failed: %s', e)
 
-                if cmd == 'evaluate':
-                    if self._is_evaluating:
-                        self.recv_input(msg['data'] + '\n')
-                    else:
-                        start_thread(self.evaluate, msg['data'])
-                elif cmd == 'complete':
-                    self.complete(msg['data'])
-                elif cmd == 'events':
-                    for event in self.events():
-                        sock.sendmsg(event)
-                else:
-                    log.error('unknown command: %s', cmd)
-        except socket.error as e:
-            log.warning('socket error: %s', e)
+        utils.start_thread(_connect, self, address)
 
-    def evaluate(self, source):
+        self.run()
+
+    def serve(self, address):
+        sockio.start_server(address, self.handle)
+        self.run()
+
+    def run(self):
+        q = self.code_queue
+
+        while True:
+            data = q.get()
+            self.evaluate(**data)
+
+    ## commands ##
+
+    def evaluate(self, source, notify=True):
         self._is_evaluating = True
         try:
             self._code.evaluate(source)
         finally:
             self._is_evaluating = False
-            self.add_event('done')
+            if notify:
+                self.add_event('done')
+
+    def interrupt(self):
+        self._code.interrupt()
 
     def complete(self, prefix):
         matches = self._code.complete(prefix)
         self.add_event('completion', matches=matches)
 
-    def recv_input(self, text):
-        sys.stdin.write(text)
-
     def events(self):
-        q = queue.Queue()
-        self._event_queues.add(q)
+        stop = self._stop
+        q = self._events
 
         self.add_event('start', version=sys.version)
 
-        while True:
+        while not stop.is_set():
             try:
                 yield q.get(timeout=1)
             except queue.Empty:
                 yield
+
+    ## handlers ##
+
+    def handle(self, sock):
+        self.add_event('start', version=sys.version)
+
+        t_evt = utils.start_thread(self.handle_events, sock)
+        t_cmd = utils.start_thread(self.handle_commands, sock)
+
+        t_evt.join()
+        t_cmd.join()
+
+    def handle_events(self, sock):
+        stop = self._stop
+        events = self._events
+
+        try:
+            while not stop.is_set():
+                try:
+                    event = events.get(timeout=1)
+                except queue.Empty:
+                    sock.sendmsg(None)
+                else:
+                    sock.sendmsg(event)
+        except sockio.error as e:
+            log.warning('handle_events error: %s', repr(e))
+
+    def handle_commands(self, sock):
+        stop = self._stop
+
+        try:
+            while not stop.is_set():
+                msg = sock.recvmsg()
+
+                cmd = msg['cmd']
+                data = msg.get('data')
+                log.debug('cmd: %s%s', cmd, ': ' + repr(data) if data else '')
+
+                if cmd == 'evaluate':
+                    if self._is_evaluating:
+                        self.recv_input(data + '\n')
+                    else:
+                        self.code_queue.put(data)
+                elif cmd == 'interrupt':
+                    self.interrupt()
+                elif cmd == 'complete':
+                    self.complete(data)
+                else:
+                    log.error('unknown command: %s', cmd)
+
+        except sockio.ReceiveInterrupted as e:
+            log.warning('handle_commands error: %s', repr(e))
+
+    ## utils ##
 
     def add_event(self, name, **data):
         if name == 'output':
@@ -92,16 +152,22 @@ class Service(object):
             log.debug('evt: %s%s', name, (data or '') and ': ' + repr(data))
 
         event = {'evt': name, 'data': data}
-        for q in self._event_queues:
-            q.put(event)
+        self._events.put(event)
+
+    def recv_input(self, text):
+        sys.stdin.write(text)
 
     def reset(self):
         self._code.reset()
         self._code.locals.update(self._ctx.env)
         self._result_count = 0
 
+    def stop(self):
+        self._stop.set()
+
 class Context(object):
-    def __init__(self, service, output_mode, loc):
+    """Exposes a limited API to the control terminal."""
+    def __init__(self, service, loc):
         self.env = {
             '__name__': '__remote__',
             '__context__': self,
@@ -111,7 +177,7 @@ class Context(object):
         self._service = service
 
         self._output_mode = None
-        self.output_mode = output_mode or 'remote'
+        self.output_mode = 'remote'
 
     @property
     def output_mode(self):
@@ -147,7 +213,7 @@ class Context(object):
 
     def reset(self):
         """Clears and resets the locals environment."""
-        self._service._reset()
+        self._service.reset()
 
     def __str__(self):
         return "{}(output_mode='{}', env={})".format(

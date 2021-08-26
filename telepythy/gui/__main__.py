@@ -1,13 +1,14 @@
-import faulthandler
-faulthandler.enable()
+if __debug__:
+    import faulthandler
+    faulthandler.enable()
 
+import sys
+import signal
 import argparse
 
-from qtpy import QtGui, QtWidgets
-import qdarkstyle
+from qtpy import QtCore, QtGui, QtWidgets
 
 from .. import logs
-from .. import utils
 from .. import control
 
 from . import config
@@ -16,20 +17,14 @@ from .window import Window
 def main():
     parser = argparse.ArgumentParser()
 
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('-s', '--serve', nargs='?', default=False,
-        help='<interface>:<port> to bind to. '
-             'set port to 0 for a random port (default: {})'.format(
-            utils.DEFAULT_ADDR))
-    group.add_argument('-c', '--connect', nargs='?', default=False,
-        help='<host>:<port> to connect to (default: {})'.format(
-            utils.DEFAULT_ADDR))
-    group.add_argument('-p', '--profile', nargs='?', default=False,
-        help='[default] Python executable or profile to load (default: default)'.format(
-            utils.DEFAULT_ADDR))
+    parser.add_argument('-p', '--profile', default='default',
+        help='profile or Python executable to load (default: %(default)s)')
+    parser.add_argument('-l', '--list-profiles', action='store_true',
+        help='list the configured profiles')
 
     parser.add_argument('--config', default=config.DEFAULT_PATH,
         help='path to the config file (default: %(default)s)')
+
     parser.add_argument('-q', '--quiet', action='store_true',
         help='disable all output')
     parser.add_argument('-v', '--verbose', action='count', default=0,
@@ -38,30 +33,40 @@ def main():
     args = parser.parse_args()
 
     logs.init(args.verbose, args.quiet, mode='ctl')
-
     cfg = config.init(args.config)
 
-    # this hacky section ensures that the option that is set passes either a
-    # value, or ''
-    # the other options will pass None
-    ctl = control.get_control(cfg,
-        (args.profile or '') if args.profile is not False else None,
-        (args.connect or '') if args.connect is not False else None,
-        (args.serve or '') if args.serve is not False else None,
-        args.verbose, args.quiet)
+    if args.list_profiles:
+        list_profiles(cfg)
+        return
+
+    mgr = control.Manager(cfg, args.verbose, args.quiet)
 
     app = QtWidgets.QApplication()
-    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='qtpy'))
     app.setWindowIcon(QtGui.QIcon('res/telepathy.svg'))
 
-    win = Window(cfg, ctl)
+    win = Window(cfg, mgr, args.profile)
     win.setWindowTitle('Telepythy')
     win.show()
 
-    try:
-        app.exec_()
-    except KeyboardInterrupt:
-        pass
+    # enable clean shutdown on ctrl+c
+    setup_int_handler(win)
+
+    sys.exit(app.exec_())
+
+def list_profiles(cfg):
+    for name, profile in sorted(cfg.profile.items()):
+        print(name, profile)
+
+def setup_int_handler(win):
+    signal.signal(signal.SIGINT, get_int_handler(win))
+    def timer():
+        QtCore.QTimer.singleShot(100, timer)
+    timer()
+
+def get_int_handler(win):
+    def handler(signum, frame):
+        win.close()
+    return handler
 
 if __name__ == '__main__':
     try:
