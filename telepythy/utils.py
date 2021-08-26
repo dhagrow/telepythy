@@ -22,7 +22,7 @@ def start_thread(func, *args, **kwargs):
         log.debug('thread started (%s): %s', ident, func.__name__)
         try:
             return func(*args, **kwargs)
-        except Exception:
+        except:
             log.exception('unexpected thread error')
         finally:
             log.debug('thread stopped (%s): %s', ident, func.__name__)
