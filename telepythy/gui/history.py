@@ -13,9 +13,10 @@ class History(object):
         self._index = min(max(0, value), len(self._history))
 
     def append(self, value):
+        hist = self._history
         value = value.strip()
-        if value:
-            self._history.append(value)
+        if value and value != (hist and hist[-1]):
+            hist.append(value)
         self.reset()
 
     def first(self):

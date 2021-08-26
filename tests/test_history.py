@@ -1,6 +1,6 @@
 import pytest
 
-from telepythy import history
+from telepythy.gui import history
 
 @pytest.fixture
 def hist():
@@ -63,3 +63,11 @@ def test_next_search(hist):
     assert hist.next('e') == 'epsilon'
     assert hist.next('e') is None
     assert hist.next() is None
+
+def test_no_duplicates(hist):
+    hist.append('epsilon')
+    hist.append('epsilon')
+    hist.append('zeta')
+    assert hist.previous() == 'zeta'
+    assert hist.previous() == 'epsilon'
+    assert hist.previous() == 'delta'
