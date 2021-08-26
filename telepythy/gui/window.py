@@ -43,6 +43,12 @@ class Window(QtWidgets.QMainWindow):
     def config(self, config):
         self._config = config
 
+        # style
+        sec = config.style
+        self.style_chooser.set_app_style(sec.app)
+        self.style_chooser.set_output_style(sec.output)
+        self.style_chooser.set_source_style(sec.source)
+
         # menus
         view_menu = config.window.view.menu
         self.menuBar().setVisible(view_menu)
