@@ -16,10 +16,9 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 ## Screenshots
 
 **Linux/I3**<br>
-<img src="res/screenshot_0.png" width="500"/><br>
+![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_0.png)
 **Windows**
-<br>
-<img src="res/screenshot_1.png" width="500" align="top"/>
+![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_1.png)
 
 ## Motivation
 
