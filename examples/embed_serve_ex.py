@@ -8,7 +8,7 @@ from telepythy import logs
 logs.init(2)
 
 def handler(signum, frame):
-    serve(('0.0.0.0', 7357), locals())
+    serve(('localhost', 7357), locals())
 
 signal.signal(signal.SIGUSR1, handler)
 

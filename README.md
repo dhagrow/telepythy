@@ -35,6 +35,12 @@ NOTE: This will pull in [PySide2][4], which weighs in at >100mb. I expect the ev
 
 *work in progress*
 
+## Security
+
+To be explicit, there are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the transit of source code will remain the responsibility of the user.
+
+For connections across machines, I recommend using [SSH port forwarding][6].
+
 ## Roadmap
 
 **Telepythy** is very much a work in progress. Here are some features that are planned for future releases (in no particular order):
@@ -61,3 +67,4 @@ If you have additional feature suggestions, please don't hesistate to create an 
 [3]: https://jupyter.org/
 [4]: https://wiki.qt.io/Qt_for_Python
 [5]: https://github.com/dhagrow/telepythy/issues/new
+[6]: https://help.ubuntu.com/community/SSH/OpenSSH/PortForwarding
