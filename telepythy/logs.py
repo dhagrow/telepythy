@@ -17,7 +17,7 @@ LOG_COLORS = {
 get = getLogger
 log = get(__name__)
 
-def init(debug_level=0, quiet=False, mode=None, log_exceptions=True):
+def init(verbose=0, quiet=False, mode=None, log_exceptions=True):
     """Initializes simple logging defaults."""
     if quiet:
         disable(CRITICAL)
@@ -37,9 +37,9 @@ def init(debug_level=0, quiet=False, mode=None, log_exceptions=True):
     handler.addFilter(ModeFilter(mode))
 
     root_log.addHandler(handler)
-    if   debug_level == 0: level = WARNING
-    elif debug_level == 1: level = INFO
-    else:                  level = DEBUG
+    if   verbose == 0: level = WARNING
+    elif verbose == 1: level = INFO
+    else:              level = DEBUG
     root_log.setLevel(level)
 
     if log_exceptions:
