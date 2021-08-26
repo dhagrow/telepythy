@@ -29,7 +29,54 @@ At the moment there is no installer available for **Telepythy**. The easiest opt
 $ pip install telepythy
 ```
 
-NOTE: This will pull in [PySide2][4], which weighs in at >100mb. I expect the eventual installer to be <20mb.
+**NOTE**: This will pull in [PySide2][4], which weighs in at >100mb. I expect the eventual installer to be <20mb.
+
+## Usage
+
+Once **Telepythy** and its dependencies have been installed, you can start the UI with:
+
+```shell
+$ python -m telepythy.gui
+```
+
+**NOTE**: There are simplified entry points in the `<telepythy>/scripts` directory.
+
+**NOTE**: At this early state, it may be helpful to use the `--verbose` (`-v` or `-vv`) flag to track what **Telepythy** is doing (especially if reporting a bug).
+
+### Remote Service
+
+To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port. Currently that must be done by editing the config file (located according the the results of `appdirs.user_config_dir()`, e.g. `~/.config/telepythy.cfg` on Linux).
+
+To add a connect profile:
+
+```ini
+[profile.<profile_name>]
+connect = '<host>:<port>'
+```
+
+To add a serve profile:
+
+```ini
+[profile.<profile_name>]
+serve = '<interface>:<port>'
+```
+
+You can then use the profile by selecting it in the UI, or with the `--profile` command-line option:
+
+```shell
+$ python -m telepythy.gui [-p,--profile] <profile_name>
+```
+
+The remote service can be started using one of the following commands (opposing the profile option used by the UI):
+
+```shell
+$ python -m telepythy --connect '<host>:<port>'
+$ python -m telepythy --serve '<interface>:<port>'
+```
+
+### Embedding
+
+See the `<telepythy>/examples` directory for examples on how to embed the service into existing code.
 
 ## Documentation
 
@@ -37,7 +84,7 @@ NOTE: This will pull in [PySide2][4], which weighs in at >100mb. I expect the ev
 
 ## Security
 
-To be explicit, there are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the transit of source code will remain the responsibility of the user.
+To be explicit, there are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the source code in transit will remain the responsibility of the user.
 
 For connections across machines, I recommend using [SSH port forwarding][6].
 
