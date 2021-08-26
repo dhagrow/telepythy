@@ -41,7 +41,6 @@ class Service(object):
     def connect(self, address):
         def _connect(svc, address):
             try:
-                raise SystemExit()
                 svc.handle(sockio.connect(address))
             except sockio.error as e:
                 log.error('connection failed: %s', e)
