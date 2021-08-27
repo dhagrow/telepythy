@@ -1,9 +1,9 @@
 appdirs==1.4.4
 attrdict==2.0.1
 Pygments==2.10.0
-PySide2==5.14.1
+PySide2==5.15.2
 QDarkStyle==3.0.2
 QtPy==1.10.0
-shiboken2==5.14.1
+shiboken2==5.15.2
 six==1.16.0
 toml==0.10.2
