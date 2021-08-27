@@ -2,19 +2,18 @@ from gevent import monkey
 monkey.patch_all()
 
 import time
-print('time.sleep from:', time.sleep.__module__)
 import random
 import signal
 
 import gevent
 
-from telepythy.server import serve
+from telepythy import serve
 from telepythy import logs
 
 logs.init(2)
 
 def handler(signum, frame):
-    gevent.spawn(serve, ('0.0.0.0', 5556), globals())
+    gevent.spawn(serve, ('0.0.0.0', 7357), globals())
 
 signal.signal(signal.SIGUSR1, handler)
 
