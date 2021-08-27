@@ -7,7 +7,7 @@ with open(readme_path) as f:
 
 setup(
     name='telepythy',
-    version='0.1.0',
+    version='0.1.0-2',
     url='https://github.com/dhagrow/telepythy',
     author='Miguel Turner',
     author_email='cymrow@gmail.com',

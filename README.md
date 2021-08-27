@@ -53,9 +53,24 @@ $ python -m telepythy.gui
 
 **NOTE**: At this early state, it may be helpful to use the `--verbose` (`-v` or `-vv`) flag to track what **Telepythy** is doing (especially if reporting a bug).
 
+### Configuration
+
+Manually editing the configuration file is currently the only way to persist settings. It is saved according the the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux).
+
+### Interpreters
+
+To use **Telepythy** with a different local Python interpreter, you must create a profile referencing the path of the interpreter in the config file.
+
+To add a different interpreter:
+
+```ini
+[profile.<profile_name>]
+command = <path-to-interpreter>
+```
+
 ### Remote Service
 
-To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port. Currently that must be done by editing the config file (located according the the results of `appdirs.user_config_dir()`, e.g. `~/.config/telepythy.cfg` on Linux).
+To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port, in the config file.
 
 To add a connect profile:
 
