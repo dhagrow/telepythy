@@ -1,5 +1,5 @@
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
 readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
 with open(readme_path) as f:
@@ -13,10 +13,11 @@ setup(
     author_email='cymrow@gmail.com',
     long_description=readme,
     long_description_content_type='text/markdown',
-    packages=find_packages(exclude=['test']),
+    packages=['telepythy', 'telepythy.gui'],
     entry_points={
         'console_scripts': [
-            'telepythy=telepythy.gui.__main__:main'
+            'telepythy=telepythy.gui.__main__:main',
+            'telepythy-service=telepythy.__main__:main'
             ]
         },
     install_requires=[

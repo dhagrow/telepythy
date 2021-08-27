@@ -8,10 +8,13 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 * UI based on Qt 5
 * Syntax highlighting (based on Pygments)
 * Embeddable service with no third-party dependencies
-* Connections to remote Python interpreters (as client or server)
-* Swap between multiple interpreter profiles (local or remote)
-* UI requires Python 3 on Linux/Windows/OSX (tested: 3.6/3.9 on Linux/Windows)
-* Embeddable service supports Python 2 and 3 on all platforms (tested: 2.7/3.6/3.9 on Linux/Windows)
+* Connection to service remotely (as client or server via TCP)
+* Seamlessly swap between multiple interpreter profiles
+
+## Requirements
+
+* UI requires Python 3 on Linux/Windows/OSX (tested: 3.6/3.7/3.9 on Linux/Windows)
+* Embeddable service supports Python 2 and 3 on all platforms (tested: 2.7/3.6/3.7/3.9 on Linux/Windows)
 
 ## Screenshots
 
@@ -22,9 +25,9 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 ## Motivation
 
-As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers. However, I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) an unfamiliar and complex code-base was too daunting for me.
+[Jupyter][3] exists and is very powerful. But I have always found the interface and workflow awkward. I don't really want a shareable code notebook. I want a prototyping and debugging tool.
 
-Of course, [Jupyter][3] exists and is very powerful. But I have always found the workflow awkward. I don't really want a shareable code notebook. I want a prototyping and debugging tool.
+As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, though I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) and refactor an unfamiliar and complex code-base was too daunting for me.
 
 So, I decided to start from scratch, and **Telepythy** is the result.
 
@@ -43,10 +46,10 @@ $ pip install telepythy
 Once **Telepythy** and its dependencies have been installed, you can start the UI with:
 
 ```shell
+$ telepythy
+# or
 $ python -m telepythy.gui
 ```
-
-**NOTE**: There are simplified entry points in the `<telepythy>/scripts` directory.
 
 **NOTE**: At this early state, it may be helpful to use the `--verbose` (`-v` or `-vv`) flag to track what **Telepythy** is doing (especially if reporting a bug).
 
@@ -71,19 +74,21 @@ serve = '<interface>:<port>'
 You can then use the profile by selecting it in the UI, or with the `--profile` command-line option:
 
 ```shell
-$ python -m telepythy.gui [-p,--profile] <profile_name>
+$ telepythy [-p,--profile] <profile_name>
 ```
 
 The remote service can be started using one of the following commands (opposing the profile option used by the UI):
 
 ```shell
-$ python -m telepythy --connect '<host>:<port>'
-$ python -m telepythy --serve '<interface>:<port>'
+$ telepythy-service --connect '<host>:<port>'
+$ telepythy-service --serve '<interface>:<port>'
+# or
+$ python -m telepythy ...
 ```
 
 ### Embedding
 
-See the `<telepythy>/examples` directory for examples on how to embed the service into existing code.
+See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
 
 ## Documentation
 

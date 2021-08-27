@@ -6,6 +6,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from .. import logs
+from .. import utils
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
@@ -171,13 +172,13 @@ class Window(QtWidgets.QMainWindow):
     def setup_statusbar(self):
         bar = self.statusBar()
 
-        icon = QtGui.QIcon('res/connected.png')
+        icon = QtGui.QIcon(':connected')
         self._status_pixmap_connected = icon.pixmap(16)
-        icon = QtGui.QIcon('res/disconnected.png')
+        icon = QtGui.QIcon(':disconnected')
         self._status_pixmap_disconnected = icon.pixmap(16)
 
         self.menu_button = QtWidgets.QPushButton()
-        self.menu_button.setIcon(QtGui.QIcon('res/menu.svg'))
+        self.menu_button.setIcon(QtGui.QIcon(':menu'))
         self.menu_button.setMenu(self.status_menu)
         self.menu_button.setStyleSheet('::menu-indicator{ image: none; }')
         self.menu_button.setFlat(True)

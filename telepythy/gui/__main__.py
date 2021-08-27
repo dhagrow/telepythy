@@ -14,6 +14,8 @@ from .. import control
 from . import config
 from .window import Window
 
+from .  import resources
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -42,7 +44,7 @@ def main():
     mgr = control.Manager(cfg, args.verbose, args.quiet)
 
     app = QtWidgets.QApplication()
-    app.setWindowIcon(QtGui.QIcon('res/telepathy.svg'))
+    # app.setWindowIcon(QtGui.QIcon(':telepathy'))
 
     win = Window(cfg, mgr, args.profile)
     win.setWindowTitle('Telepythy')
