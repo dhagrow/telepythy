@@ -6,15 +6,17 @@ import sys
 import signal
 import argparse
 
-from qtpy import QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtWidgets
 
-from .. import logs
-from .. import control
+# absolute imports to support PyInstaller
+# https://github.com/pyinstaller/pyinstaller/issues/2560
+from telepythy import logs
+from telepythy import control
 
-from . import config
-from .window import Window
+from telepythy.gui import config
+from telepythy.gui.window import Window
 
-from .  import resources
+from telepythy.gui  import resources
 
 def main():
     parser = argparse.ArgumentParser()
