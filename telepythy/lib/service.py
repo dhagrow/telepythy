@@ -129,7 +129,7 @@ class Service(object):
 
                 if cmd == 'evaluate':
                     if self._is_evaluating:
-                        self.recv_input(data + '\n')
+                        self.recv_input(data['source'] + '\n')
                     else:
                         self.code_queue.put(data)
                 elif cmd == 'interrupt':

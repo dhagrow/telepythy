@@ -10,8 +10,8 @@ from qtpy import QtCore, QtWidgets
 
 # absolute imports to support PyInstaller
 # https://github.com/pyinstaller/pyinstaller/issues/2560
-from telepythy import logs
-from telepythy import control
+from telepythy.lib import logs
+from telepythy.lib import control
 
 from telepythy.gui import config
 from telepythy.gui.window import Window

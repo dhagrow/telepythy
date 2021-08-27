@@ -2,6 +2,8 @@ import toml
 import appdirs
 from attrdict import AttrDict
 
+from ..lib import utils
+
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
 DEFAULT_INTERPRETER = 'python'
 
@@ -9,7 +11,11 @@ def init(path=None):
     path = path or DEFAULT_PATH
 
     defaults = AttrDict({
-        'profile': {'default': {'command': DEFAULT_INTERPRETER}},
+        'profile': {
+            'default': {'command': DEFAULT_INTERPRETER},
+            'connect': {'connect': utils.DEFAULT_ADDR},
+            'serve': {'serve': utils.DEFAULT_ADDR},
+            },
         'startup': {'source': ''},
         'style': {
             'app': 'qdarkstyle',

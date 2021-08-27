@@ -8,7 +8,7 @@ from . import logs
 from . import utils
 from . import sockio
 
-MODULE = 'telepythy'
+MODULE = 'telepythy.lib'
 TIMEOUT = 5
 
 log = logs.get(__name__)

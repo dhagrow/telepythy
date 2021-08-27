@@ -5,8 +5,8 @@ from qtpy import QtCore, QtGui, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
-from .. import logs
-from .. import utils
+from ..lib import logs
+from ..lib import utils
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
