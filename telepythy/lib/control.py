@@ -263,8 +263,10 @@ class ServiceProxy(object):
                 name = event['evt']
                 if name == 'done':
                     log.debug('evt: done')
-                elif name == 'output':
+                elif name == 'stdout':
                     log.debug('out: %r', event['data']['text'][:100])
+                elif name == 'stderr':
+                    log.debug('err: %r', event['data']['text'][:100])
                 else:
                     data = event.get('data', '')
                     data = data and ': ' + repr(data)[:100]

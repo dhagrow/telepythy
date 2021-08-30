@@ -6,7 +6,6 @@ from qtpy import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from ..lib import logs
-from ..lib import utils
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
@@ -18,7 +17,8 @@ log = logs.get(__name__)
 class Window(QtWidgets.QMainWindow):
     output_started = QtCore.Signal(str)
     output_stopped = QtCore.Signal()
-    output_received = QtCore.Signal(str)
+    stdout_received = QtCore.Signal(str)
+    stderr_received = QtCore.Signal(str)
     completion_received = QtCore.Signal(list)
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
@@ -217,7 +217,8 @@ class Window(QtWidgets.QMainWindow):
 
         self.output_started.connect(self.start_session)
         self.output_stopped.connect(self.output_edit.append_prompt)
-        self.output_received.connect(self.output_edit.append)
+        self.stdout_received.connect(self.output_edit.append)
+        self.stderr_received.connect(self.output_edit.append)
 
         self.completion_received.connect(self.source_edit.show_completer)
 
@@ -254,10 +255,15 @@ class Window(QtWidgets.QMainWindow):
         ctl.register('start', start)
         ctl.register('done', lambda _: self.output_stopped.emit())
 
-        def output(event):
+        def stdout(event):
             text = event['data']['text']
-            self.output_received.emit(text)
-        ctl.register('output', output)
+            self.stdout_received.emit(text)
+        ctl.register('stdout', stdout)
+
+        def stderr(event):
+            text = event['data']['text']
+            self.stderr_received.emit(text)
+        ctl.register('stderr', stderr)
 
         def completion(event):
             matches = event['data']['matches']

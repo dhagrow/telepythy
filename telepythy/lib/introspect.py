@@ -8,7 +8,6 @@ import itertools
 import linecache
 import traceback
 import threading
-import contextlib
 import collections
 
 from . import logs
@@ -21,23 +20,29 @@ except NameError:
     pass
 
 class Code(object):
-    def __init__(self, locs=None, filename=None):
+    def __init__(self, locs=None, filename=None,
+            stdout_callback=None, stderr_callback=None):
         self.locals = locs
         self.filename = filename or 'telepythy'
 
         self._run_lock = threading.Lock()
-        self._last_result = None
         self._result_count = 0
         self._result_limit = 30
 
         self._block_counter = itertools.count()
 
-        self.init()
+        self._last_result = None
+        self._stdout_callback = stdout_callback
+        self._stderr_callback = stderr_callback
+
         self.reset()
 
-    def init(self):
-        sys.stdin = InputIO()
-        sys.displayhook = self.displayhook
+    def reset(self):
+        self.locals.clear()
+        exec('', self.locals)
+        self._result_count = 0
+
+    ## commands ##
 
     def evaluate(self, source):
         block = next(self._block_counter)
@@ -48,7 +53,7 @@ class Code(object):
         linecache.cache[fname] = (
             len(source), None, source.splitlines(True), fname)
 
-        with self.running():
+        with self._run_lock:
             try:
                 mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
                 inter = ast.Interactive(mod.body)
@@ -110,6 +115,28 @@ class Code(object):
 
         return sorted(matches, key=match_sort_key)
 
+    ## io control ##
+
+    def hook(self):
+        sys.stdin = InputIO()
+        sys.stdout = OutputIO(self._stdout_callback)
+        sys.stderr = OutputIO(self._stderr_callback)
+
+        sys.displayhook = self.displayhook
+
+    def unhook(self):
+        sys.stdin = sys.__stdin__
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+
+        sys.displayhook = sys.__displayhook__
+
+    def recv_input(self, text):
+        sys.stdin.write(text)
+
+    def displayhook(self, value):
+        self._last_result = value
+
     def _store_result(self):
         if self._last_result is None:
             return
@@ -127,28 +154,6 @@ class Code(object):
         # remove old results
         for i in range(max(0, self._result_count-self._result_limit)):
             self.locals.pop('_{}'.format(i), None)
-
-    def recv_input(self, text):
-        sys.stdin.write(text)
-
-    def displayhook(self, value):
-        self._last_result = value
-
-    @contextlib.contextmanager
-    def running(self):
-        # ctx = self.locals['__context__']
-        with self._run_lock:
-            yield
-            # ctx.output_mode = 'remote'
-            # try:
-            #     yield
-            # finally:
-            #     ctx.output_mode = 'local'
-
-    def reset(self):
-        self.locals.clear()
-        exec('', self.locals)
-        self._result_count = 0
 
 class InputIO:
     def __init__(self):
@@ -180,8 +185,8 @@ class InputIO:
         self._ready.set()
 
 class OutputIO(object):
-    def __init__(self, service, mirror=None):
-        self._service = service
+    def __init__(self, callback, mirror=None):
+        self._callback = callback
         self._mirror = mirror
 
     def write(self, s):
@@ -189,7 +194,7 @@ class OutputIO(object):
             self._mirror.write(s)
         if isinstance(s, bytes):
             s = s.decode('utf8')
-        self._service.add_event('output', text=s)
+        self._callback(s)
 
     def flush(self):
         if self._mirror is not None:
