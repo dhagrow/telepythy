@@ -3,14 +3,11 @@ import collections
 from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
-from pygments.lexers import PythonConsoleLexer
-
 from ..lib import logs
 
 from .source_edit import SourceEdit
 from .output_edit import OutputEdit
 from .style_widget import StyleWidget
-from .highlighter import PygmentsHighlighter
 
 log = logs.get(__name__)
 
@@ -44,11 +41,16 @@ class Window(QtWidgets.QMainWindow):
     def config(self, config, profile):
         self._config = config
 
+        # font
+        family = config.style.font_family
+        size = config.style.font_size
+        self.output_edit.setFont(QtGui.QFont(family, size))
+        self.source_edit.setFont(QtGui.QFont(family, size))
+
         # style
         sec = config.style
         self.style_chooser.set_app_style(sec.app)
-        self.style_chooser.set_output_style(sec.output)
-        self.style_chooser.set_source_style(sec.source)
+        self.style_chooser.set_highlight_style(sec.highlight)
 
         # menus
         view_menu = config.window.view.menu
@@ -106,31 +108,13 @@ class Window(QtWidgets.QMainWindow):
 
     def setup_output_edit(self):
         self.output_edit = OutputEdit()
-        self.output_edit.setFont(QtGui.QFont('Fira Mono', 13))
         self.output_edit.setReadOnly(True)
         self.output_edit.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-
-        self.output_highlighter = PygmentsHighlighter(
-            self.output_edit.document(), PythonConsoleLexer())
-
-        palette = self.output_edit.palette()
-        palette.setColor(QtGui.QPalette.Base, '#333')
-        palette.setColor(QtGui.QPalette.Text, Qt.white)
-        self.output_edit.setPalette(palette)
 
         self.setCentralWidget(self.output_edit)
 
     def setup_source_edit(self):
         self.source_edit = SourceEdit()
-        self.source_edit.setFont(QtGui.QFont('Fira Mono', 13))
-
-        self.source_highlighter = PygmentsHighlighter(
-            self.source_edit.document())
-
-        palette = self.source_edit.palette()
-        palette.setColor(QtGui.QPalette.Base, '#333')
-        palette.setColor(QtGui.QPalette.Text, Qt.white)
-        self.source_edit.setPalette(palette)
 
         self.source_dock = QtWidgets.QDockWidget('source')
         self.source_dock.setWidget(self.source_edit)
@@ -225,10 +209,10 @@ class Window(QtWidgets.QMainWindow):
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
-        self.style_chooser.output_style_changed.connect(
-            self.output_highlighter.set_style)
-        self.style_chooser.source_style_changed.connect(
-            self.source_highlighter.set_style)
+        self.style_chooser.highlight_style_changed.connect(
+            self.output_edit.set_style)
+        self.style_chooser.highlight_style_changed.connect(
+            self.source_edit.set_style)
 
     ## events ##
 

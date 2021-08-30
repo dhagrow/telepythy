@@ -5,6 +5,7 @@ from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
 from . import document
+from .highlighter import PygmentsHighlighter
 from .history import History
 
 COMPLETER_KEYS = frozenset([
@@ -39,8 +40,8 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
     evaluation_requested = QtCore.Signal(str)
     completion_requested = QtCore.Signal(str)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
         self._history = History()
         self._current = None
@@ -50,6 +51,8 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         doc = document.TextDocument(self)
         self.setDocument(doc)
 
+        self.highlighter = PygmentsHighlighter(doc)
+
         self.completer_model = QtGui.QStandardItemModel()
         self.completer = QtWidgets.QCompleter(self.completer_model, self)
         self.completer.setWidget(self)
@@ -57,6 +60,17 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         self.completer.activated[str].connect(self.complete)
 
         self.textChanged.connect(self.refresh_completer)
+
+    def set_style(self, style):
+        self.highlighter.set_style(style)
+        self.set_palette()
+
+    def set_palette(self):
+        highlight = self.highlighter
+        palette = self.palette()
+        palette.setColor(QtGui.QPalette.Base, highlight.background_color())
+        palette.setColor(QtGui.QPalette.Text, highlight.text_color())
+        self.setPalette(palette)
 
     def show_completer(self, matches):
         if not matches:

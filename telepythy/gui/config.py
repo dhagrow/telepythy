@@ -19,8 +19,9 @@ def init(path=None):
         'startup': {'source': ''},
         'style': {
             'app': 'qdarkstyle',
-            'output': 'gruvbox-dark',
-            'source': 'gruvbox-dark',
+            'highlight': 'gruvbox-dark',
+            'font_family': 'fira mono',
+            'font_size': 12,
             },
         'window': {
             'size': [800, 800],

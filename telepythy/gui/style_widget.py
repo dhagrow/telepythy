@@ -5,8 +5,7 @@ from pygments import styles
 
 class StyleWidget(QtWidgets.QWidget):
     app_style_changed = QtCore.Signal(str)
-    output_style_changed = QtCore.Signal(str)
-    source_style_changed = QtCore.Signal(str)
+    highlight_style_changed = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -23,11 +22,8 @@ class StyleWidget(QtWidgets.QWidget):
         self.app_combo.setItemDelegate(delegate)
         self.layout.addRow('Application style', self.app_combo)
 
-        self.output_combo = QtWidgets.QComboBox()
-        self.layout.addRow('Output highlight style', self.output_combo)
-
-        self.source_combo = QtWidgets.QComboBox()
-        self.layout.addRow('Source highlight style', self.source_combo)
+        self.highlight_combo = QtWidgets.QComboBox()
+        self.layout.addRow('Syntax highlight style', self.highlight_combo)
 
         # add styles
         self.app_combo.addItem('qdarkstyle')
@@ -35,15 +31,13 @@ class StyleWidget(QtWidgets.QWidget):
             self.app_combo.addItem(style.lower())
 
         for style in sorted(styles.get_all_styles()):
-            self.output_combo.addItem(style)
-            self.source_combo.addItem(style)
+            self.highlight_combo.addItem(style)
 
         self.setup_actions()
 
     def setup_actions(self):
         self.app_combo.currentTextChanged.connect(self.set_app_style)
-        self.output_combo.currentTextChanged.connect(self.output_style_changed)
-        self.source_combo.currentTextChanged.connect(self.source_style_changed)
+        self.highlight_combo.currentTextChanged.connect(self.highlight_style_changed)
 
     def set_app_style(self, style):
         app = QtWidgets.QApplication.instance()
@@ -55,8 +49,5 @@ class StyleWidget(QtWidgets.QWidget):
 
         self.app_combo.setCurrentText(style)
 
-    def set_output_style(self, style):
-        self.output_combo.setCurrentText(style)
-
-    def set_source_style(self, style):
-        self.source_combo.setCurrentText(style)
+    def set_highlight_style(self, style):
+        self.highlight_combo.setCurrentText(style)

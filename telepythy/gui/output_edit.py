@@ -1,9 +1,31 @@
-from qtpy import QtWidgets
+from qtpy.QtCore import Qt
+from qtpy import QtGui, QtWidgets
+
+from pygments.lexers import PythonConsoleLexer
+
+from .highlighter import PygmentsHighlighter
 
 PS1 = '>>> '
 PS2 = '... '
 
 class OutputEdit(QtWidgets.QPlainTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.highlighter = PygmentsHighlighter(
+            self.document(), PythonConsoleLexer())
+
+    def set_style(self, style):
+        self.highlighter.set_style(style)
+        self.set_palette()
+
+    def set_palette(self):
+        highlight = self.highlighter
+        palette = self.palette()
+        palette.setColor(QtGui.QPalette.Base, highlight.background_color())
+        palette.setColor(QtGui.QPalette.Text, highlight.text_color())
+        self.setPalette(palette)
+
     def append(self, text):
         cur = self.textCursor()
         cur.movePosition(cur.End)
@@ -15,8 +37,9 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         cur.movePosition(cur.End)
         if self.blockCount() > 1:
             cur.insertText('\n')
-        tpl = '<div style="background: darkred;">{}</p><p></p>'
-        cur.insertHtml(tpl.format(version))
+        tpl = '<div style="background: {};">{}</p><p></p>'
+        cur.insertHtml(tpl.format('darkred', version))
+        # cur.insertHtml(tpl.format(self.highlighter.highlight_color(), version))
         self.append_prompt()
 
     def append_prompt(self, prompt=PS1):
