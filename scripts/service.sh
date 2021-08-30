@@ -1,3 +1,3 @@
 PYTHONPATH=$(dirname "$0")
 clear
-python -m telepythy "$@"
+python -m telepythy.lib "$@"
