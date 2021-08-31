@@ -77,12 +77,17 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
             return
 
         completer = self.completer
-        model = self.completer_model
+        completer.setCompletionPrefix('')
 
+        model = self.completer_model
         model.clear()
+
         for match in matches:
             item = QtGui.QStandardItem(match)
             model.appendRow(item)
+
+        # refresh first to ensure correct completion count
+        self.refresh_completer(force=True)
 
         if completer.completionCount() == 1:
             self.complete(completer.currentCompletion())
@@ -96,19 +101,26 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
 
         completer.complete(rect)
 
-    def refresh_completer(self):
-        # if not self.completer.popup().isVisible():
-        #     return
-        ident = self.completion_context().split('.')[-1]
-        self.completer.setCompletionPrefix(ident)
+    def refresh_completer(self, force=False):
+        if not (force or self.completer.popup().isVisible()):
+            return
 
-        # popup = self.completer.popup()
-        # item = self.completer_model.item(0)
-        # if item:
-        #     popup.setCurrentIndex(item.index())
+        completer = self.completer
+        popup = completer.popup()
+
+        ident = self.completion_context().split('.')[-1]
+        if not ident.strip():
+            popup.hide()
+
+        self.completer.setCompletionPrefix(ident)
+        if completer.completionCount() == 0:
+            popup.hide()
+
+        item = self.completer_model.item(0)
+        if item:
+            popup.setCurrentIndex(item.index())
 
     def complete(self, match):
-        print(match)
         ident = self.completion_context().split('.')[-1]
         text = match[len(ident):]
 
