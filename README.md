@@ -4,12 +4,12 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 ## Features
 
-* Divided editor for code
-* UI based on Qt 5
-* Syntax highlighting (based on Pygments)
+* Combines the flow of a REPL with the expressiveness of an editor
+* Syntax highlighting based on [Pygments][7]
+* UI based on [Qt 5][8]
 * Embeddable service with no third-party dependencies
-* Connection to service remotely (as client or server via TCP)
-* Seamlessly swap between multiple interpreter profiles
+* Remote connections (as client or server via TCP)
+* Seamless swapping between multiple interpreter profiles
 
 ## Requirements
 
@@ -18,10 +18,10 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 ## Screenshots
 
+**Windows**
+![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_2.png)
 **Linux/I3**<br>
 ![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_0.png)
-**Windows**
-![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_1.png)
 
 ## Motivation
 
@@ -142,3 +142,5 @@ If you have additional feature suggestions, please don't hesistate to create an 
 [4]: https://wiki.qt.io/Qt_for_Python
 [5]: https://github.com/dhagrow/telepythy/issues/new
 [6]: https://help.ubuntu.com/community/SSH/OpenSSH/PortForwarding
+[7]: https://pygments.org
+[8]: https://www.qt.io
