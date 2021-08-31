@@ -142,7 +142,7 @@ class Service(object):
                 else:
                     log.error('unknown command: %s', cmd)
 
-        except sockio.ReceiveInterrupted as e:
+        except (sockio.ReceiveInterrupted, ConnectionResetError) as e:
             log.warning('handle_commands error: %s', repr(e))
 
     ## utils ##
