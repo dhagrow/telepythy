@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
   <qresource>
+    <file alias="icon">snake.ico</file>
     <file alias="menu">menu.svg</file>
     <file alias="connected">connected.png</file>
     <file alias="disconnected">disconnected.png</file>

@@ -6,7 +6,7 @@ import sys
 import signal
 import argparse
 
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 # absolute imports to support PyInstaller
 # https://github.com/pyinstaller/pyinstaller/issues/2560
@@ -16,7 +16,8 @@ from telepythy.lib import control
 from telepythy.gui import config
 from telepythy.gui.window import Window
 
-from telepythy.gui  import resources
+from telepythy.gui import resources
+from telepythy.gui import utils
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,7 +47,8 @@ def main():
     mgr = control.Manager(cfg, args.verbose, args.quiet)
 
     app = QtWidgets.QApplication()
-    # app.setWindowIcon(QtGui.QIcon(':telepathy'))
+    app.setWindowIcon(QtGui.QIcon(':icon'))
+    utils.set_app_id()
 
     win = Window(cfg, mgr, args.profile)
     win.setWindowTitle('Telepythy')
