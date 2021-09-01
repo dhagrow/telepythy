@@ -13,14 +13,10 @@ COMPLETER_KEYS = frozenset([
 
 _rx_indent = re.compile(r'^(\s*)')
 
-# match dotted identifiers
-_rx_dotted_ident = re.compile(r'.*[^\w.](.*)')
-
+_rx_context = re.compile(r'[_A-Za-z0-9.()"\'\[\]]+$')
 def get_completion_context(line):
-    # the '!' is a hack because I can't figure out how to match when there is
-    # no non-word/dot char
-    match = _rx_dotted_ident.match('!' + line)
-    return match and match.group(1)
+    match = _rx_context.search(line)
+    return (match and match.group()) or ''
 
 # required to let ctrl+c through (when no text is selected)
 class EventFilter(QtCore.QObject):

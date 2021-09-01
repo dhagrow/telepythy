@@ -75,6 +75,34 @@ class Code(object):
 
     def complete(self, prefix):
         matches = []
+        log.error('prefix: %s', prefix)
+
+        if '.' not in prefix:
+            # return global matches
+            for kw in keyword.kwlist:
+                matches.append(kw)
+
+            for name in self.locals.keys():
+                matches.append(name)
+
+            for name in self.locals['__builtins__'].keys():
+                matches.append(name)
+        else:
+            ctx = prefix.rsplit('.', 1)[0]
+            try:
+                obj = eval(ctx, self.locals)
+            except Exception:
+                log.error('ctx failed to resolve: %r', ctx)
+            else:
+                log.error('obj: %s', obj)
+
+                for name in dir(obj):
+                    matches.append(name)
+
+        return matches
+
+    def complete_x(self, prefix):
+        matches = []
 
         if '.' not in prefix:
             prefix_0 = prefix and prefix[0]
