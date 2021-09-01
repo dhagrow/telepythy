@@ -5,7 +5,8 @@ from attrdict import AttrDict
 from ..lib import utils
 
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
-DEFAULT_INTERPRETER = 'python'
+# when blank sys.executable will be used
+DEFAULT_INTERPRETER = ''
 
 def init(path=None):
     path = path or DEFAULT_PATH

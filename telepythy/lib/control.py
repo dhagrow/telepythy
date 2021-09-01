@@ -1,3 +1,4 @@
+import sys
 import time
 import shlex
 import threading
@@ -189,7 +190,8 @@ class ServerControl(Control):
         super().shutdown()
 
 class ProcessControl(ServerControl):
-    def __init__(self, address, command=None, verbose=0, quiet=False, kill_timeout=None):
+    def __init__(self, address, command=None, verbose=0, quiet=False,
+            kill_timeout=None):
         super().__init__(address)
 
         self._proc = None
@@ -207,7 +209,8 @@ class ProcessControl(ServerControl):
         if self._proc:
             return
 
-        cmd = shlex.split(self._command) + ['-m', MODULE]
+        python = self._command or sys.executable
+        cmd = shlex.split(python, posix=False) + ['-m', MODULE]
         if not self._quiet:
             cmd.extend(['-v'] * self._verbose)
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
