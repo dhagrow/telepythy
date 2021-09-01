@@ -20,7 +20,7 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 **Windows**
 ![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_2.png)
-**Linux/I3**<br>
+**Linux/i3**<br>
 ![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_0.png)
 
 ## Motivation
