@@ -19,6 +19,11 @@ log = get(__name__)
 
 def init(verbose=0, quiet=False, mode=None, log_exceptions=True):
     """Initializes simple logging defaults."""
+    if sys.stdout is None:
+        sys.stdout = NullIO()
+    if sys.stderr is None:
+        sys.stderr = NullIO()
+
     if quiet:
         disable(CRITICAL)
         return
@@ -62,3 +67,7 @@ class ModeFilter(Filter):
     def filter(self, record):
         record.mode = self._mode
         return True
+
+class NullIO:
+    def write(self, text):
+        pass
