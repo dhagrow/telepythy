@@ -1,7 +1,3 @@
-if __debug__:
-    import faulthandler
-    faulthandler.enable()
-
 import sys
 import signal
 import argparse
