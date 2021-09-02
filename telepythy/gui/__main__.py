@@ -43,7 +43,9 @@ def main():
 
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))
+
     utils.set_app_id()
+    utils.hook_exceptions()
 
     win = Window(cfg, mgr, args.profile)
     win.setWindowTitle('Telepythy')
