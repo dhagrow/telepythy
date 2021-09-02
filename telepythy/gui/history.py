@@ -1,4 +1,4 @@
-class History(object):
+class History:
     def __init__(self):
         self._history = []
         self._index = 0
