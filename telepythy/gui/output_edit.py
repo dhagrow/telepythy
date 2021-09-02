@@ -1,5 +1,4 @@
-from qtpy.QtCore import Qt
-from qtpy import QtGui, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
@@ -26,6 +25,7 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         palette.setColor(QtGui.QPalette.Text, highlight.text_color())
         self.setPalette(palette)
 
+    @QtCore.Slot(str)
     def append(self, text):
         cur = self.textCursor()
         cur.movePosition(cur.End)
@@ -42,6 +42,7 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         # cur.insertHtml(tpl.format(self.highlighter.highlight_color(), version))
         self.append_prompt()
 
+    @QtCore.Slot(str)
     def append_prompt(self, prompt=PS1):
         self.append(prompt)
 
