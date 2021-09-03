@@ -116,7 +116,7 @@ class Window(QtWidgets.QMainWindow):
     def setup_source_edit(self):
         self.source_edit = SourceEdit()
 
-        self.source_dock = QtWidgets.QDockWidget('source')
+        self.source_dock = QtWidgets.QDockWidget('Source')
         self.source_dock.setWidget(self.source_edit)
 
         self.addDockWidget(Qt.BottomDockWidgetArea, self.source_dock)
@@ -138,6 +138,7 @@ class Window(QtWidgets.QMainWindow):
         self.view_menu = QtWidgets.QMenu('View', self)
         self.view_menu.addAction(self.action_toggle_menu)
         self.view_menu.addAction(self.style_dock.toggleViewAction())
+        self.view_menu.addAction(self.source_dock.toggleViewAction())
         self.view_menu.addAction(self.action_toggle_source_title)
 
         self.profile_menu = QtWidgets.QMenu('Profile', self)

@@ -1,12 +1,18 @@
+import os
 import threading
 
 from . import logs
+
+BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 7357
 DEFAULT_ADDR = '{}:{}'.format(DEFAULT_HOST, DEFAULT_PORT)
 
 log = logs.get(__name__)
+
+def get_path(*names):
+    return os.path.join(BASE_PATH, *names)
 
 def parse_address(address):
     s = address.split(':', 1)

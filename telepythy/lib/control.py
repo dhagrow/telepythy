@@ -2,12 +2,12 @@ import sys
 import time
 import shlex
 import threading
-import subprocess
 import collections
 
 from . import logs
 from . import utils
 from . import sockio
+from . import killableprocess
 
 TIMEOUT = 5
 
@@ -210,6 +210,9 @@ class ProcessControl(ServerControl):
 
         lib_path = utils.get_path('telepythy.pyz')
 
+        startupinfo = killableprocess.STARTUPINFO()
+        startupinfo.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
+
         python = self._command or sys.executable
         cmd = shlex.split(python, posix=False) + [lib_path]
         if not self._quiet:
@@ -217,7 +220,7 @@ class ProcessControl(ServerControl):
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
         log.debug('starting process: %s', cmd)
-        self._proc = subprocess.Popen(cmd)
+        self._proc = killableprocess.Popen(cmd, startupinfo=startupinfo)
 
     def stop(self):
         proc = self._proc
@@ -225,13 +228,8 @@ class ProcessControl(ServerControl):
             return
         log.debug('stopping process')
 
-        proc.terminate()
-        try:
-            proc.wait(self._timeout)
-        except subprocess.TimeoutExpired:
-            log.warning('terminate timed out. killing ...')
-            proc.kill()
-        proc.wait()
+        proc.kill()
+        proc.wait(self._timeout)
 
         self._proc = None
 
