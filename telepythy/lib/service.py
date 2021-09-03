@@ -24,14 +24,13 @@ def connect(address, locs=None):
 
 class Service(object):
     def __init__(self, locs=None, filename=None):
-        self._locals = {}
         self._is_evaluating = False
 
         self._stop = threading.Event()
         self._events = queue.Queue()
         self.code_queue = queue.Queue()
 
-        self._code = introspect.Code(self._locals, filename,
+        self._code = introspect.Code(locs, filename,
             lambda text: self.add_event('stdout', text=text),
             lambda text: self.add_event('stderr', text=text),
             )
@@ -56,6 +55,10 @@ class Service(object):
         self.run()
 
     def run(self):
+        # clean up the environment
+        sys.argv = ['']
+        sys.path.insert(0, '')
+
         self._code.hook()
         q = self.code_queue
 

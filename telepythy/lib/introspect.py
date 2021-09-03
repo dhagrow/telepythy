@@ -22,7 +22,10 @@ except NameError:
 class Code(object):
     def __init__(self, locs=None, filename=None,
             stdout_callback=None, stderr_callback=None):
-        self.locals = locs
+
+        self._locs = locs or {}
+        self.locals = {}
+
         self.filename = filename or 'telepythy'
 
         self._run_lock = threading.Lock()
@@ -40,6 +43,7 @@ class Code(object):
     def reset(self):
         self.locals.clear()
         exec('', self.locals)
+        self.locals.update(self._locs)
         self._result_count = 0
 
     ## commands ##
