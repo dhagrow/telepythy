@@ -9,7 +9,6 @@ from . import logs
 from . import utils
 from . import sockio
 
-MODULE = 'telepythy.lib'
 TIMEOUT = 5
 
 log = logs.get(__name__)
@@ -209,8 +208,10 @@ class ProcessControl(ServerControl):
         if self._proc:
             return
 
+        lib_path = utils.get_path('telepythy.pyz')
+
         python = self._command or sys.executable
-        cmd = shlex.split(python, posix=False) + ['-m', MODULE]
+        cmd = shlex.split(python, posix=False) + [lib_path]
         if not self._quiet:
             cmd.extend(['-v'] * self._verbose)
         cmd.extend(['-c', '{}:{}'.format(*self._address)])

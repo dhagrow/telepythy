@@ -14,6 +14,8 @@ from telepythy.gui import resources
 from telepythy.gui import config
 from telepythy.gui import utils
 
+from telepythy import pack
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -38,6 +40,8 @@ def main():
     if args.list_profiles:
         list_profiles(cfg)
         return
+
+    pack.pack()
 
     mgr = control.Manager(cfg, args.verbose, args.quiet)
 
