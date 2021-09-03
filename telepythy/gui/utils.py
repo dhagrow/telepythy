@@ -1,7 +1,6 @@
 import sys
 import traceback
 
-from qtpy.QtCore import Qt
 from qtpy import QtWidgets
 
 APPID = 'dhagrow.telepythy'
@@ -41,8 +40,8 @@ class ErrorBox(QtWidgets.QMessageBox):
         return result
 
 if sys.platform == 'win32':
-    import ctypes
-    from ctypes import wintypes
+    import ctypes as ct
+    from ctypes import wintypes as wt
 
     def set_app_id():
         res = SetCurrentProcessExplicitAppUserModelID(APPID)
@@ -50,13 +49,15 @@ if sys.platform == 'win32':
             err = 'SetCurrentProcessExplicitAppUserModelID failed: {:x}'
             raise Exception(err.format(res))
 
-    ## definitions ##
+    ## constants ##
 
     S_OK = 0x0
 
-    SetCurrentProcessExplicitAppUserModelID = ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID
-    SetCurrentProcessExplicitAppUserModelID.argtypes = [wintypes.LPCWSTR]
-    SetCurrentProcessExplicitAppUserModelID.restype = ctypes.HRESULT
+    ## functions ##
+
+    SetCurrentProcessExplicitAppUserModelID = ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID
+    SetCurrentProcessExplicitAppUserModelID.argtypes = [wt.LPCWSTR]
+    SetCurrentProcessExplicitAppUserModelID.restype = ct.HRESULT
 
 else:
     def set_app_id():
