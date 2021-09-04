@@ -43,6 +43,7 @@ class Code(object):
     def reset(self):
         self.locals.clear()
         exec('', self.locals)
+        self.locals['__name__'] = '__main__'
         self.locals.update(self._locs)
         self._result_count = 0
 
