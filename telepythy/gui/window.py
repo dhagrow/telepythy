@@ -27,14 +27,12 @@ class Window(QtWidgets.QMainWindow):
         self._control = None
         self._profiles = {}
 
+        self._connected = None
+        self._history_result = collections.OrderedDict()
+
         self.setup()
         self.config(config, profile)
         self.set_profile(profile)
-
-        self._connected = False
-        self._history_result = collections.OrderedDict()
-
-        self._set_disconnected(force=True)
 
     ## config ##
 
@@ -194,8 +192,6 @@ class Window(QtWidgets.QMainWindow):
 
         self.profile_menu.triggered.connect(
             lambda action: self.set_profile(action.text()))
-        self.profile_menu.triggered.connect(
-            lambda action: self.profile_button.setText(action.text()))
 
         self.source_edit.evaluation_requested.connect(self.evaluate)
         self.source_edit.completion_requested.connect(self.complete)
@@ -230,6 +226,7 @@ class Window(QtWidgets.QMainWindow):
 
         if self._control:
             self._control.shutdown()
+        self._set_disconnected(force=True)
 
         self._control = ctl = self._manager.get_control(name)
 
@@ -307,18 +304,18 @@ class Window(QtWidgets.QMainWindow):
     ## status ##
 
     def _set_connected(self, address):
-        if self._connected:
+        if self._connected == address:
             return
-        self._connected = True
+        self._connected = address
 
         msg = 'connected: {}:{}'.format(*address)
         self.status_label.setText(msg)
         self.status_icon.setPixmap(self._status_pixmap_connected)
 
     def _set_disconnected(self, error=None, force=False):
-        if not self._connected and not force:
+        if self._connected is None and not force:
             return
-        self._connected = False
+        self._connected = None
 
         e = error and ': {}'.format(error) or ''
         msg = 'not connected{}'.format(e)
