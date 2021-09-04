@@ -17,9 +17,12 @@ __main__.main()
 
 log = logs.get(__name__)
 
-def pack():
+def pack(force=False):
     src_path = get_path('telepythy', 'lib')
     dst_path = get_path('telepythy.pyz')
+
+    if os.path.exists(dst_path) and not force:
+        return
 
     with zipfile.PyZipFile(dst_path, 'w', optimize=2) as zip:
         zip.writepy(src_path)
