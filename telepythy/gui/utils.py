@@ -1,16 +1,18 @@
+import os
 import sys
 import traceback
 
 from qtpy import QtWidgets
 
 APPID = 'dhagrow.telepythy'
+if os.path.exists('.git'):
+    APPID = '.'.join([APPID, 'dev'])
 
 def excepthook(type, value, tb):
     err = ''.join(traceback.format_exception_only(type, value))
     exc = ''.join(traceback.format_exception(type, value, tb))
 
     box = ErrorBox()
-    # box.setStyleSheet("QTextEdit { font-family: monospace; }");
     box.setWindowTitle('Unexpected Exception')
     box.setText(err)
 
