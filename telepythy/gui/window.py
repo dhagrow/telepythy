@@ -5,9 +5,10 @@ from qtpy import QtCore, QtGui, QtWidgets
 
 from ..lib import logs
 
-from .source_edit import SourceEdit
-from .output_edit import OutputEdit
-from .style_widget import StyleWidget
+from .about import AboutDialog
+from .source import SourceEdit
+from .output import OutputEdit
+from .style import StyleWidget
 
 log = logs.get(__name__)
 
@@ -73,6 +74,7 @@ class Window(QtWidgets.QMainWindow):
 
     def setup(self):
         self.setup_actions()
+        self.setup_about_dialog()
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_style_widget()
@@ -84,6 +86,9 @@ class Window(QtWidgets.QMainWindow):
         self.source_edit.setFocus()
 
     def setup_actions(self):
+        self.action_about = QtWidgets.QAction('About')
+        self.addAction(self.action_about)
+
         self.action_quit = QtWidgets.QAction('Quit')
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
@@ -103,6 +108,9 @@ class Window(QtWidgets.QMainWindow):
         self.action_toggle_source_title = QtWidgets.QAction('Source Titlebar')
         self.action_toggle_source_title.setCheckable(True)
         self.action_toggle_source_title.setChecked(True)
+
+    def setup_about_dialog(self):
+        self.about_dialog = AboutDialog()
 
     def setup_output_edit(self):
         self.output_edit = OutputEdit()
@@ -130,6 +138,7 @@ class Window(QtWidgets.QMainWindow):
 
     def setup_menus(self):
         self.main_menu = QtWidgets.QMenu('Main', self)
+        self.main_menu.addAction(self.action_about)
         self.main_menu.addAction(self.action_restart)
         self.main_menu.addAction(self.action_quit)
 
@@ -180,6 +189,7 @@ class Window(QtWidgets.QMainWindow):
         bar.addPermanentWidget(self.profile_button)
 
     def setup_signals(self):
+        self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
         self.action_interrupt.triggered.connect(self.interrupt)
         self.action_restart.triggered.connect(self.restart)
