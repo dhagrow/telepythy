@@ -5,10 +5,13 @@ from .. import __version__, __revision__
 
 class AboutDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        flags = Qt.WindowTitleHint | Qt.WindowSystemMenuHint
+        super().__init__(parent, flags)
         self.setup()
 
     def setup(self):
+        self.setWindowTitle('About Telepythy')
+
         icon_label = QtWidgets.QLabel()
         icon_label.setAlignment(Qt.AlignCenter)
         icon = QtGui.QIcon(':icon')

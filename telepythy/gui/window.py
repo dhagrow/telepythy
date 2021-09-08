@@ -110,7 +110,7 @@ class Window(QtWidgets.QMainWindow):
         self.action_toggle_source_title.setChecked(True)
 
     def setup_about_dialog(self):
-        self.about_dialog = AboutDialog()
+        self.about_dialog = AboutDialog(self)
 
     def setup_output_edit(self):
         self.output_edit = OutputEdit()
