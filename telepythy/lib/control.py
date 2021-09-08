@@ -210,8 +210,11 @@ class ProcessControl(ServerControl):
 
         lib_path = utils.get_path('telepythy.pyz')
 
-        startupinfo = killableprocess.STARTUPINFO()
-        startupinfo.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
+        kwargs = {}
+
+        if killableprocess.mswindows:
+            kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
+            info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
 
         python = self._command or sys.executable
         cmd = shlex.split(python, posix=False) + [lib_path]
@@ -220,7 +223,7 @@ class ProcessControl(ServerControl):
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
         log.debug('starting process: %s', cmd)
-        self._proc = killableprocess.Popen(cmd, startupinfo=startupinfo)
+        self._proc = killableprocess.Popen(cmd, **kwargs)
 
     def stop(self):
         proc = self._proc
