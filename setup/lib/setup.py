@@ -1,9 +1,8 @@
 import os
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
-# chdir to root of repo
-os.chdir(os.path.join(os.path.dirname(__file__), '..', '..'))
+os.chdir(os.path.dirname(__file__))
 sys.path.insert(0, '.')
 
 import telepythy
@@ -19,7 +18,7 @@ setup(
     author_email='cymrow@gmail.com',
     long_description=readme,
     long_description_content_type='text/markdown',
-    packages=['telepythy', 'telepythy.lib'],
+    packages=find_packages(),
     entry_points={
         'console_scripts': [
             'telepythy-service=telepythy.lib.__main__:main'
