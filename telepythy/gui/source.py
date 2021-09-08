@@ -47,6 +47,8 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
         doc = document.TextDocument(self)
         self.setDocument(doc)
 
+        self.setLineWrapMode(self.NoWrap)
+
         self.highlighter = PygmentsHighlighter(doc)
 
         self.completer_model = QtGui.QStandardItemModel()
