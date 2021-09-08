@@ -1,7 +1,7 @@
 from qtpy.QtCore import Qt
 from qtpy import QtGui, QtWidgets
 
-from .. import __version__
+from .. import __version__, __revision__
 
 class AboutDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -16,10 +16,18 @@ class AboutDialog(QtWidgets.QDialog):
 
         title = f'Telepythy {__version__}'
         title_label = QtWidgets.QLabel(title)
+        title_label.setAlignment(Qt.AlignCenter)
         font = title_label.font()
         font.setPointSize(16)
         font.setWeight(font.Bold)
         title_label.setFont(font)
+
+        subtitle = f'Revision: {__revision__}'
+        subtitle_label = QtWidgets.QLabel(subtitle)
+        subtitle_label.setAlignment(Qt.AlignCenter)
+        font = subtitle_label.font()
+        font.setPointSize(10)
+        subtitle_label.setFont(font)
 
         button = QtWidgets.QPushButton('Close')
         button.clicked.connect(self.accept)
@@ -32,6 +40,7 @@ class AboutDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(icon_label)
         layout.addWidget(title_label)
+        layout.addWidget(subtitle_label)
         layout.addLayout(button_layout)
 
         self.setLayout(layout)
