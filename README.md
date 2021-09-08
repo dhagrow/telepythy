@@ -27,7 +27,7 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 [Jupyter][3] exists and is very powerful. But I have always found the interface and workflow awkward. I don't really want a shareable code notebook. I want a prototyping and debugging tool.
 
-As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, though I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) and refactor an unfamiliar and complex code-base was too daunting for me.
+As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, though I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) and refactor an unfamiliar and complex code-base was more than I cared to invest in. Starting a new project seemed much more fun.
 
 So, I decided to start from scratch, and **Telepythy** is the result.
 
@@ -57,7 +57,7 @@ $ python -m telepythy.gui
 
 Manually editing the configuration file is currently the only way to persist settings. It is saved according the the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux).
 
-### Interpreters
+### Local Interpreters
 
 To use **Telepythy** with a different local Python interpreter, you must create a profile referencing the path of the interpreter in the config file.
 
@@ -65,10 +65,27 @@ To add a different interpreter:
 
 ```ini
 [profile.<profile_name>]
-command = <path-to-interpreter>
+command = "<command-for-interpreter>"
 ```
 
-### Remote Service
+### Remote Interpreters
+
+The remote service needs to be installed as a package for whichever interpreter you intend to use. A minimal, service-only package can be installed from PyPI:
+
+```shell
+$ pip install telepythy-service
+```
+
+It can then be started using one of the following commands:
+
+```shell
+$ telepythy-service --connect '<host>:<port>'
+$ telepythy-service --serve '<interface>:<port>'
+# or
+$ python -m telepythy ...
+```
+
+If no arguments are provided, the service will automatically listen as a server on port 7357.
 
 To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port, in the config file.
 
@@ -76,29 +93,20 @@ To add a connect profile:
 
 ```ini
 [profile.<profile_name>]
-connect = '<host>:<port>'
+connect = "<host>:<port>"
 ```
 
 To add a serve profile:
 
 ```ini
 [profile.<profile_name>]
-serve = '<interface>:<port>'
+serve = "<interface>:<port>"
 ```
 
 You can then use the profile by selecting it in the UI, or with the `--profile` command-line option:
 
 ```shell
 $ telepythy [-p,--profile] <profile_name>
-```
-
-The remote service can be started using one of the following commands (opposing the profile option used by the UI):
-
-```shell
-$ telepythy-service --connect '<host>:<port>'
-$ telepythy-service --serve '<interface>:<port>'
-# or
-$ python -m telepythy ...
 ```
 
 ### Embedding
@@ -119,7 +127,7 @@ For connections across machines, I recommend using [SSH port forwarding][6].
 
 **Telepythy** is very much a work in progress. Here are some features that are planned for future releases (in no particular order):
 
-* Minimal PyPI package for the embeddable service (no dependencies)
+* ~~Minimal PyPI package for the embeddable service (no dependencies)~~
 * Configuration UI
 * Profile configuration UI
 * Style/syntax highlighting configuration UI
