@@ -59,7 +59,7 @@ Manually editing the configuration file is currently the only way to persist set
 
 ### Local Interpreters
 
-To use **Telepythy** with a different local Python interpreter, you must create a profile referencing the path of the interpreter in the config file.
+To use **Telepythy** with a different local Python interpreter, you must create a profile referencing the command for the interpreter in the config file.
 
 To add a different interpreter:
 
