@@ -14,6 +14,9 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
         self.highlighter = PygmentsHighlighter(
             self.document(), PythonConsoleLexer())
 
+        self.setReadOnly(True)
+        self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
+
     def set_style(self, style):
         self.highlighter.set_style(style)
         self.set_palette()

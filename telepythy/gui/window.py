@@ -114,9 +114,6 @@ class Window(QtWidgets.QMainWindow):
 
     def setup_output_edit(self):
         self.output_edit = OutputEdit()
-        self.output_edit.setReadOnly(True)
-        self.output_edit.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-
         self.setCentralWidget(self.output_edit)
 
     def setup_source_edit(self):
