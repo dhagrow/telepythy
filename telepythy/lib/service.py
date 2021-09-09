@@ -84,21 +84,10 @@ class Service(object):
         matches = self._code.complete(prefix)
         self.add_event('completion', matches=matches)
 
-    def events(self):
-        stop = self._stop
-        q = self._events
-
-        self.add_event('start', version=sys.version)
-
-        while not stop.is_set():
-            try:
-                yield q.get(timeout=1)
-            except queue.Empty:
-                yield
-
     ## handlers ##
 
     def handle(self, sock):
+        self._stop.clear()
         self.add_event('start', version=sys.version)
 
         t_evt = utils.start_thread(self.handle_events, sock)
@@ -121,6 +110,7 @@ class Service(object):
                     sock.sendmsg(event)
         except sockio.error as e:
             log.warning('handle_events error: %s', repr(e))
+            stop.set()
 
     def handle_commands(self, sock):
         stop = self._stop
@@ -147,6 +137,7 @@ class Service(object):
 
         except (sockio.ReceiveInterrupted, ConnectionResetError) as e:
             log.warning('handle_commands error: %s', repr(e))
+            stop.set()
 
     ## utils ##
 
