@@ -28,7 +28,8 @@ def init(verbose=0, quiet=False, mode=None, log_exceptions=True):
         disable(CRITICAL)
         return
 
-    root_log = get()
+    root_log = get('telepythy')
+    root_log.propagate = False
 
     fmt = '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
     if colorlog:
