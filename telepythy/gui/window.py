@@ -274,6 +274,7 @@ class Window(QtWidgets.QMainWindow):
 
     def restart(self):
         self._control.restart()
+        self._set_disconnected(force=True)
 
     ## commands ##
 
