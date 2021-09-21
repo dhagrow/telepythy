@@ -20,12 +20,10 @@ def main():
 
     parser.add_argument('-v', '--verbose', action='count',
         default=0, help='enable verbose output (-vv for more)')
-    parser.add_argument('-q', '--quiet', action='store_true',
-        help='disable all output')
 
     args = parser.parse_args()
 
-    logs.init(args.verbose, args.quiet, mode='svc', log_exceptions=False)
+    logs.init(args.verbose, mode='svc')
 
     svc = service.Service()
 

@@ -27,14 +27,12 @@ def main():
     parser.add_argument('--config', default=config.DEFAULT_PATH,
         help='path to the config file (default: %(default)s)')
 
-    parser.add_argument('-q', '--quiet', action='store_true',
-        help='disable all output')
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help='enable verbose output (-vv for more)')
 
     args = parser.parse_args()
 
-    logs.init(args.verbose, args.quiet, mode='ctl')
+    logs.init(args.verbose, mode='ctl', log_exceptions=True)
     cfg = config.init(args.config)
 
     if args.list_profiles:
@@ -43,7 +41,7 @@ def main():
 
     pack.pack()
 
-    mgr = control.Manager(cfg, args.verbose, args.quiet)
+    mgr = control.Manager(cfg, args.verbose)
 
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))

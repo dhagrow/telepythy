@@ -6,47 +6,39 @@ try:
 except ImportError:
     colorlog = None
 
-LOG_COLORS = {
-    'DEBUG'   : 'reset',
-    'INFO'    : 'white',
-    'WARNING' : 'yellow',
-    'ERROR'   : 'red',
-    'CRITICAL': 'bold_red,bg_black',
-    }
+iswindows = sys.platform == 'win32'
 
 get = getLogger
 log = get(__name__)
 
-def init(verbose=0, quiet=False, mode=None, log_exceptions=True):
+def init(verbose=0, mode=None, log_exceptions=False):
     """Initializes simple logging defaults."""
-    if sys.stdout is None:
-        sys.stdout = NullIO()
-    if sys.stderr is None:
-        sys.stderr = NullIO()
-
-    if quiet:
-        disable(CRITICAL)
+    if verbose == 0:
+        # no logging
         return
 
-    root_log = get('telepythy')
-    root_log.propagate = False
-
     fmt = '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
-    if colorlog:
-        formatter = colorlog.ColoredFormatter('%(log_color)s' + fmt,
-            log_colors=LOG_COLORS)
-    else:
-        formatter = Formatter(fmt)
 
-    handler = StreamHandler()
+    if sys.stderr is None:
+        if not iswindows:
+            # TODO: maybe try syslog on linux?
+            return
+        handler = DbgViewHandler()
+        formatter = Formatter(fmt)
+    else:
+        handler = StreamHandler()
+        if colorlog:
+            formatter = colorlog.ColoredFormatter('%(log_color)s' + fmt)
+        else:
+            formatter = Formatter(fmt)
+
     handler.setFormatter(formatter)
     handler.addFilter(ModeFilter(mode))
 
+    root_log = get('telepythy')
+    root_log.propagate = False
     root_log.addHandler(handler)
-    if   verbose == 0: level = WARNING
-    elif verbose == 1: level = INFO
-    else:              level = DEBUG
-    root_log.setLevel(level)
+    root_log.setLevel(INFO if verbose == 1 else DEBUG)
 
     if log_exceptions:
         sys.excepthook = handle_exception
@@ -69,6 +61,14 @@ class ModeFilter(Filter):
         record.mode = self._mode
         return True
 
-class NullIO:
-    def write(self, text):
-        pass
+if iswindows:
+    import ctypes as ct
+    from ctypes import wintypes as wt
+
+    OutputDebugString = ct.windll.kernel32.OutputDebugStringW
+    OutputDebugString.argtypes = [wt.LPCWSTR]
+    OutputDebugString.restype = None
+
+    class DbgViewHandler(Handler):
+        def emit(self, record):
+            OutputDebugString(self.format(record))
