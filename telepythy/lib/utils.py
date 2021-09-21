@@ -25,13 +25,13 @@ def start_thread(func, *args, **kwargs):
     def thread(func, *args, **kwargs):
         ident = threading.current_thread().ident
 
-        log.debug('thread started (%s): %s', ident, func.__name__)
+        log.debug('thread started <%s:%s>', func.__qualname__, ident)
         try:
             return func(*args, **kwargs)
         except:
-            log.exception('unexpected thread error')
+            log.exception('unexpected thread error <%s:%s>', func.__qualname__, ident)
         finally:
-            log.debug('thread stopped (%s): %s', ident, func.__name__)
+            log.debug('thread stopped <%s:%s>', func.__qualname__, ident)
 
     t = threading.Thread(target=thread, args=(func,) + args, kwargs=kwargs)
     t.daemon = True
