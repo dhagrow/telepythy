@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import os
+import sys
 import zipfile
 
 from .lib import logs
@@ -11,17 +12,18 @@ def get_path(*names):
     return os.path.abspath(os.path.join(BASE_PATH, *names))
 
 MAIN = """\
-from lib import __main__
-__main__.main()
+from telepythy.__main__ import main
+main()
 """
 
-log = logs.get(__name__)
+log = logs.get('telepythy.pack')
 
-def pack(force=False):
-    src_path = get_path('telepythy', 'lib')
+def pack():
+    src_path = get_path('telepythy')
     dst_path = get_path('telepythy.pyz')
 
-    if os.path.exists(dst_path) and not force:
+    # don't run if frozen
+    if getattr(sys, 'frozen', False):
         return
 
     with zipfile.PyZipFile(dst_path, 'w', optimize=2) as zip:
@@ -34,7 +36,7 @@ def pack(force=False):
 
 if __name__ == '__main__':
     try:
-        path = pack()
-        print('saved to:', path)
+        logs.init(2)
+        pack()
     except KeyboardInterrupt:
         pass
