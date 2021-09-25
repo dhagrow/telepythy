@@ -30,6 +30,7 @@ setup(
     install_requires=[
         'appdirs',
         'attrdict',
+        'colorlog',
         'Pygments',
         'PySide2',
         'QDarkStyle',
