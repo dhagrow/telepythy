@@ -2,11 +2,17 @@ import argparse
 
 from . import logs
 from . import utils
-from . import service
+from . import connect, serve
 
 log = logs.get(__name__)
 
 def main():
+    try:
+        _main()
+    except KeyboardInterrupt:
+        pass
+
+def _main():
     parser = argparse.ArgumentParser('telepythy')
 
     group = parser.add_mutually_exclusive_group()
@@ -25,18 +31,11 @@ def main():
 
     logs.init(args.verbose, mode='svc')
 
-    svc = service.Service()
-
     # serve unless connect is set
     if args.connect is not False:
-        addr = utils.parse_address(args.connect or utils.DEFAULT_ADDR)
-        svc.connect(addr)
+        connect(address=args.connect, embed_mode=False)
     else:
-        addr = utils.parse_address(args.serve or utils.DEFAULT_ADDR)
-        svc.serve(addr)
+        serve(address=args.serve, embed_mode=False)
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    main()
