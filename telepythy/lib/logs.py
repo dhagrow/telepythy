@@ -47,7 +47,8 @@ def init(verbose=0, mode=None, log_exceptions=False):
     get('qdarkstyle').setLevel(WARNING)
 
 def handle_exception(etype, evalue, etb):
-    if issubclass(etype, KeyboardInterrupt):
+    if not issubclass(etype, Exception):
+        # default handling for BaseExceptions
         sys.__excepthook__(etype, evalue, etb)
         return
     log.error('unhandled exception', exc_info=(etype, evalue, etb))
