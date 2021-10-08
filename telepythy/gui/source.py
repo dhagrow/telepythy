@@ -195,7 +195,14 @@ class SourceEdit(QtWidgets.QPlainTextEdit):
 
         self.ensureCursorVisible()
 
-        if key == Qt.Key_Return:
+        if key == Qt.Key_Enter:
+            # Enter (keypad) will always evaluate
+            source = self.toPlainText()
+            if source:
+                self.evaluation_requested.emit(source)
+                return
+
+        elif key == Qt.Key_Return:
             # only evaluate when all of the following are true:
             # - there is only one line
             # - the text cursor is at the end of the text
