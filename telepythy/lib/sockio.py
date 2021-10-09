@@ -34,18 +34,18 @@ def client_loop(address, handler, stop, retry_limit, retry_interval):
             with connect(address, timeout) as sock:
                 sock.sendinit()
                 handler(sock)
-        except socket.timeout:
-            continue
-        finally:
-            if stop.is_set():
-                break
-            count += 1
-            if retry_limit != -1 and count > retry_limit:
-                log.warning('retry limit reached (attempt #%s)', count)
-                stop.set()
-                break
-            time.sleep(retry_interval)
-            log.warning('retrying connection (attempt #%s)', count)
+        except socket.error as e:
+            log.error('connection error: %s', e)
+
+        if stop.is_set():
+            break
+        count += 1
+        if retry_limit != -1 and count > retry_limit:
+            log.warning('retry limit reached (attempt #%s)', count)
+            stop.set()
+            break
+        time.sleep(retry_interval)
+        log.warning('retrying connection (attempt #%s)', count)
 
 def start_server(address, handler, stop=None, backlog=None):
     stop = stop or threading.Event()

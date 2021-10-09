@@ -90,6 +90,8 @@ class Control(object):
     ## handlers ##
 
     def _handle(self, sock):
+        self._stop.clear()
+
         t_evt = utils.start_thread(self._handle_events, sock)
         t_cmd = utils.start_thread(self._handle_commands, sock)
 
@@ -113,6 +115,7 @@ class Control(object):
 
         except Exception as e:
             log.debug('_handle_events error: %s', repr(e))
+            stop.set()
             call_handlers('error', repr(e))
 
     def _handle_commands(self, sock):
@@ -132,6 +135,7 @@ class Control(object):
 
         except Exception as e:
             log.debug('_handle_commands error: %s', repr(e))
+            stop.set()
             self._call_handlers('error', repr(e))
 
     def _call_handlers(self, name, event=None):
@@ -150,12 +154,13 @@ class ClientControl(Control):
     def stop(self):
         super().stop()
         if self._client_thread:
+            self._client_thread.stop()
             self._client_thread.join()
             self._client_thread = None
 
     def connect(self):
         self._client_thread, _addr = sockio.start_client(
-            self._address, self._handle, self._stop)
+            self._address, self._handle)
 
 class ServerControl(Control):
     def __init__(self, address):
@@ -169,13 +174,14 @@ class ServerControl(Control):
     def stop(self):
         super().stop()
         if self._server_thread:
+            self._server_thread.stop()
             self._server_thread.join()
             self._server_thread = None
 
     def serve(self):
         # replace address in case a port was generated (port=0)
         self._server_thread, self._address = sockio.start_server(
-            self._address, self._handle, self._stop)
+            self._address, self._handle)
 
 class ProcessControl(ServerControl):
     def __init__(self, address, command=None, verbose=0, kill_timeout=None):
