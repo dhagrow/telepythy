@@ -42,7 +42,6 @@ def client_loop(address, handler, stop, retry_limit, retry_interval):
         count += 1
         if retry_limit != -1 and count > retry_limit:
             log.warning('retry limit reached (attempt #%s)', count)
-            stop.set()
             break
         time.sleep(retry_interval)
         log.warning('retrying connection (attempt #%s)', count)
