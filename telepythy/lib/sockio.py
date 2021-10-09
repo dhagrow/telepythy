@@ -1,29 +1,56 @@
 import io
 import json
+import time
 import errno
 import socket
 import struct
 import threading
 
 from . import logs
-from .utils import start_thread
+from . import utils
 
+TIMEOUT = 0.1
 BACKLOG = socket.SOMAXCONN
 CHUNK_SIZE = io.DEFAULT_BUFFER_SIZE
 
 error = socket.error
+timeout = socket.timeout
 
 log = logs.get(__name__)
 
-def connect(address, timeout=None):
-    log.debug('connecting: %s:%s', *address)
-    sock = socket.create_connection(address, timeout)
-    log.info('connected: %s:%s', *address)
-    return SockIO(sock)
+def start_client(address, handler, stop=None, retry_limit=-1, retry_interval=1):
+    stop = stop or threading.Event()
 
-def start_server(address, handler, timeout=None, accept_timeout=1, backlog=None):
+    t = utils.start_thread(client_loop,
+        address, handler, stop, retry_limit, retry_interval)
+    return (StoppableThread(t, stop), address)
+
+def client_loop(address, handler, stop, retry_limit, retry_interval):
+    count = 0
+    timeout = TIMEOUT
+
+    while not stop.is_set():
+        try:
+            with connect(address, timeout) as sock:
+                sock.sendinit()
+                handler(sock)
+        except socket.timeout:
+            continue
+        finally:
+            if stop.is_set():
+                break
+            count += 1
+            if retry_limit != -1 and count > retry_limit:
+                log.warning('retry limit reached (attempt #%s)', count)
+                stop.set()
+                break
+            time.sleep(retry_interval)
+            log.warning('retrying connection (attempt #%s)', count)
+
+def start_server(address, handler, stop=None, backlog=None):
+    stop = stop or threading.Event()
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(accept_timeout)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(address)
     sock.listen(backlog or BACKLOG)
@@ -31,36 +58,49 @@ def start_server(address, handler, timeout=None, accept_timeout=1, backlog=None)
     host, port = sock.getsockname()
     log.info('listening: %s:%s', host, port)
 
-    stop = threading.Event()
-    t = start_thread(serve, sock, handler, stop, timeout)
-    return (ServerThread(t, stop), (host, port))
+    t = utils.start_thread(server_loop, sock, handler, stop)
+    return (StoppableThread(t, stop), (host, port))
 
-def serve(sock, handler, stop, timeout=None):
+def server_loop(server_sock, handler, stop):
+    timeout = TIMEOUT
+    server_sock.settimeout(timeout)
+
     while not stop.is_set():
         try:
-            s, addr = sock.accept()
+            s, addr = server_sock.accept()
         except socket.timeout:
             continue
-        s.settimeout(timeout)
 
         log.info('connected: %s:%s', *addr)
-        start_thread(handler, SockIO(s))
+        with SockIO(s) as sock:
+            sock.recvinit()
+            sock.settimeout(timeout)
+            handler(sock)
 
-class ServerThread(object):
-    def __init__(self, thread, stop):
-        self._thread = thread
-        self._stop = stop
-
-    def stop(self):
-        self._stop.set()
-
-    def join(self):
-        self._thread.join()
+def connect(address, timeout=None):
+    log.debug('connecting: %s:%s', *address)
+    sock = socket.create_connection(address, timeout)
+    log.info('connected: %s:%s', *address)
+    return SockIO(sock)
 
 class SockIO(object):
     def __init__(self, sock, chunk_size=None):
         self._sock = sock
         self._chunk_size = chunk_size or CHUNK_SIZE
+
+    def sendinit(self):
+        log.debug('sendinit')
+        self.sendmsg({'cmd': 'init'})
+
+    def recvinit(self):
+        msg = self.recvmsg()
+        log.debug('recvinit: %s', msg)
+        try:
+            if msg['cmd'] == 'init':
+                return
+        except Exception:
+            pass
+        raise InvalidInitialization()
 
     def sendmsg(self, msg):
         data = json.dumps(msg).encode('utf8')
@@ -109,7 +149,27 @@ class SockIO(object):
                 raise
         self._sock.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, etype, evalue, etb):
+        self.close()
+
+class StoppableThread(object):
+    def __init__(self, thread, stop):
+        self._thread = thread
+        self._stop = stop
+
+    def stop(self):
+        self._stop.set()
+
+    def join(self):
+        self._thread.join()
+
 class SockIOError(Exception):
+    pass
+
+class InvalidInitialization(SockIOError):
     pass
 
 class ReceiveInterrupted(SockIOError):

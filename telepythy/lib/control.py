@@ -1,23 +1,26 @@
 import sys
-import time
 import shlex
 import threading
 import collections
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 from . import logs
 from . import utils
 from . import sockio
 from . import killableprocess
 
-TIMEOUT = 5
+TIMEOUT = 0.01
+KILL_TIMEOUT = 5
 
 log = logs.get(__name__)
 
 class Manager:
-    def __init__(self, config, verbose=0, quiet=False):
+    def __init__(self, config, verbose=0):
         self._config = config
         self._verbose = verbose
-        self._quiet = quiet
 
     def get_control(self, profile=None, connect=None, serve=None):
         command = None
@@ -36,8 +39,7 @@ class Manager:
                 serve = sec.get('serve')
 
         if command is not None:
-            return ProcessControl(('localhost', 0), command,
-                self._verbose, self._quiet)
+            return ProcessControl(('localhost', 0), command, self._verbose)
 
         elif connect is not None:
             addr = utils.parse_address(connect or utils.DEFAULT_ADDR)
@@ -55,195 +57,164 @@ class Control(object):
 
         self._handlers = collections.defaultdict(set)
 
-        self._work_socket = None
-        self._work_event = threading.Event()
-        self._events_thread = None
-        self._events_stop = threading.Event()
+        self._cmd_queue = queue.Queue(1)
+        self._stop = threading.Event()
 
-        self._restart_lock = threading.Lock()
+    def start(self):
+        self._stop.clear()
 
-    def init(self):
-        raise NotImplementedError('abstract')
+    def stop(self):
+        self._stop.set()
+
+    def restart(self):
+        log.debug('restarting')
+        self.stop()
+        self.start()
 
     ## commands ##
 
     def evaluate(self, source, notify=True):
-        self.get_work_proxy().evaluate(source, notify)
+        self._cmd_queue.put(('evaluate', source, notify))
 
     def interrupt(self):
-        self.get_work_proxy().interrupt()
+        self._cmd_queue.put(('interrupt',))
 
     def complete(self, prefix):
-        self.get_work_proxy().complete(prefix)
+        self._cmd_queue.put(('complete', prefix))
 
     ## events ##
 
     def register(self, event, handler):
         self._handlers[event].add(handler)
 
-    def _events(self, sock):
-        stop = self._events_stop
-        stop.clear()
+    ## handlers ##
 
-        handle = self._handle_event
+    def _handle(self, sock):
+        t_evt = utils.start_thread(self._handle_events, sock)
+        t_cmd = utils.start_thread(self._handle_commands, sock)
+
+        t_evt.join()
+        t_cmd.join()
+
+    def _handle_events(self, sock):
+        stop = self._stop
         address = self._address
-
-        proxy = ServiceProxy(sock)
+        call_handlers = self._call_handlers
 
         try:
-            for event in proxy.events(stop):
+            for event in ServiceProxy(sock).events(stop):
                 if stop.is_set():
                     break
                 if event is None:
-                    handle(None, address)
+                    call_handlers(None, address)
                     continue
                 name = event['evt']
-                handle(name, event)
-        except Exception as e:
-            if stop.is_set():
-                return
-            handle('error', repr(e))
-            self.restart()
+                call_handlers(name, event)
 
-    def _handle_event(self, name, event=None):
+        except Exception as e:
+            log.debug('_handle_events error: %s', repr(e))
+            call_handlers('error', repr(e))
+
+    def _handle_commands(self, sock):
+        stop = self._stop
+        q = self._cmd_queue
+
+        try:
+            while not stop.is_set():
+                try:
+                    cmd = q.get(timeout=TIMEOUT)
+                except queue.Empty:
+                    continue
+                cmd_name, *cmd_args = cmd
+
+                func = getattr(ServiceProxy(sock), cmd_name)
+                func(*cmd_args)
+
+        except Exception as e:
+            log.debug('_handle_commands error: %s', repr(e))
+            self._call_handlers('error', repr(e))
+
+    def _call_handlers(self, name, event=None):
         for handler in self._handlers.get(name, []):
             handler(event)
-
-    ## proxies ##
-
-    def get_work_proxy(self):
-        if not self._work_socket:
-            raise Exception('no connection')
-        return ServiceProxy(self._work_socket)
-
-    ## sockets ##
-
-    def _set_sockets(self, sock):
-        self._work_socket = sock
-        self._work_event.set()
-        self._events_thread = utils.start_thread(self._events, sock)
-
-    def restart(self):
-        with self._restart_lock:
-            log.debug('restarting')
-            self._restart()
-
-    def _restart(self):
-        self._work_event.clear()
-        self._work_socket = None
-        self._events_stop.set()
-        self._events_thread = None
-
-    def shutdown(self):
-        self._events_stop.set()
 
 class ClientControl(Control):
     def __init__(self, address):
         super().__init__(address)
-        self._connect_stop = threading.Event()
+        self._client_thread = None
 
-    def init(self):
+    def start(self):
+        super().start()
         self.connect()
+
+    def stop(self):
+        super().stop()
+        if self._client_thread:
+            self._client_thread.join()
+            self._client_thread = None
 
     def connect(self):
-        stop = self._connect_stop
-
-        def connect(address):
-            while not stop.is_set():
-                try:
-                    sock = sockio.connect(address)
-                except sockio.error as e:
-                    log.debug('connection failed: %s', e)
-                    time.sleep(1)
-                    continue
-                else:
-                    self._set_sockets(sock)
-                    break
-
-        utils.start_thread(connect, self._address)
-
-    def _restart(self):
-        super()._restart()
-        self.connect()
-
-    def shutdown(self):
-        super().shutdown()
-        self._connect_stop.set()
+        self._client_thread, _addr = sockio.start_client(
+            self._address, self._handle, self._stop)
 
 class ServerControl(Control):
     def __init__(self, address):
         super().__init__(address)
         self._server_thread = None
 
-    def init(self):
+    def start(self):
+        super().start()
         self.serve()
+
+    def stop(self):
+        super().stop()
+        if self._server_thread:
+            self._server_thread.join()
+            self._server_thread = None
 
     def serve(self):
         # replace address in case a port was generated (port=0)
         self._server_thread, self._address = sockio.start_server(
-            self._address, self._set_sockets)
-
-    def shutdown(self):
-        if self._server_thread:
-            self._server_thread.stop()
-        super().shutdown()
+            self._address, self._handle, self._stop)
 
 class ProcessControl(ServerControl):
-    def __init__(self, address, command=None, verbose=0, quiet=False,
-            kill_timeout=None):
+    def __init__(self, address, command=None, verbose=0, kill_timeout=None):
         super().__init__(address)
 
         self._proc = None
 
         self._command = command
         self._verbose = verbose
-        self._quiet = quiet
-        self._timeout = TIMEOUT if kill_timeout is None else kill_timeout
-
-    def init(self):
-        self.serve()
-        self.start()
+        self._timeout = KILL_TIMEOUT if kill_timeout is None else kill_timeout
 
     def start(self):
-        if self._proc:
-            return
+        super().start()
 
+        python = self._command or sys.executable
         lib_path = utils.get_path('telepythy.pyz')
-
-        kwargs = {}
-
-        if killableprocess.mswindows:
-            kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
-            info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
 
         python = self._command or sys.executable
         cmd = shlex.split(python, posix=False) + [lib_path]
-        if not self._quiet:
-            cmd.extend(['-v'] * self._verbose)
+        cmd.extend(['-v'] * self._verbose)
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
+
+        kwargs = {}
+        if killableprocess.mswindows:
+            kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
+            info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
 
         log.debug('starting process: %s', cmd)
         self._proc = killableprocess.Popen(cmd, **kwargs)
 
     def stop(self):
-        proc = self._proc
-        if not proc:
-            return
+        super().stop()
+
         log.debug('stopping process')
 
+        proc = self._proc
         proc.kill()
         proc.wait(self._timeout)
-
         self._proc = None
-
-    def _restart(self):
-        self.stop()
-        super()._restart()
-        self.start()
-
-    def shutdown(self):
-        super().shutdown()
-        self.stop()
 
 class ServiceProxy(object):
     def __init__(self, sock):
@@ -262,14 +233,18 @@ class ServiceProxy(object):
         sock = self._sock
 
         while not stop.is_set():
-            event = sock.recvmsg()
+            try:
+                event = sock.recvmsg()
+            except sockio.timeout:
+                continue
 
             if event:
                 name = event['evt']
                 if name == 'done':
                     log.debug('evt: done')
                 elif name == 'stdout':
-                    log.debug('out: %r', event['data']['text'][:100])
+                    pass
+                    # log.debug('out: %r', event['data']['text'][:100])
                 elif name == 'stderr':
                     log.debug('err: %r', event['data']['text'][:100])
                 else:

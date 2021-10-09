@@ -12,61 +12,77 @@ from . import utils
 from . import sockio
 from . import introspect
 
-OUTPUT_MODES = ('local', 'remote', 'mirror')
+TIMEOUT = 0.1
 
 log = logs.get(__name__)
 
-def serve(address, locs=None):
-    Service(locs).serve(address)
-
-def connect(address, locs=None):
-    Service(locs).connect(address)
-
 class Service(object):
-    def __init__(self, locs=None, filename=None):
-        self._is_evaluating = False
+    def __init__(self, locs=None, filename=None, embed_mode=True):
+        self._timeout = TIMEOUT
 
         self._stop = threading.Event()
+        self._shutdown = threading.Event()
+
         self._events = queue.Queue()
-        self.code_queue = queue.Queue()
+        self._code_queue = queue.Queue()
+
+        self._is_evaluating = False
+
+        if not embed_mode:
+            # set up a shell environment
+            locs = locs or {}
+            locs.setdefault('__name__', '__main__')
+
+            sys.argv = ['']
+            if not sys.path or sys.path[0] != '':
+                sys.path.insert(0, '')
 
         self._code = introspect.Code(locs, filename,
             lambda text: self.add_event('stdout', text=text),
             lambda text: self.add_event('stderr', text=text),
             )
 
-        self.reset()
-
     ## execution ##
 
     def connect(self, address):
-        def _connect(svc, address):
-            try:
-                svc.handle(sockio.connect(address))
-            except sockio.error as e:
-                log.error('connection failed: %s', e)
-
-        utils.start_thread(_connect, self, address)
-
-        self.run()
+        client, _addr = sockio.start_client(address, self._handle)
+        try:
+            self.run()
+        finally:
+            client.stop()
+            client.join()
 
     def serve(self, address):
-        sockio.start_server(address, self.handle)
-        self.run()
+        server, _addr = sockio.start_server(address, self._handle)
+        try:
+            self.run()
+        finally:
+            server.stop()
+            server.join()
 
     def run(self):
-        # clean up the environment
-        sys.argv = ['']
-        sys.path.insert(0, '')
+        shutdown = self._shutdown
+        shutdown.clear()
 
-        self._code.hook()
-        q = self.code_queue
+        q = self._code_queue
+        timeout = self._timeout
 
-        while True:
-            data = q.get()
-            self.evaluate(**data)
+        with self._code.hooked():
+            while not shutdown.is_set():
+                try:
+                    data = q.get(timeout=timeout)
+                except queue.Empty:
+                    continue
+                self.evaluate(**data)
 
-    ## commands ##
+    def shutdown(self):
+        self._shutdown.set()
+
+    ## interpreter ##
+
+    @property
+    def locals(self):
+        return self._code.locals
 
     def evaluate(self, source, notify=True):
         self._is_evaluating = True
@@ -84,62 +100,10 @@ class Service(object):
         matches = self._code.complete(prefix)
         self.add_event('completion', matches=matches)
 
+    def reset(self):
+        self._code.reset()
+
     ## handlers ##
-
-    def handle(self, sock):
-        self._stop.clear()
-        self.add_event('start', version=sys.version)
-
-        t_evt = utils.start_thread(self.handle_events, sock)
-        t_cmd = utils.start_thread(self.handle_commands, sock)
-
-        t_evt.join()
-        t_cmd.join()
-
-    def handle_events(self, sock):
-        stop = self._stop
-        events = self._events
-
-        try:
-            while not stop.is_set():
-                try:
-                    event = events.get(timeout=1)
-                except queue.Empty:
-                    sock.sendmsg(None)
-                else:
-                    sock.sendmsg(event)
-        except sockio.error as e:
-            log.warning('handle_events error: %s', repr(e))
-            stop.set()
-
-    def handle_commands(self, sock):
-        stop = self._stop
-
-        try:
-            while not stop.is_set():
-                msg = sock.recvmsg()
-
-                cmd = msg['cmd']
-                data = msg.get('data')
-                log.debug('cmd: %s%s', cmd, ': ' + repr(data) if data else '')
-
-                if cmd == 'evaluate':
-                    if self._is_evaluating:
-                        self._code.recv_input(data['source'] + '\n')
-                    else:
-                        self.code_queue.put(data)
-                elif cmd == 'interrupt':
-                    self.interrupt()
-                elif cmd == 'complete':
-                    self.complete(data)
-                else:
-                    log.error('unknown command: %s', cmd)
-
-        except (sockio.ReceiveInterrupted, ConnectionResetError) as e:
-            log.warning('handle_commands error: %s', repr(e))
-            stop.set()
-
-    ## utils ##
 
     def add_event(self, name, **data):
         if name == 'stdout':
@@ -152,9 +116,60 @@ class Service(object):
         event = {'evt': name, 'data': data}
         self._events.put(event)
 
-    def reset(self):
-        self._code.reset()
-        self._result_count = 0
+    def _handle(self, sock):
+        self._stop.clear()
 
-    def stop(self):
-        self._stop.set()
+        self.add_event('start', version=sys.version)
+
+        t_evt = utils.start_thread(self._handle_events, sock)
+        t_cmd = utils.start_thread(self._handle_commands, sock)
+
+        t_evt.join()
+        t_cmd.join()
+
+    def _handle_events(self, sock):
+        stop = self._stop
+        events = self._events
+        timeout = self._timeout
+
+        try:
+            while not stop.is_set():
+                try:
+                    event = events.get(timeout=timeout)
+                except queue.Empty:
+                    sock.sendmsg(None)
+                else:
+                    sock.sendmsg(event)
+        except sockio.error as e:
+            log.warning('handle_events error: %s', repr(e))
+            stop.set()
+
+    def _handle_commands(self, sock):
+        stop = self._stop
+
+        try:
+            while not stop.is_set():
+                try:
+                    msg = sock.recvmsg()
+                except sockio.timeout:
+                    continue
+
+                cmd = msg['cmd']
+                data = msg.get('data')
+                log.debug('cmd: %s%s', cmd, ': ' + repr(data) if data else '')
+
+                if cmd == 'evaluate':
+                    if self._is_evaluating:
+                        self._code.recv_input(data['source'] + '\n')
+                    else:
+                        self._code_queue.put(data)
+                elif cmd == 'interrupt':
+                    self.interrupt()
+                elif cmd == 'complete':
+                    self.complete(data)
+                else:
+                    log.error('unknown command: %s', cmd)
+
+        except (sockio.ReceiveInterrupted, ConnectionResetError) as e:
+            log.warning('handle_commands error: %s', repr(e))
+            stop.set()

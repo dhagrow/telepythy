@@ -61,7 +61,7 @@ class Window(QtWidgets.QMainWindow):
         # profiles
         menu = self.profile_menu
         group = QtWidgets.QActionGroup(menu)
-        for name in config.profile:
+        for name in sorted(config.profile, key=lambda n: n.lower()):
             action = group.addAction(name)
             action.setCheckable(True)
             action.setChecked(name == profile)
@@ -224,7 +224,7 @@ class Window(QtWidgets.QMainWindow):
         self.view_menu.exec_(event.globalPos())
 
     def closeEvent(self, event):
-        self._control.shutdown()
+        self._control.stop()
 
     ## actions ##
 
@@ -232,7 +232,8 @@ class Window(QtWidgets.QMainWindow):
         action = self._profiles[name]
 
         if self._control:
-            self._control.shutdown()
+            self._control.stop()
+            self._control = None
         self._set_disconnected(force=True)
 
         self._control = ctl = self._manager.get_control(name)
@@ -264,13 +265,10 @@ class Window(QtWidgets.QMainWindow):
             self.status_disconnected.emit(err)
         ctl.register('error', error)
 
-        ctl.init()
+        ctl.start()
 
         self.profile_menu.setActiveAction(action)
         self.profile_button.setText(name)
-
-    def stop(self):
-        self._control.stop()
 
     def restart(self):
         self._control.restart()

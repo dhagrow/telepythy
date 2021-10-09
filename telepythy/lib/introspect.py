@@ -8,6 +8,7 @@ import itertools
 import linecache
 import traceback
 import threading
+import contextlib
 import collections
 
 from . import logs
@@ -23,8 +24,8 @@ class Code(object):
     def __init__(self, locs=None, filename=None,
             stdout_callback=None, stderr_callback=None):
 
-        self._locs = locs or {}
         self.locals = {}
+        self._init_locals = locs or {}
 
         self.filename = filename or 'telepythy'
 
@@ -43,8 +44,7 @@ class Code(object):
     def reset(self):
         self.locals.clear()
         exec('', self.locals)
-        self.locals['__name__'] = '__main__'
-        self.locals.update(self._locs)
+        self.locals.update(self._init_locals)
         self._result_count = 0
 
     ## commands ##
@@ -149,6 +149,14 @@ class Code(object):
         return sorted(matches, key=match_sort_key)
 
     ## io control ##
+
+    @contextlib.contextmanager
+    def hooked(self):
+        self.hook()
+        try:
+            yield
+        finally:
+            self.unhook()
 
     def hook(self):
         sys.stdin = InputIO()
