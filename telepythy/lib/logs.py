@@ -13,13 +13,16 @@ log = get(__name__)
 
 def init(verbose=0, mode=None, log_exceptions=False):
     """Initializes simple logging defaults."""
-    if verbose == 0:
-        # no logging
-        return
+    root_log = get('telepythy')
+    root_log.propagate = False
 
     fmt = '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
 
-    if sys.stderr is None:
+    if verbose == 0:
+        handler = NullHandler()
+        root_log.addHandler(handler)
+        return
+    elif sys.stderr is None:
         if not iswindows:
             # TODO: maybe try syslog on linux?
             return
@@ -35,8 +38,6 @@ def init(verbose=0, mode=None, log_exceptions=False):
     handler.setFormatter(formatter)
     handler.addFilter(ModeFilter(mode))
 
-    root_log = get('telepythy')
-    root_log.propagate = False
     root_log.addHandler(handler)
     root_log.setLevel(INFO if verbose == 1 else DEBUG)
 
@@ -61,6 +62,10 @@ class ModeFilter(Filter):
     def filter(self, record):
         record.mode = self._mode
         return True
+
+class NullHandler(Handler):
+    def emit(self, record):
+        pass
 
 if iswindows:
     import ctypes as ct
