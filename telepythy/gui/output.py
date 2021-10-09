@@ -80,3 +80,11 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
     def scroll_to_bottom(self):
         scroll = self.verticalScrollBar()
         scroll.setValue(scroll.maximum())
+
+    def show_block(self, block):
+        block.setVisible(True)
+        self.viewport().update()
+
+    def hide_block(self, block):
+        block.setVisible(False)
+        self.viewport().update()
