@@ -141,7 +141,7 @@ class Service(object):
                 else:
                     sock.sendmsg(event)
         except sockio.error as e:
-            log.warning('handle_events error: %s', repr(e))
+            log.error('handle_events error: %s', repr(e))
             stop.set()
 
     def _handle_commands(self, sock):
@@ -171,5 +171,5 @@ class Service(object):
                     log.error('unknown command: %s', cmd)
 
         except sockio.error as e:
-            log.warning('handle_commands error: %s', repr(e))
+            log.error('handle_commands error: %s', repr(e))
             stop.set()
