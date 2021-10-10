@@ -171,5 +171,5 @@ class SockIOError(Exception):
 class InvalidInitialization(SockIOError):
     pass
 
-class ReceiveInterrupted(SockIOError):
+class ReceiveInterrupted(SockIOError, error):
     pass
