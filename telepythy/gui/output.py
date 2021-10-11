@@ -1,32 +1,17 @@
-from qtpy import QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
-from .highlighter import PygmentsHighlighter
+from . import textedit
 
 PS1 = '>>> '
 PS2 = '... '
 
-class OutputEdit(QtWidgets.QPlainTextEdit):
+class OutputEdit(textedit.TextEdit):
     def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.highlighter = PygmentsHighlighter(
-            self.document(), PythonConsoleLexer())
+        super().__init__(PythonConsoleLexer(), parent)
 
         self.setReadOnly(True)
-        self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-
-    def set_style(self, style):
-        self.highlighter.set_style(style)
-        self.set_palette()
-
-    def set_palette(self):
-        highlight = self.highlighter
-        palette = self.palette()
-        palette.setColor(QtGui.QPalette.Base, highlight.background_color())
-        palette.setColor(QtGui.QPalette.Text, highlight.text_color())
-        self.setPalette(palette)
 
     @QtCore.Slot(str)
     def append(self, text):
@@ -76,10 +61,6 @@ class OutputEdit(QtWidgets.QPlainTextEdit):
                 elif line.startswith(PS2):
                     yield line[len(PS2):]
         return '\n'.join(collect())
-
-    def scroll_to_bottom(self):
-        scroll = self.verticalScrollBar()
-        scroll.setValue(scroll.maximum())
 
     def show_block(self, block):
         block.setVisible(True)
