@@ -5,13 +5,10 @@ from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
 from . import textedit
-from .highlighter import PygmentsHighlighter
 from .history import History
 
 COMPLETER_KEYS = frozenset([
     Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape, Qt.Key_Tab, Qt.Key_Backtab])
-
-_rx_indent = re.compile(r'^(\s*)')
 
 _rx_context = re.compile(r'[_A-Za-z0-9.()"\'\[\]]+$')
 def get_completion_context(line):
@@ -168,6 +165,7 @@ class SourceEdit(textedit.TextEdit):
     ## events ##
 
     def keyPressEvent(self, event):
+        doc = self.document()
         key = event.key()
         mod = event.modifiers()
         ctrl = mod & Qt.ControlModifier
@@ -209,7 +207,8 @@ class SourceEdit(textedit.TextEdit):
                     self.evaluation_requested.emit(source)
                 return
             else:
-                spaces = self.block_indent(block)
+                spaces = doc.block_indentation(block)
+                # spaces = self.block_indent(block)
                 if new_scope:
                     spaces += 4
                 self.insertPlainText('\n' + (' ' * spaces))
@@ -265,11 +264,11 @@ class SourceEdit(textedit.TextEdit):
                     blockEnd = block.position() + block.length() - 1
                     if blockEnd < start:
                         break
-                    offset = doc.blockIndentation(block) % indent
+                    offset = doc.block_indentation(block) % indent
                     cursor.setPosition(block.position())
                     cursor.insertText(' ' * (indent - offset))
             else:
-                offset = doc.blockIndentation(block) % indent
+                offset = doc.block_indentation(block) % indent
                 cursor.setPosition(block.position())
                 cursor.insertText(' ' * (indent - offset))
 
@@ -291,23 +290,13 @@ class SourceEdit(textedit.TextEdit):
                 if blockEnd < start:
                     break
 
-                blockIndent = doc.blockIndentation(block)
+                blockIndent = doc.block_indentation(block)
                 offset = blockIndent % indent
 
                 cursor.setPosition(block.position() + blockIndent)
                 n = min(cursor.columnNumber(), indent - offset)
                 cursor.movePosition(cursor.PreviousCharacter, cursor.KeepAnchor, n)
                 cursor.removeSelectedText()
-
-    def blocks(self, start=None):
-        return BlockIterator(start or self.firstVisibleBlock())
-
-    def block_indent(self, block):
-        for prev in reversed(self.blocks(block)):
-            spaces = _rx_indent.match(prev.text()).group(0)
-            if spaces:
-                return len(spaces)
-        return 0
 
     def move_cursor_position(self, position):
         cursor = self.textCursor()
@@ -321,19 +310,3 @@ def cursor_edit(cursor):
         yield cursor
     finally:
         cursor.endEditBlock()
-
-class BlockIterator:
-    def __init__(self, start):
-        self._start = start
-
-    def __iter__(self):
-        block = self._start
-        while block.isValid():
-            yield block
-            block = block.next()
-
-    def __reversed__(self):
-        block = self._start
-        while block.isValid():
-            yield block
-            block = block.previous()

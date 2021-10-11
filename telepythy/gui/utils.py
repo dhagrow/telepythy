@@ -41,22 +41,6 @@ class ErrorBox(QtWidgets.QMessageBox):
 
         return result
 
-class BlockIterator:
-    def __init__(self, block):
-        self.block = block
-
-    def __iter__(self):
-        block = self.block
-        while block.isValid():
-            yield block
-            block = block.next()
-
-    def __reversed__(self):
-        block = self.block
-        while block.isValid():
-            yield block
-            block = block.previous()
-
 if sys.platform == 'win32':
     import ctypes as ct
     from ctypes import wintypes as wt
