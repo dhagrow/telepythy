@@ -1,3 +1,4 @@
+from qtpy.QtCore import Qt
 from qtpy import QtGui, QtWidgets
 
 from . import document
@@ -13,6 +14,15 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         self.highlighter = PygmentsHighlighter(doc, lexer)
 
         self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
+
+        self.setup_actions()
+
+    def setup_actions(self):
+        self.action_copy = QtWidgets.QAction('Copy', self)
+        self.action_copy.setShortcutContext(Qt.WidgetShortcut)
+        self.action_copy.setShortcut('Ctrl+c')
+        self.action_copy.triggered.connect(self.copy)
+        self.addAction(self.action_copy)
 
     def set_style(self, style):
         self.highlighter.set_style(style)

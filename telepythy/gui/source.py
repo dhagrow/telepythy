@@ -15,20 +15,6 @@ def get_completion_context(line):
     match = _rx_context.search(line)
     return (match and match.group()) or ''
 
-# required to let ctrl+c through (when no text is selected)
-class EventFilter(QtCore.QObject):
-    def eventFilter(self, obj, event):
-        if isinstance(event, QtGui.QKeyEvent):
-            key = event.key()
-            mod = event.modifiers()
-            ctrl = mod & Qt.ControlModifier
-
-            if ctrl and key == Qt.Key_C:
-                if not obj.textCursor().hasSelection():
-                    return True
-
-        return super().eventFilter(obj, event)
-
 class SourceEdit(textedit.TextEdit):
     evaluation_requested = QtCore.Signal(str)
     completion_requested = QtCore.Signal(str)
@@ -38,8 +24,6 @@ class SourceEdit(textedit.TextEdit):
 
         self._history = History()
         self._current = None
-
-        self.installEventFilter(EventFilter(self))
 
         self.setLineWrapMode(self.NoWrap)
 

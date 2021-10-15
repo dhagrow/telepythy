@@ -1,4 +1,5 @@
-from qtpy import QtCore, QtWidgets
+from qtpy.QtCore import Qt
+from qtpy import QtCore
 
 from pygments.lexers import PythonConsoleLexer
 
@@ -12,6 +13,9 @@ class OutputEdit(textedit.TextEdit):
         super().__init__(PythonConsoleLexer(), parent)
 
         self.setReadOnly(True)
+        self.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+
+    ## append ##
 
     @QtCore.Slot(str)
     def append(self, text):
@@ -61,6 +65,8 @@ class OutputEdit(textedit.TextEdit):
                 elif line.startswith(PS2):
                     yield line[len(PS2):]
         return '\n'.join(collect())
+
+    ## folding ##
 
     def show_block(self, block):
         block.setVisible(True)
