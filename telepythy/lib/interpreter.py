@@ -20,7 +20,7 @@ try:
 except NameError:
     pass
 
-class Code(object):
+class Interpreter(object):
     def __init__(self, locs=None, filename=None,
             stdout_callback=None, stderr_callback=None):
 

@@ -10,7 +10,7 @@ except ImportError:
 from . import logs
 from . import utils
 from . import sockio
-from . import introspect
+from . import interpreter
 
 TIMEOUT = 0.1
 
@@ -37,7 +37,7 @@ class Service(object):
             if not sys.path or sys.path[0] != '':
                 sys.path.insert(0, '')
 
-        self._code = introspect.Code(locs, filename,
+        self._inter = interpreter.Interpreter(locs, filename,
             lambda text: self.add_event('stdout', text=text),
             lambda text: self.add_event('stderr', text=text),
             )
@@ -67,7 +67,7 @@ class Service(object):
         q = self._code_queue
         timeout = self._timeout
 
-        with self._code.hooked():
+        with self._inter.hooked():
             while not shutdown.is_set():
                 try:
                     data = q.get(timeout=timeout)
@@ -82,26 +82,26 @@ class Service(object):
 
     @property
     def locals(self):
-        return self._code.locals
+        return self._inter.locals
 
     def evaluate(self, source, notify=True):
         self._is_evaluating = True
         try:
-            self._code.evaluate(source)
+            self._inter.evaluate(source)
         finally:
             self._is_evaluating = False
             if notify:
                 self.add_event('done')
 
     def interrupt(self):
-        self._code.interrupt()
+        self._inter.interrupt()
 
     def complete(self, prefix):
-        matches = self._code.complete(prefix)
+        matches = self._inter.complete(prefix)
         self.add_event('completion', matches=matches)
 
     def reset(self):
-        self._code.reset()
+        self._inter.reset()
 
     ## handlers ##
 
@@ -160,7 +160,7 @@ class Service(object):
 
                 if cmd == 'evaluate':
                     if self._is_evaluating:
-                        self._code.recv_input(data['source'] + '\n')
+                        self._inter.recv_input(data['source'] + '\n')
                     else:
                         self._code_queue.put(data)
                 elif cmd == 'interrupt':
