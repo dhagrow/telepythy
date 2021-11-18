@@ -2,7 +2,10 @@ import toml
 import appdirs
 from attrdict import AttrDict
 
+from ..lib import logs
 from ..lib import utils
+
+log = logs.get(__name__)
 
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
 # when blank sys.executable will be used
@@ -10,6 +13,8 @@ DEFAULT_INTERPRETER = 'python'
 
 def init(path=None):
     path = path or DEFAULT_PATH
+
+    log.debug('config: %s', path)
 
     defaults = AttrDict({
         'profile': {
