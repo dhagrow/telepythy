@@ -6,7 +6,7 @@ from ..lib import utils
 
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
 # when blank sys.executable will be used
-DEFAULT_INTERPRETER = ''
+DEFAULT_INTERPRETER = 'python'
 
 def init(path=None):
     path = path or DEFAULT_PATH
