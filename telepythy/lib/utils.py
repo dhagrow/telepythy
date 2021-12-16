@@ -1,5 +1,10 @@
 import os
+import sys
+import signal
 import threading
+
+import ctypes as ct
+from ctypes import wintypes as wt
 
 from . import logs
 
@@ -8,6 +13,8 @@ BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 7357
 DEFAULT_ADDR = '{}:{}'.format(DEFAULT_HOST, DEFAULT_PORT)
+
+IS_WINDOWS = sys.platform == 'win32'
 
 log = logs.get(__name__)
 
@@ -37,3 +44,14 @@ def start_thread(func, *args, **kwargs):
     t.daemon = True
     t.start()
     return t
+
+if IS_WINDOWS:
+    GenerateConsoleCtrlEvent = ct.windll.kernel32.GenerateConsoleCtrlEvent
+    GenerateConsoleCtrlEvent.argtypes = (wt.DWORD, wt.DWORD)
+    GenerateConsoleCtrlEvent.restype = wt.BOOL
+
+def interrupt():
+    if IS_WINDOWS:
+        GenerateConsoleCtrlEvent(signal.CTRL_C_EVENT, 0)
+    else:
+        os.kill(os.getpid(), signal.SIGINT)

@@ -10,7 +10,7 @@ from telepythy.lib import logs
 from telepythy.lib import control
 
 from telepythy.gui.window import Window
-from telepythy.gui import resources
+from telepythy.gui import resources # import ensures availability
 from telepythy.gui import config
 from telepythy.gui import utils
 

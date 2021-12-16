@@ -1,7 +1,5 @@
-import os
 import ast
 import sys
-import signal
 import pprint
 import keyword
 import itertools
@@ -12,6 +10,7 @@ import contextlib
 import collections
 
 from . import logs
+from . import utils
 
 log = logs.get(__name__)
 
@@ -73,10 +72,9 @@ class Interpreter(object):
             self._store_result()
 
     def interrupt(self):
+        # XXX: potential race-condition
         if self._run_lock.locked():
-            os.kill(os.getpid(), signal.SIGINT)
-        else:
-            log.debug('nothing to interrupt')
+            utils.interrupt()
 
     def complete(self, prefix):
         matches = []
@@ -229,6 +227,10 @@ class OutputIO(object):
     def __init__(self, callback, mirror=None):
         self._callback = callback
         self._mirror = mirror
+
+    def isatty(self):
+        # XXX: disabled until support for ANSI codes can be implemented
+        return False
 
     def write(self, s):
         if self._mirror is not None:

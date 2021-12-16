@@ -13,7 +13,8 @@ class OutputEdit(textedit.TextEdit):
         super().__init__(PythonConsoleLexer(), parent)
 
         self.setReadOnly(True)
-        self.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self.setTextInteractionFlags(
+            Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
 
     ## append ##
 

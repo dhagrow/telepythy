@@ -206,6 +206,7 @@ class ProcessControl(ServerControl):
 
         kwargs = {}
         if killableprocess.mswindows:
+            kwargs['creationflags'] = killableprocess.winprocess.CREATE_NEW_CONSOLE
             kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
             info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
 

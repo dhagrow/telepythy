@@ -1,10 +1,12 @@
 from qtpy.QtCore import Qt
-from qtpy import QtGui, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 from . import document
 from .highlighter import PygmentsHighlighter
 
 class TextEdit(QtWidgets.QPlainTextEdit):
+    interrupt_requested = QtCore.Signal()
+
     def __init__(self, lexer=None, parent=None):
         super().__init__(parent)
 
@@ -14,15 +16,6 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         self.highlighter = PygmentsHighlighter(doc, lexer)
 
         self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
-
-        self.setup_actions()
-
-    def setup_actions(self):
-        self.action_copy = QtWidgets.QAction('Copy', self)
-        self.action_copy.setShortcutContext(Qt.WidgetShortcut)
-        self.action_copy.setShortcut('Ctrl+c')
-        self.action_copy.triggered.connect(self.copy)
-        self.addAction(self.action_copy)
 
     def set_style(self, style):
         self.highlighter.set_style(style)
@@ -38,3 +31,19 @@ class TextEdit(QtWidgets.QPlainTextEdit):
     def scroll_to_bottom(self):
         scroll = self.verticalScrollBar()
         scroll.setValue(scroll.maximum())
+
+    def handle_ctrl_c(self):
+        if self.textCursor().hasSelection():
+            self.copy()
+        else:
+            self.interrupt_requested.emit()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        mod = event.modifiers()
+        ctrl = mod & Qt.ControlModifier
+
+        if ctrl and key == Qt.Key_C:
+            self.handle_ctrl_c()
+        else:
+            super().keyPressEvent(event)

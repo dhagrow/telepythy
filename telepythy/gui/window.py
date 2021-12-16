@@ -134,9 +134,12 @@ class Window(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
 
     def setup_menus(self):
-        self.main_menu = QtWidgets.QMenu('Main', self)
+        self.main_menu = QtWidgets.QMenu('File', self)
         self.main_menu.addAction(self.action_about)
+        self.main_menu.addSeparator()
+        self.main_menu.addAction(self.action_interrupt)
         self.main_menu.addAction(self.action_restart)
+        self.main_menu.addSeparator()
         self.main_menu.addAction(self.action_quit)
 
         self.view_menu = QtWidgets.QMenu('View', self)
@@ -188,7 +191,8 @@ class Window(QtWidgets.QMainWindow):
     def setup_signals(self):
         self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
-        self.action_interrupt.triggered.connect(self.interrupt)
+        self.action_interrupt.triggered.connect(
+            lambda: self.focusWidget().handle_ctrl_c())
         self.action_restart.triggered.connect(self.restart)
         self.action_toggle_menu.toggled.connect(self.menuBar().setVisible)
 
@@ -199,6 +203,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.profile_menu.triggered.connect(
             lambda action: self.set_profile(action.text()))
+
+        self.source_edit.interrupt_requested.connect(self.interrupt)
+        self.output_edit.interrupt_requested.connect(self.interrupt)
 
         self.source_edit.evaluation_requested.connect(self.evaluate)
         self.source_edit.completion_requested.connect(self.complete)
