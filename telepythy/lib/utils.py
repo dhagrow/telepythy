@@ -4,7 +4,6 @@ import signal
 import threading
 
 import ctypes as ct
-from ctypes import wintypes as wt
 
 from . import logs
 
@@ -31,14 +30,15 @@ def parse_address(address):
 def start_thread(func, *args, **kwargs):
     def thread(func, *args, **kwargs):
         ident = threading.current_thread().ident
+        func_name = getattr(func, '__qualname__', func.__name__)
 
-        log.debug('thread started <%s:%s>', func.__qualname__, ident)
+        log.debug('thread started <%s:%s>', func_name, ident)
         try:
             return func(*args, **kwargs)
         except:
-            log.exception('unexpected thread error <%s:%s>', func.__qualname__, ident)
+            log.exception('unexpected thread error <%s:%s>', func_name, ident)
         finally:
-            log.debug('thread stopped <%s:%s>', func.__qualname__, ident)
+            log.debug('thread stopped <%s:%s>', func_name, ident)
 
     t = threading.Thread(target=thread, args=(func,) + args, kwargs=kwargs)
     t.daemon = True
@@ -46,6 +46,7 @@ def start_thread(func, *args, **kwargs):
     return t
 
 if IS_WINDOWS:
+    from ctypes import wintypes as wt
     GenerateConsoleCtrlEvent = ct.windll.kernel32.GenerateConsoleCtrlEvent
     GenerateConsoleCtrlEvent.argtypes = (wt.DWORD, wt.DWORD)
     GenerateConsoleCtrlEvent.restype = wt.BOOL
