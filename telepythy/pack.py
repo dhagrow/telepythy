@@ -2,6 +2,7 @@
 
 import os
 import sys
+import glob
 import zipfile
 
 from .lib import logs
@@ -19,15 +20,18 @@ main()
 log = logs.get('telepythy.pack')
 
 def pack():
-    src_path = get_path('telepythy')
+    src_path = get_path('telepythy/**/*.py')
     dst_path = get_path('telepythy.pyz')
 
     # don't run if frozen
     if getattr(sys, 'frozen', False):
         return
 
-    with zipfile.PyZipFile(dst_path, 'w', optimize=2) as zip:
-        zip.writepy(src_path)
+    with zipfile.ZipFile(dst_path, 'w', zipfile.ZIP_DEFLATED,
+            allowZip64=False) as zip:
+        for path in glob.iglob(src_path, recursive=True):
+            if 'gui' in path: continue
+            zip.write(path, os.path.relpath(path))
         zip.writestr('__main__.py', MAIN)
 
     log.debug('packed lib stored to: %s', dst_path)
