@@ -1,5 +1,5 @@
 from qtpy.QtCore import Qt
-from qtpy import QtCore
+from qtpy import QtCore, QtGui
 
 from pygments.lexers import PythonConsoleLexer
 
@@ -15,6 +15,26 @@ class OutputEdit(textedit.TextEdit):
         self.setReadOnly(True)
         self.setTextInteractionFlags(
             Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+
+    ## copy ##
+
+    def copy(self):
+        clip = QtGui.QGuiApplication.clipboard()
+        text = self.textCursor().selectedText()
+        lines = []
+        for line in text.splitlines():
+            if line.startswith((PS1, PS2)):
+                line = line[4:]
+            lines.append(line)
+        clip.setText('\n'.join(lines))
+
+    def contextMenuEvent(self, event):
+        # make sure copy menu action calls self.copy()
+        menu = self.createStandardContextMenu()
+        act = menu.actions()[0]
+        act.triggered.disconnect()
+        act.triggered.connect(self.copy)
+        menu.exec_(event.globalPos())
 
     ## append ##
 
