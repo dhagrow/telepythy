@@ -20,6 +20,7 @@ class Service(object):
     def __init__(self, locals=None, filename=None, init_shell=False):
         self._timeout = TIMEOUT
 
+        self._thread = None
         self._stop = threading.Event()
         self._shutdown = threading.Event()
 
@@ -42,9 +43,30 @@ class Service(object):
             lambda text: self.add_event('stderr', text=text),
             )
 
+    ## threading ##
+
+    def start_connect(self, addr):
+        if self._thread is not None:
+            raise ServiceError('thread already running')
+        self._thread = utils.start_thread(self.connect, addr)
+
+    def start_serve(self, addr):
+        if self._thread is not None:
+            raise ServiceError('thread already running')
+        self._thread = utils.start_thread(self.serve, addr)
+
+    def join(self, timeout=None):
+        if self._thread is None:
+            raise ServiceError('thread is not running')
+        self._thread.join(timeout)
+        if self._thread.is_alive():
+            raise Timeout()
+        self._thread = None
+
     ## execution ##
 
     def connect(self, address):
+        address = utils.parse_address(address)
         client, _addr = sockio.start_client(address, self._handle)
         try:
             self.run()
@@ -53,6 +75,7 @@ class Service(object):
             client.join()
 
     def serve(self, address):
+        address = utils.parse_address(address)
         server, _addr = sockio.start_server(address, self._handle)
         try:
             self.run()
@@ -75,7 +98,7 @@ class Service(object):
                     continue
                 self.evaluate(**data)
 
-    def shutdown(self):
+    def stop(self):
         self._shutdown.set()
 
     ## interpreter ##
@@ -173,3 +196,9 @@ class Service(object):
         except sockio.error as e:
             log.error('handle_commands error: %s', repr(e))
             stop.set()
+
+class ServiceError(Exception):
+    """Raised for Service errors."""
+
+class Timeout(ServiceError):
+    """Raised for join timeouts."""

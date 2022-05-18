@@ -10,7 +10,7 @@ from . import logs
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 DEFAULT_HOST = 'localhost'
-DEFAULT_PORT = 7357
+DEFAULT_PORT = 7373
 DEFAULT_ADDR = '{}:{}'.format(DEFAULT_HOST, DEFAULT_PORT)
 
 IS_WINDOWS = sys.platform == 'win32'
