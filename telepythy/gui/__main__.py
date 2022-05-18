@@ -4,7 +4,7 @@ import argparse
 
 # absolute imports to support PyInstaller
 # https://github.com/pyinstaller/pyinstaller/issues/2560
-from PySide2 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from telepythy.lib import logs
 from telepythy.lib import control

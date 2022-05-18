@@ -62,7 +62,7 @@ class OutputEdit(textedit.TextEdit):
         cur.movePosition(cur.End)
         if self.blockCount() > 1:
             cur.insertText('\n')
-        tpl = '<div style="background: {};">{}</p><p></p>'
+        tpl = '<div style="background: {};">{}</p><p style="background: #00000000;"></p>'
         cur.insertHtml(tpl.format('#49A0AE', version))
         # cur.insertHtml(tpl.format(self.highlighter.highlight_color(), version))
         self.append_prompt()
