@@ -20,11 +20,11 @@ except NameError:
     pass
 
 class Interpreter(object):
-    def __init__(self, locs=None, filename=None,
+    def __init__(self, locals=None, filename=None,
             stdout_callback=None, stderr_callback=None):
 
         self.locals = {}
-        self._init_locals = locs or {}
+        self._init_locals = locals or {}
 
         self.filename = filename or 'telepythy'
 

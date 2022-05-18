@@ -17,7 +17,7 @@ TIMEOUT = 0.1
 log = logs.get(__name__)
 
 class Service(object):
-    def __init__(self, locs=None, filename=None, embed_mode=True):
+    def __init__(self, locals=None, filename=None, init_shell=False):
         self._timeout = TIMEOUT
 
         self._stop = threading.Event()
@@ -28,16 +28,16 @@ class Service(object):
 
         self._is_evaluating = False
 
-        if not embed_mode:
+        if init_shell:
             # set up a shell environment
-            locs = locs or {}
-            locs.setdefault('__name__', '__main__')
+            locals = locals or {}
+            locals.setdefault('__name__', '__main__')
 
             sys.argv = ['']
             if not sys.path or sys.path[0] != '':
                 sys.path.insert(0, '')
 
-        self._inter = interpreter.Interpreter(locs, filename,
+        self._inter = interpreter.Interpreter(locals, filename,
             lambda text: self.add_event('stdout', text=text),
             lambda text: self.add_event('stderr', text=text),
             )

@@ -94,12 +94,8 @@ class SockIO(object):
     def recvinit(self):
         msg = self.recvmsg()
         log.debug('recvinit: %s', msg)
-        try:
-            if msg['cmd'] == 'init':
-                return
-        except Exception:
-            pass
-        raise InvalidInitialization()
+        if msg.get('cmd') != 'init':
+            raise InvalidInitialization()
 
     def sendmsg(self, msg):
         data = json.dumps(msg).encode('utf8')
