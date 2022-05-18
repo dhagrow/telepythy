@@ -30,6 +30,10 @@ def main():
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help='enable verbose output (-vv for more)')
 
+    # undocumented support for self-debugging
+    parser.add_argument('-d', '--debug', action='store_true',
+        help=argparse.SUPPRESS)
+
     args = parser.parse_args()
 
     logs.init(args.verbose, mode='ctl', log_exceptions=True)
@@ -49,7 +53,7 @@ def main():
     utils.set_app_id()
     utils.hook_exceptions()
 
-    win = Window(cfg, mgr, args.profile)
+    win = Window(cfg, mgr, args.profile, args.debug)
     win.setWindowTitle('Telepythy')
     win.show()
 

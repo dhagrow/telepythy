@@ -1,5 +1,7 @@
+import threading
+
 from qtpy.QtCore import Qt
-from qtpy import QtCore, QtGui
+from qtpy import QtCore, QtGui, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
@@ -12,38 +14,48 @@ class OutputEdit(textedit.TextEdit):
     def __init__(self, parent=None):
         super().__init__(PythonConsoleLexer(), parent)
 
+        self._buffer = []
+        self._buffer_lock = threading.Lock()
+        self.startTimer(50)
+
         self.setReadOnly(True)
         self.setTextInteractionFlags(
             Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
 
-    ## copy ##
+        self.action_copy_source = QtWidgets.QAction('Copy Source')
+        self.action_copy_source.setShortcut('Ctrl+Shift+c')
+        self.action_copy_source.triggered.connect(self.copy_source)
+        self.addAction(self.action_copy_source)
 
-    def copy(self):
-        clip = QtGui.QGuiApplication.clipboard()
-        text = self.textCursor().selectedText()
-        lines = []
-        for line in text.splitlines():
-            if line.startswith((PS1, PS2)):
-                line = line[4:]
-            lines.append(line)
-        clip.setText('\n'.join(lines))
+    def timerEvent(self, event):
+        self._flush_buffer()
+
+    ## menu ##
 
     def contextMenuEvent(self, event):
-        # make sure copy menu action calls self.copy()
         menu = self.createStandardContextMenu()
-        act = menu.actions()[0]
-        act.triggered.disconnect()
-        act.triggered.connect(self.copy)
+        before = menu.actions()[1]
+        menu.insertAction(before, self.action_copy_source)
+
         menu.exec_(event.globalPos())
 
     ## append ##
 
     @QtCore.Slot(str)
     def append(self, text):
-        cur = self.textCursor()
-        cur.movePosition(cur.End)
-        cur.insertText(text)
-        self.scroll_to_bottom()
+        with self._buffer_lock:
+            self._buffer.append(text)
+
+    def _flush_buffer(self):
+        with self._buffer_lock:
+            text = ''.join(self._buffer)
+            del self._buffer[:]
+
+        if text:
+            cur = self.textCursor()
+            cur.movePosition(cur.End)
+            cur.insertText(text)
+            self.scroll_to_bottom()
 
     def append_session(self, version):
         cur = self.textCursor()
@@ -77,15 +89,33 @@ class OutputEdit(textedit.TextEdit):
 
         self.scroll_to_bottom()
 
-    def extract_source(self):
-        def collect():
-            text = self.toPlainText()
+    ## source ##
+
+    def copy_source(self):
+        clip = QtGui.QGuiApplication.clipboard()
+
+        # extend selection to include full lines
+        cur = self.textCursor()
+        start = cur.selectionStart()
+        end = cur.selectionEnd()
+
+        cur.movePosition(cur.Start)
+        cur.movePosition(cur.Right, cur.MoveAnchor, start)
+        cur.movePosition(cur.StartOfLine, cur.MoveAnchor)
+        cur.movePosition(cur.Right, cur.KeepAnchor, end - cur.position())
+        cur.movePosition(cur.EndOfLine, cur.KeepAnchor)
+
+        text = cur.selectedText()
+        clip.setText(self.extract_source(text))
+
+    def extract_source(self, text=None):
+        def collect(text):
             for line in text.splitlines():
                 if line.startswith(PS1):
                     yield line[len(PS1):]
                 elif line.startswith(PS2):
                     yield line[len(PS2):]
-        return '\n'.join(collect())
+        return '\n'.join(collect(text or self.toPlainText()))
 
     ## folding ##
 

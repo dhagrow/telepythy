@@ -4,6 +4,7 @@ from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
 from ..lib import logs
+from ..lib import serve_thread
 
 from .about import AboutDialog
 from .source import SourceEdit
@@ -21,7 +22,7 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, manager, profile):
+    def __init__(self, config, manager, profile, debug=False):
         super().__init__()
 
         self._manager = manager
@@ -30,6 +31,9 @@ class Window(QtWidgets.QMainWindow):
 
         self._connected = None
         self._history_result = collections.OrderedDict()
+
+        self._debug = debug
+        self._debug_server = None
 
         self.setup()
         self.config(config, profile)
@@ -79,7 +83,6 @@ class Window(QtWidgets.QMainWindow):
         self.setup_source_edit()
         self.setup_style_widget()
         self.setup_menus()
-        self.setup_menubar()
         self.setup_statusbar()
         self.setup_signals()
 
@@ -92,6 +95,10 @@ class Window(QtWidgets.QMainWindow):
         self.action_quit = QtWidgets.QAction('Quit')
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
+
+        self.action_clear = QtWidgets.QAction('Clear Output')
+        self.action_clear.setShortcut('Ctrl+l')
+        self.addAction(self.action_clear)
 
         self.action_interrupt = QtWidgets.QAction('Interrupt')
         self.action_interrupt.setShortcut('Ctrl+c')
@@ -108,6 +115,10 @@ class Window(QtWidgets.QMainWindow):
         self.action_toggle_source_title = QtWidgets.QAction('Source Titlebar')
         self.action_toggle_source_title.setCheckable(True)
         self.action_toggle_source_title.setChecked(True)
+
+        if self._debug:
+            self.action_debug_start = QtWidgets.QAction('Start Introspection')
+            self.action_debug_stop = QtWidgets.QAction('Stop Introspection')
 
     def setup_about_dialog(self):
         self.about_dialog = AboutDialog(self)
@@ -137,6 +148,7 @@ class Window(QtWidgets.QMainWindow):
         self.main_menu = QtWidgets.QMenu('File', self)
         self.main_menu.addAction(self.action_about)
         self.main_menu.addSeparator()
+        self.main_menu.addAction(self.action_clear)
         self.main_menu.addAction(self.action_interrupt)
         self.main_menu.addAction(self.action_restart)
         self.main_menu.addSeparator()
@@ -148,18 +160,26 @@ class Window(QtWidgets.QMainWindow):
         self.view_menu.addAction(self.source_dock.toggleViewAction())
         self.view_menu.addAction(self.action_toggle_source_title)
 
-        self.profile_menu = QtWidgets.QMenu('Profile', self)
+        self.profile_menu = QtWidgets.QMenu('Profiles', self)
+
+        if self._debug:
+            self.debug_menu = QtWidgets.QMenu('Debug', self)
+            self.debug_menu.addAction(self.action_debug_start)
+            self.debug_menu.addAction(self.action_debug_stop)
+
+        bar = self.menuBar()
+        bar.addMenu(self.main_menu)
+        bar.addMenu(self.view_menu)
+        bar.addMenu(self.profile_menu)
+        if self._debug:
+            bar.addMenu(self.debug_menu)
 
         self.status_menu = QtWidgets.QMenu()
         self.status_menu.addMenu(self.main_menu)
         self.status_menu.addMenu(self.view_menu)
         self.status_menu.addMenu(self.profile_menu)
-
-    def setup_menubar(self):
-        bar = self.menuBar()
-        bar.addMenu(self.main_menu)
-        bar.addMenu(self.view_menu)
-        bar.addMenu(self.profile_menu)
+        if self._debug:
+            self.status_menu.addMenu(self.debug_menu)
 
     def setup_statusbar(self):
         bar = self.statusBar()
@@ -191,6 +211,7 @@ class Window(QtWidgets.QMainWindow):
     def setup_signals(self):
         self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
+        self.action_clear.triggered.connect(self.output_edit.clear_output)
         self.action_interrupt.triggered.connect(
             lambda: self.focusWidget().handle_ctrl_c())
         self.action_restart.triggered.connect(self.restart)
@@ -200,6 +221,10 @@ class Window(QtWidgets.QMainWindow):
             w = None if checked else QtWidgets.QWidget(self.source_dock)
             self.source_dock.setTitleBarWidget(w)
         self.action_toggle_source_title.toggled.connect(source_toggle)
+
+        if self._debug:
+            self.action_debug_start.triggered.connect(self.start_debug_server)
+            self.action_debug_stop.triggered.connect(self.stop_debug_server)
 
         self.profile_menu.triggered.connect(
             lambda action: self.set_profile(action.text()))
@@ -334,3 +359,18 @@ class Window(QtWidgets.QMainWindow):
         msg = 'not connected{}'.format(e)
         self.status_label.setText(msg)
         self.status_icon.setPixmap(self._status_pixmap_disconnected)
+
+    ## debug ##
+
+    def start_debug_server(self):
+        if not self._debug_server:
+            self._debug_server = serve_thread({'window': self})
+            log.warning('debug server started')
+
+    def stop_debug_server(self):
+        if self._debug_server:
+            log.debug('debug server stopping')
+            self._debug_server.stop()
+            self._debug_server.join()
+            self._debug_server = None
+            log.warning('debug server stopped')

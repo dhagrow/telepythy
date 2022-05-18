@@ -29,6 +29,22 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         self.setPalette(palette)
 
     def scroll_to_bottom(self):
+        block = self.firstVisibleBlock()
+        block_h = self.blockBoundingRect(block).height()
+        frame_h = self.viewport().size().height()
+        visible_block_count = int(frame_h / block_h)
+
+        # -3 is a bit fudged but seems to work
+        bottom = block.blockNumber() + visible_block_count - 3
+
+        scroll = self.verticalScrollBar()
+        if self.blockCount() >= bottom:
+            self.setCenterOnScroll(False)
+            self.moveCursor(QtGui.QTextCursor.End)
+            scroll.setValue(scroll.maximum())
+
+    def clear_output(self):
+        self.setCenterOnScroll(True)
         scroll = self.verticalScrollBar()
         scroll.setValue(scroll.maximum())
 
