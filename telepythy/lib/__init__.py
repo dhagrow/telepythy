@@ -1,7 +1,7 @@
-from .service import Service
+from .service import Client, Server
 from . import utils
 
-def connect_thread(locals=None, address=None, init_shell=False):
+def start_client(locals=None, address=None, init_shell=False):
     """Starts a client in a thread.
 
     If set, *locals* must be a dictionary specifying the context in which
@@ -15,11 +15,11 @@ def connect_thread(locals=None, address=None, init_shell=False):
 
     Returns a `ServiceThread` instance.
     """
-    svc = Service(locals, init_shell=init_shell)
-    svc.start_connect(address or utils.DEFAULT_ADDR)
+    svc = Client(locals, init_shell=init_shell)
+    svc.start(address or utils.DEFAULT_ADDR)
     return svc
 
-def serve_thread(locals=None, address=None, init_shell=False):
+def start_server(locals=None, address=None, init_shell=False):
     """Starts a server in a thread.
 
     *address* is used to set the address to listen on for connections (e.g.
@@ -31,6 +31,6 @@ def serve_thread(locals=None, address=None, init_shell=False):
 
     Returns a `ServiceThread` instance.
     """
-    svc = Service(locals, init_shell=init_shell)
-    svc.start_serve(address or utils.DEFAULT_ADDR)
+    svc = Server(locals, init_shell=init_shell)
+    svc.start(address or utils.DEFAULT_ADDR)
     return svc

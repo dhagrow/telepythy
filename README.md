@@ -39,7 +39,7 @@ At the moment there is no installer available for **Telepythy**. The easiest opt
 $ pip install telepythy
 ```
 
-**NOTE**: This will pull in [PySide2][4], which weighs in at >100mb. I expect the eventual installer to be <20mb.
+**NOTE**: This will pull in [PySide6][4], which weighs in at >100mb. I expect the eventual installer to be <20mb.
 
 ## Usage
 
@@ -111,6 +111,19 @@ $ telepythy [-p,--profile] <profile_name>
 
 ### Embedding
 
+To embed a Telepythy service in your code, you can use any of the following
+functions:
+
+```python
+import telepythy
+
+# start a server
+telepythy.start_server()
+
+# or start a client
+telepythy.start_client()
+```
+
 See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
 
 ## Documentation
@@ -127,7 +140,6 @@ For connections across machines, I recommend using [SSH port forwarding][6].
 
 **Telepythy** is very much a work in progress. Here are some features that are planned for future releases (in no particular order):
 
-* ~~Minimal PyPI package for the embeddable service (no dependencies)~~
 * Configuration UI
 * Profile configuration UI
 * Style/syntax highlighting configuration UI
@@ -138,7 +150,6 @@ For connections across machines, I recommend using [SSH port forwarding][6].
 * Session import/export
 * Embedded documentation
 * Platform installers
-* Upgrade to PySide6 (QML? snake_case!)
 * Localization
 * Website/logo
 

@@ -1,6 +1,5 @@
 import datetime
 
-from .lib import Service, connect_thread, serve_thread
+from .lib import start_client, start_server
 
-__version__ = '0.3.0'
-__revision__ = datetime.date.today().strftime('%Y.%m.%d')
+__version__ = '0.4.0'

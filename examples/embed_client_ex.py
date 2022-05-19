@@ -7,9 +7,9 @@ from telepythy.lib import logs
 
 logs.init(2)
 
-svc = telepythy.connect_thread()
+client = telepythy.start_client()
 
 for i in itertools.count():
     value = random.random()
     time.sleep(1)
-    svc.locals.update(locals())
+    client.locals.update(locals())

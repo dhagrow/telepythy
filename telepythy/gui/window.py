@@ -4,7 +4,7 @@ from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
 from ..lib import logs
-from ..lib import serve_thread
+from ..lib import start_server
 
 from .about import AboutDialog
 from .source import SourceEdit
@@ -364,7 +364,7 @@ class Window(QtWidgets.QMainWindow):
 
     def start_debug_server(self):
         if not self._debug_server:
-            self._debug_server = serve_thread({'window': self})
+            self._debug_server = start_server({'window': self})
             log.warning('debug server started')
 
     def stop_debug_server(self):

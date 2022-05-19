@@ -17,6 +17,7 @@ TIMEOUT = 0.1
 log = logs.get(__name__)
 
 class Service(object):
+    """Base class for client/server services."""
     def __init__(self, locals=None, filename=None, init_shell=False):
         self._timeout = TIMEOUT
 
@@ -45,16 +46,6 @@ class Service(object):
 
     ## threading ##
 
-    def start_connect(self, addr):
-        if self._thread is not None:
-            raise ServiceError('thread already running')
-        self._thread = utils.start_thread(self.connect, addr)
-
-    def start_serve(self, addr):
-        if self._thread is not None:
-            raise ServiceError('thread already running')
-        self._thread = utils.start_thread(self.serve, addr)
-
     def join(self, timeout=None):
         if self._thread is None:
             raise ServiceError('thread is not running')
@@ -64,24 +55,6 @@ class Service(object):
         self._thread = None
 
     ## execution ##
-
-    def connect(self, address):
-        address = utils.parse_address(address)
-        client, _addr = sockio.start_client(address, self._handle)
-        try:
-            self.run()
-        finally:
-            client.stop()
-            client.join()
-
-    def serve(self, address):
-        address = utils.parse_address(address)
-        server, _addr = sockio.start_server(address, self._handle)
-        try:
-            self.run()
-        finally:
-            server.stop()
-            server.join()
 
     def run(self):
         shutdown = self._shutdown
@@ -196,6 +169,36 @@ class Service(object):
         except sockio.error as e:
             log.error('handle_commands error: %s', repr(e))
             stop.set()
+
+class Client(Service):
+    def start(self, addr):
+        if self._thread is not None:
+            raise ServiceError('thread already running')
+        self._thread = utils.start_thread(self.connect, addr)
+
+    def connect(self, address):
+        address = utils.parse_address(address)
+        client, _addr = sockio.start_client(address, self._handle)
+        try:
+            self.run()
+        finally:
+            client.stop()
+            client.join()
+
+class Server(Service):
+    def start(self, addr):
+        if self._thread is not None:
+            raise ServiceError('thread already running')
+        self._thread = utils.start_thread(self.serve, addr)
+
+    def serve(self, address):
+        address = utils.parse_address(address)
+        server, _addr = sockio.start_server(address, self._handle)
+        try:
+            self.run()
+        finally:
+            server.stop()
+            server.join()
 
 class ServiceError(Exception):
     """Raised for Service errors."""

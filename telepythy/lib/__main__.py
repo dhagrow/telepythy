@@ -2,7 +2,7 @@ import argparse
 
 from . import logs
 from . import utils
-from . import connect_thread, serve_thread
+from . import start_client, start_server
 
 log = logs.get(__name__)
 
@@ -33,9 +33,9 @@ def _main():
 
     # serve unless connect is set
     if args.connect is not False:
-        connect_thread(address=args.connect, init_shell=True).join()
+        start_client(address=args.connect, init_shell=True).join()
     else:
-        serve_thread(address=args.serve, init_shell=True).join()
+        start_server(address=args.serve, init_shell=True).join()
 
 if __name__ == '__main__':
     main()

@@ -1,7 +1,7 @@
 import threading
 
 from qtpy.QtCore import Qt
-from qtpy import QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from pygments.lexers import PythonConsoleLexer
 
@@ -92,7 +92,7 @@ class OutputEdit(textedit.TextEdit):
     ## source ##
 
     def copy_source(self):
-        clip = QtGui.QGuiApplication.clipboard()
+        clip = QtWidgets.QApplication.clipboard()
 
         # extend selection to include full lines
         cur = self.textCursor()

@@ -60,7 +60,7 @@ def main():
     # enable clean shutdown on ctrl+c
     setup_int_handler(win)
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 def list_profiles(cfg):
     for name, profile in sorted(cfg.profile.items()):

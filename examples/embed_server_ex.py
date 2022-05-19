@@ -7,9 +7,16 @@ from telepythy.lib import logs
 
 logs.init(2)
 
-svc = telepythy.serve_thread()
+server = telepythy.start_server()
 
 for i in itertools.count():
     value = random.random()
     time.sleep(1)
-    svc.locals.update(locals())
+    server.locals.update(locals())
+
+    if i == 10:
+        print('stopping')
+        server.stop()
+
+print('joining')
+server.join()
