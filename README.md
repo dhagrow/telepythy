@@ -6,7 +6,7 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 * Combines the flow of a REPL with the expressiveness of an editor
 * Syntax highlighting based on [Pygments][7]
-* UI based on [Qt 5][8]
+* UI based on [Qt 6][8]
 * Embeddable service with no third-party dependencies
 * Remote connections (as client or server via TCP)
 * Seamless swapping between multiple interpreter profiles

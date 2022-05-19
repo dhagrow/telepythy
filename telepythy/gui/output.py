@@ -1,4 +1,6 @@
-import threading
+import re
+import enum
+import itertools
 
 from qtpy.QtCore import Qt
 from qtpy import QtCore, QtWidgets
@@ -9,14 +11,19 @@ from . import textedit
 
 PS1 = '>>> '
 PS2 = '... '
+BUFFER_TIMEOUT = 50 # ms
+
+class BlockState(enum.IntEnum):
+    source = 0
+    output = 1
+    session = 2
 
 class OutputEdit(textedit.TextEdit):
     def __init__(self, parent=None):
         super().__init__(PythonConsoleLexer(), parent)
 
         self._buffer = []
-        self._buffer_lock = threading.Lock()
-        self.startTimer(50)
+        self.startTimer(BUFFER_TIMEOUT)
 
         self.setReadOnly(True)
         self.setTextInteractionFlags(
@@ -37,92 +44,99 @@ class OutputEdit(textedit.TextEdit):
         before = menu.actions()[1]
         menu.insertAction(before, self.action_copy_source)
 
-        menu.exec_(event.globalPos())
+        menu.exec(event.globalPos())
 
     ## append ##
 
     @QtCore.Slot(str)
-    def append(self, text):
-        with self._buffer_lock:
-            self._buffer.append(text)
+    def append(self, text, state=None):
+        state = BlockState.output if state is None else state
+        self._buffer.append((text, state))
 
     def _flush_buffer(self):
-        with self._buffer_lock:
-            text = ''.join(self._buffer)
-            del self._buffer[:]
+        buf = self._buffer
+        self._buffer = []
 
-        if text:
-            cur = self.textCursor()
-            cur.movePosition(cur.End)
-            cur.insertText(text)
-            self.scroll_to_bottom()
-
-    def append_session(self, version):
-        cur = self.textCursor()
-        cur.movePosition(cur.End)
-        if self.blockCount() > 1:
-            cur.insertText('\n')
-        tpl = '<div style="background: {};">{}</p><p style="background: #00000000;"></p>'
-        cur.insertHtml(tpl.format('#49A0AE', version))
-        # cur.insertHtml(tpl.format(self.highlighter.highlight_color(), version))
-        self.append_prompt()
-
-    @QtCore.Slot(str)
-    def append_prompt(self, prompt=PS1):
-        self.append(prompt)
-
-    def append_source(self, source):
-        if not source:
+        if not buf:
             return
 
         cur = self.textCursor()
-        cur.movePosition(cur.End)
-        insert = cur.insertText
-        lines = source.splitlines()
-        insert(lines[0] + '\n')
+        doc = self.document()
 
-        # TODO: remove trailing empty lines
+        key = lambda item: item[1]
+        for state, items in itertools.groupby(buf, key):
+            text = ''.join(item[0] for item in items)
 
-        for line in lines[1:]:
-            insert(PS2)
-            insert(line + '\n')
+            cur.movePosition(cur.End)
+            start_block = cur.block()
+
+            if state is BlockState.session:
+                cur.insertHtml(text)
+            else:
+                cur.insertText(text)
+
+            end_block = cur.block()
+
+            # set state for all appended blocks
+            for block in doc.blocks(start_block, end_block):
+                block.setUserState(state)
 
         self.scroll_to_bottom()
+
+    @QtCore.Slot()
+    def append_prompt(self, prompt=PS1):
+        self.append(prompt, BlockState.source)
+
+    def append_source(self, source):
+        source = source.strip()
+        if not source:
+            return
+
+        lines = source.splitlines()
+        text = [lines[0], '\n']
+        for line in lines[1:]:
+            text.extend([PS2, line, '\n'])
+
+        self.append(''.join(text), BlockState.source)
+
+    def append_session(self, version):
+        text = []
+        if self.blockCount() > 1:
+            text.append('\n')
+
+        # TODO: take style into account
+        tpl = '<div style="background: {};">{}</p>'
+        text.append(tpl.format('#49A0AE', version))
+        text.append('<p style="background: #00000000;"></p>')
+
+        self.append(''.join(text), BlockState.session)
+        self.append_prompt()
 
     ## source ##
 
     def copy_source(self):
         clip = QtWidgets.QApplication.clipboard()
 
-        # extend selection to include full lines
+        doc = self.document()
         cur = self.textCursor()
         start = cur.selectionStart()
         end = cur.selectionEnd()
 
+        # find selected blocks
         cur.movePosition(cur.Start)
         cur.movePosition(cur.Right, cur.MoveAnchor, start)
-        cur.movePosition(cur.StartOfLine, cur.MoveAnchor)
+        start_block = cur.block()
         cur.movePosition(cur.Right, cur.KeepAnchor, end - cur.position())
-        cur.movePosition(cur.EndOfLine, cur.KeepAnchor)
+        end_block = cur.block()
 
-        text = cur.selectedText()
-        clip.setText(self.extract_source(text))
+        # regex to remove prompts
+        rx_ps = re.compile('^({}|{})'.format(PS1, PS2))
 
-    def extract_source(self, text=None):
-        def collect(text):
-            for line in text.splitlines():
-                if line.startswith(PS1):
-                    yield line[len(PS1):]
-                elif line.startswith(PS2):
-                    yield line[len(PS2):]
-        return '\n'.join(collect(text or self.toPlainText()))
+        # find source blocks
+        text = []
+        for block in doc.blocks(start_block, end_block):
+            if block.userState() == BlockState.source:
+                line = rx_ps.sub('', block.text())
+                text.append(line)
 
-    ## folding ##
-
-    def show_block(self, block):
-        block.setVisible(True)
-        self.viewport().update()
-
-    def hide_block(self, block):
-        block.setVisible(False)
-        self.viewport().update()
+        clip.setText('\n'.join(text))

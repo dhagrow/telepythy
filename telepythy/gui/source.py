@@ -108,7 +108,7 @@ class SourceEdit(textedit.TextEdit):
         source = self._history.previous(match)
         if source:
             self.setPlainText(source)
-            self.move_cursor_position(QtGui.QTextCursor.End)
+            self.move_cursor(QtGui.QTextCursor.End)
 
     def next(self):
         if not self._history:
@@ -120,7 +120,7 @@ class SourceEdit(textedit.TextEdit):
             self.setPlainText(source)
         else:
             self.setPlainText(self._current)
-        self.move_cursor_position(QtGui.QTextCursor.End)
+        self.move_cursor(QtGui.QTextCursor.End)
 
     def reset(self):
         # clear history browsing state
@@ -282,7 +282,7 @@ class SourceEdit(textedit.TextEdit):
                 cursor.movePosition(cursor.PreviousCharacter, cursor.KeepAnchor, n)
                 cursor.removeSelectedText()
 
-    def move_cursor_position(self, position):
+    def move_cursor(self, position):
         cursor = self.textCursor()
         cursor.movePosition(position)
         self.setTextCursor(cursor)
