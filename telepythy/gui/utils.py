@@ -2,6 +2,7 @@ import os
 import sys
 import traceback
 
+from qtpy.QtCore import Qt
 from qtpy import QtWidgets
 
 APPID = 'dhagrow.telepythy'
@@ -20,7 +21,7 @@ def excepthook(type, value, tb):
     txt = box.findChild(QtWidgets.QTextEdit)
     txt.setHtml('<pre>{}</pre>'.format(exc))
 
-    box.exec_()
+    box.exec()
 
 def hook_exceptions():
     sys.excepthook = excepthook

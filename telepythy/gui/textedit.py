@@ -40,7 +40,6 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         scroll = self.verticalScrollBar()
         if self.blockCount() >= bottom:
             self.setCenterOnScroll(False)
-            self.moveCursor(QtGui.QTextCursor.End)
             scroll.setValue(scroll.maximum())
 
     def clear_output(self):

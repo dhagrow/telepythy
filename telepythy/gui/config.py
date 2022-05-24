@@ -30,7 +30,7 @@ def init(path=None):
             'font_size': 12,
             },
         'window': {
-            'size': [800, 800],
+            'size': [820, 820],
             'view': {
                 'menu': True,
                 },

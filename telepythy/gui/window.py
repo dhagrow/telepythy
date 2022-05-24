@@ -96,10 +96,6 @@ class Window(QtWidgets.QMainWindow):
         self.action_quit.setShortcut('Ctrl+q')
         self.addAction(self.action_quit)
 
-        self.action_clear = QtWidgets.QAction('Clear Output')
-        self.action_clear.setShortcut('Ctrl+l')
-        self.addAction(self.action_clear)
-
         self.action_interrupt = QtWidgets.QAction('Interrupt')
         self.action_interrupt.setShortcut('Ctrl+c')
         self.addAction(self.action_interrupt)
@@ -148,11 +144,13 @@ class Window(QtWidgets.QMainWindow):
         self.main_menu = QtWidgets.QMenu('File', self)
         self.main_menu.addAction(self.action_about)
         self.main_menu.addSeparator()
-        self.main_menu.addAction(self.action_clear)
         self.main_menu.addAction(self.action_interrupt)
         self.main_menu.addAction(self.action_restart)
         self.main_menu.addSeparator()
         self.main_menu.addAction(self.action_quit)
+
+        self.edit_menu = QtWidgets.QMenu('Edit', self)
+        self.edit_menu.addAction(self.output_edit.action_clear)
 
         self.view_menu = QtWidgets.QMenu('View', self)
         self.view_menu.addAction(self.action_toggle_menu)
@@ -169,6 +167,7 @@ class Window(QtWidgets.QMainWindow):
 
         bar = self.menuBar()
         bar.addMenu(self.main_menu)
+        bar.addMenu(self.edit_menu)
         bar.addMenu(self.view_menu)
         bar.addMenu(self.profile_menu)
         if self._debug:
@@ -176,6 +175,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.status_menu = QtWidgets.QMenu()
         self.status_menu.addMenu(self.main_menu)
+        self.status_menu.addMenu(self.edit_menu)
         self.status_menu.addMenu(self.view_menu)
         self.status_menu.addMenu(self.profile_menu)
         if self._debug:
@@ -211,10 +211,10 @@ class Window(QtWidgets.QMainWindow):
     def setup_signals(self):
         self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
-        self.action_clear.triggered.connect(self.output_edit.clear_output)
         self.action_interrupt.triggered.connect(
             lambda: self.focusWidget().handle_ctrl_c())
         self.action_restart.triggered.connect(self.restart)
+
         self.action_toggle_menu.toggled.connect(self.menuBar().setVisible)
 
         def source_toggle(checked):
