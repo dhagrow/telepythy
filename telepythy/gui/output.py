@@ -169,9 +169,8 @@ class OutputEdit(textedit.TextEdit):
         menu.exec(event.globalPos())
 
     def mouseDoubleClickEvent(self, event):
-        self._context_cursor = cur = self.cursorForPosition(event.pos())
-        chain = self._get_chain(cur.block())
-        chain.unfold()
+        cur = self.cursorForPosition(event.pos())
+        self.unfold_block(cur.block())
 
     ## append ##
 
@@ -296,9 +295,9 @@ class OutputEdit(textedit.TextEdit):
     ## internal ##
 
     def reset(self):
-        # seems to be the only way to call _q_adjustScrollbars
-        # (which is private) and reset the scroll bars
-        self.setDocument(self.document())
+        # solution from here:
+        # https://www.qtcentre.org/threads/44803-QPlainTextEdit-inherited-invisibleQTextBlock-INVALID-vertical-scroll-bar
+        self.resizeEvent(QtGui.QResizeEvent(self.size(), QtCore.QSize(0, 0)))
 
     def _get_chain(self, block):
         return self._chains[block.userState()]
