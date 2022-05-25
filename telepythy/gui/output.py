@@ -283,8 +283,7 @@ class OutputEdit(textedit.TextEdit):
             cur_block = cur.block()
 
         self._get_chain(cur_block).fold()
-
-        self.viewport().update()
+        self.reset()
 
     def unfold_block(self, cur_block=None):
         if cur_block is None:
@@ -292,10 +291,14 @@ class OutputEdit(textedit.TextEdit):
             cur_block = cur.block()
 
         self._get_chain(cur_block).unfold()
-
-        self.viewport().update()
+        self.reset()
 
     ## internal ##
+
+    def reset(self):
+        # seems to be the only way to call _q_adjustScrollbars
+        # (which is private) and reset the scroll bars
+        self.setDocument(self.document())
 
     def _get_chain(self, block):
         return self._chains[block.userState()]
