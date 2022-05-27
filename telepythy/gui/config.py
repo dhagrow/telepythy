@@ -8,7 +8,7 @@ from ..lib import utils
 log = logs.get(__name__)
 
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
-# when blank sys.executable will be used
+# when blank, sys.executable will be used
 DEFAULT_INTERPRETER = 'python'
 
 def init(path=None):

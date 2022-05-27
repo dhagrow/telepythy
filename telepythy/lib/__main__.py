@@ -13,7 +13,9 @@ def main():
         pass
 
 def _main():
-    parser = argparse.ArgumentParser('telepythy')
+    parser = argparse.ArgumentParser('telepythy',
+        description='This service can run as either an client (-c) or '
+            'server (-s).\nThe default is to run as a server.')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-s', '--serve', nargs='?', default=False,
