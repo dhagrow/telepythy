@@ -20,33 +20,36 @@ log = logs.get(__name__)
 class Manager:
     def __init__(self, config, verbose=0):
         self._config = config
+        self._venvs = {name: {'command': path}
+            for name, path in utils.virtualenvs()}
         self._verbose = verbose
 
-    def get_control(self, profile=None, connect=None, serve=None):
-        command = None
+    def get_config_profiles(self):
+        yield from self._config.profile.keys()
 
-        if profile is not None or (connect is None and serve is None):
-            profile = profile or 'default'
+    def get_virtualenv_profiles(self):
+        yield from self._venvs.keys()
 
-            try:
-                sec = self._config.profile[profile]
-            except KeyError:
-                # must be a command
-                command = profile
-            else:
-                command = sec.get('command')
-                connect = sec.get('connect')
-                serve = sec.get('serve')
+    def get_profile(self, name):
+        try:
+            sec = self._config.profile[name]
+        except KeyError:
+            sec = self._venvs[name]
+        return next(iter(sec.items()))
 
-        if command is not None:
-            return ProcessControl(('localhost', 0), command, self._verbose)
+    def get_control(self, profile_name):
+        type, value = self.get_profile(profile_name)
 
-        elif connect is not None:
-            addr = utils.parse_address(connect or utils.DEFAULT_ADDR)
+        if type == 'command':
+            cmd = value or utils.DEFAULT_COMMAND
+            return ProcessControl(('localhost', 0), cmd, self._verbose)
+
+        elif type == 'connect':
+            addr = utils.parse_address(value or utils.DEFAULT_ADDR)
             return ClientControl(addr)
 
-        elif serve is not None:
-            addr = utils.parse_address(serve or utils.DEFAULT_ADDR)
+        elif type == 'serve':
+            addr = utils.parse_address(value or utils.DEFAULT_ADDR)
             return ServerControl(addr)
 
         assert False, 'invalid control init'
@@ -184,7 +187,7 @@ class ServerControl(Control):
             self._address, self._handle)
 
 class ProcessControl(ServerControl):
-    def __init__(self, address, command=None, verbose=0, kill_timeout=None):
+    def __init__(self, address, command, verbose=0, kill_timeout=None):
         super().__init__(address)
 
         self._proc = None
@@ -196,10 +199,9 @@ class ProcessControl(ServerControl):
     def start(self):
         super().start()
 
-        python = self._command or sys.executable
         lib_path = utils.get_path('telepythy.pyz')
 
-        python = self._command or sys.executable
+        python = self._command
         cmd = shlex.split(python, posix=False) + [lib_path]
         cmd.extend(['-v'] * self._verbose)
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
@@ -216,9 +218,13 @@ class ProcessControl(ServerControl):
     def stop(self):
         super().stop()
 
+        proc = self._proc
+        if not proc:
+            log.debug('process not running')
+            return
+
         log.debug('stopping process')
 
-        proc = self._proc
         proc.kill()
         proc.wait(self._timeout)
         self._proc = None

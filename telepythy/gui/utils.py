@@ -2,7 +2,6 @@ import os
 import sys
 import traceback
 
-from qtpy.QtCore import Qt
 from qtpy import QtWidgets
 
 APPID = 'dhagrow.telepythy'

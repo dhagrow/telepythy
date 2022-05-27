@@ -1,6 +1,7 @@
 import os
 import sys
 import signal
+import pathlib
 import threading
 
 import ctypes as ct
@@ -9,6 +10,7 @@ from . import logs
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+DEFAULT_COMMAND = sys.executable
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 7373
 DEFAULT_ADDR = '{}:{}'.format(DEFAULT_HOST, DEFAULT_PORT)
@@ -19,6 +21,19 @@ log = logs.get(__name__)
 
 def get_path(*names):
     return os.path.join(BASE_PATH, *names)
+
+def virtualenvs(home_path=None):
+    home_path = pathlib.Path(home_path or pathlib.Path.home())
+    venv_path = home_path / '.virtualenvs'
+
+    get_name = lambda p: p.parent.parent.name
+
+    # linux
+    for path in venv_path.glob('**/bin/python'):
+        yield (get_name(path), str(path))
+    # windows
+    for path in venv_path.glob('**/Scripts/python.exe'):
+        yield (get_name(path), str(path))
 
 def parse_address(address):
     s = address.split(':', 1)

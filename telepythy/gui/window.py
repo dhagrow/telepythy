@@ -27,7 +27,6 @@ class Window(QtWidgets.QMainWindow):
 
         self._manager = manager
         self._control = None
-        self._profiles = {}
 
         self._connected = None
         self._history_result = collections.OrderedDict()
@@ -36,12 +35,12 @@ class Window(QtWidgets.QMainWindow):
         self._debug_server = None
 
         self.setup()
-        self.config(config, profile)
+        self.config(config)
         self.set_profile(profile)
 
     ## config ##
 
-    def config(self, config, profile):
+    def config(self, config):
         self._config = config
 
         # font
@@ -62,16 +61,6 @@ class Window(QtWidgets.QMainWindow):
 
         self.action_toggle_source_title.setChecked(False)
 
-        # profiles
-        menu = self.profile_menu
-        group = QtWidgets.QActionGroup(menu)
-        for name in sorted(config.profile, key=lambda n: n.lower()):
-            action = group.addAction(name)
-            action.setCheckable(True)
-            action.setChecked(name == profile)
-            menu.addAction(action)
-            self._profiles[name] = action
-
         self.resize(*config.window.size)
 
     ## setup ##
@@ -82,6 +71,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_style_widget()
+        self.setup_profiles()
         self.setup_menus()
         self.setup_statusbar()
         self.setup_signals()
@@ -140,6 +130,26 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
 
+    def setup_profiles(self):
+        self.profile_menu = menu = QtWidgets.QMenu('Profiles', self)
+        self.profile_group = group = QtWidgets.QActionGroup(self.profile_menu)
+        self._profile_actions = actions = {}
+
+        for name in sorted(self._manager.get_config_profiles()):
+            act = QtWidgets.QAction(name, self)
+            act.setCheckable(True)
+            act.setActionGroup(group)
+            menu.addAction(act)
+            actions[name] = act
+
+        menu.addSection('virtualenvs')
+        for name in sorted(self._manager.get_virtualenv_profiles()):
+            act = QtWidgets.QAction(name, self)
+            act.setCheckable(True)
+            act.setActionGroup(group)
+            menu.addAction(act)
+            actions[name] = act
+
     def setup_menus(self):
         self.main_menu = QtWidgets.QMenu('File', self)
         self.main_menu.addAction(self.action_about)
@@ -157,8 +167,6 @@ class Window(QtWidgets.QMainWindow):
         self.view_menu.addAction(self.style_dock.toggleViewAction())
         self.view_menu.addAction(self.source_dock.toggleViewAction())
         self.view_menu.addAction(self.action_toggle_source_title)
-
-        self.profile_menu = QtWidgets.QMenu('Profiles', self)
 
         if self._debug:
             self.debug_menu = QtWidgets.QMenu('Debug', self)
@@ -227,7 +235,7 @@ class Window(QtWidgets.QMainWindow):
             self.action_debug_stop.triggered.connect(self.stop_debug_server)
 
         self.profile_menu.triggered.connect(
-            lambda action: self.set_profile(action.text()))
+            lambda act: self.set_profile(act.text()))
 
         self.source_edit.interrupt_requested.connect(self.interrupt)
         self.output_edit.interrupt_requested.connect(self.interrupt)
@@ -261,8 +269,6 @@ class Window(QtWidgets.QMainWindow):
     ## actions ##
 
     def set_profile(self, name):
-        action = self._profiles[name]
-
         if self._control:
             self._control.stop()
             self._control = None
@@ -299,8 +305,8 @@ class Window(QtWidgets.QMainWindow):
 
         ctl.start()
 
-        self.profile_menu.setActiveAction(action)
         self.profile_button.setText(name)
+        self._profile_actions[name].setChecked(True)
 
     def restart(self):
         self._control.restart()
