@@ -7,7 +7,6 @@ import argparse
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from telepythy.lib import logs
-from telepythy.lib import control
 
 from telepythy.gui.window import Window
 from telepythy.gui import resources # import ensures availability
@@ -45,15 +44,13 @@ def main():
 
     pack.pack()
 
-    mgr = control.Manager(cfg, args.verbose)
-
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))
 
     utils.set_app_id()
     utils.hook_exceptions()
 
-    win = Window(cfg, mgr, args.profile, args.debug)
+    win = Window(cfg, args.profile, args.verbose, args.debug)
     win.setWindowTitle('Telepythy')
     win.show()
 

@@ -10,6 +10,7 @@ from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
 from .style import StyleWidget
+from .profiles import Profiles
 
 log = logs.get(__name__)
 
@@ -22,11 +23,11 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, manager, profile, debug=False):
+    def __init__(self, config, profile, verbose=0, debug=False):
         super().__init__()
 
-        self._manager = manager
         self._control = None
+        self._profiles = Profiles(config, verbose)
 
         self._connected = None
         self._history_result = collections.OrderedDict()
@@ -135,7 +136,7 @@ class Window(QtWidgets.QMainWindow):
         self.profile_group = group = QtWidgets.QActionGroup(self.profile_menu)
         self._profile_actions = actions = {}
 
-        for name in sorted(self._manager.get_config_profiles()):
+        for name in sorted(self._profiles.get_config_profiles()):
             act = QtWidgets.QAction(name, self)
             act.setCheckable(True)
             act.setActionGroup(group)
@@ -143,7 +144,7 @@ class Window(QtWidgets.QMainWindow):
             actions[name] = act
 
         menu.addSection('virtualenvs')
-        for name in sorted(self._manager.get_virtualenv_profiles()):
+        for name in sorted(self._profiles.get_virtualenv_profiles()):
             act = QtWidgets.QAction(name, self)
             act.setCheckable(True)
             act.setActionGroup(group)
@@ -274,7 +275,7 @@ class Window(QtWidgets.QMainWindow):
             self._control = None
         self._set_disconnected(force=True)
 
-        self._control = ctl = self._manager.get_control(name)
+        self._control = ctl = self._profiles.get_control(name)
 
         ctl.register(None, lambda address: self.status_connected.emit(address))
         def start(event):

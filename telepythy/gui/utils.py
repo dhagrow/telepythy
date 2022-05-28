@@ -1,5 +1,6 @@
 import os
 import sys
+import pathlib
 import traceback
 
 from qtpy import QtWidgets
@@ -40,6 +41,19 @@ class ErrorBox(QtWidgets.QMessageBox):
         txt.setFixedSize(txt.sizeHint())
 
         return result
+
+def virtualenvs(home_path=None):
+    home_path = pathlib.Path(home_path or pathlib.Path.home())
+    venv_path = home_path / '.virtualenvs'
+
+    get_name = lambda p: p.parent.parent.name
+
+    # linux
+    for path in venv_path.glob('**/bin/python'):
+        yield (get_name(path), str(path))
+    # windows
+    for path in venv_path.glob('**/Scripts/python.exe'):
+        yield (get_name(path), str(path))
 
 if sys.platform == 'win32':
     import ctypes as ct
