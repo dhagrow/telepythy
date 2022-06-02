@@ -9,7 +9,6 @@ import contextlib
 import collections
 
 from . import logs
-from . import utils
 
 log = logs.get(__name__)
 

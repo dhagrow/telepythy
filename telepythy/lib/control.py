@@ -194,11 +194,12 @@ class ProcessControl(ServerControl):
         self._proc = None
 
     def interrupt(self):
-        # all processes in the group will recieve the interrupt
-        # sleeping allows us to catch and ignore it here
         try:
-            utils.interrupt()
-            time.sleep(10)
+            utils.interrupt(self._proc.pid)
+            if utils.IS_WINDOWS:
+                # all processes in the group will recieve the interrupt
+                # sleeping allows us to catch and ignore it here
+                time.sleep(10)
         except KeyboardInterrupt:
             pass
 

@@ -13,6 +13,7 @@ from . import utils
 from . import sockio
 from . import interpreter
 
+# XXX: do we really need this?
 TIMEOUT = 0.1
 
 log = logs.get(__name__)
@@ -72,10 +73,8 @@ class Service(object):
                     except queue.Empty:
                         continue
                     self.evaluate(**data)
-                except Exception:
-                    traceback.print_exc()
                 except KeyboardInterrupt:
-                    traceback.print_exc()
+                    pass
 
     def stop(self):
         self._shutdown.set()
@@ -90,6 +89,10 @@ class Service(object):
         self._is_evaluating = True
         try:
             self._inter.evaluate(source)
+        except Exception:
+            traceback.print_exc()
+        except KeyboardInterrupt:
+            traceback.print_exc()
         finally:
             self._is_evaluating = False
             if notify:

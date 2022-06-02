@@ -51,7 +51,7 @@ def start_thread(func, *args, **kwargs):
 #     GenerateConsoleCtrlEvent.argtypes = (wt.DWORD, wt.DWORD)
 #     GenerateConsoleCtrlEvent.restype = wt.BOOL
 
-def interrupt():
-    pid = os.getpid()
+def interrupt(pid=None):
+    pid = os.getpid() if pid is None else pid
     log.debug('interrupting process: %s', pid)
     os.kill(pid, signal.CTRL_C_EVENT if IS_WINDOWS else signal.SIGINT)
