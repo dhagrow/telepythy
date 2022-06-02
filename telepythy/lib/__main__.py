@@ -2,17 +2,11 @@ import argparse
 
 from . import logs
 from . import utils
-from . import start_client, start_server
+from . import client, server
 
 log = logs.get(__name__)
 
 def main():
-    try:
-        _main()
-    except KeyboardInterrupt:
-        pass
-
-def _main():
     parser = argparse.ArgumentParser('telepythy',
         description='This service can run as either an client (-c) or '
             'server (-s).\nThe default is to run as a server.')
@@ -35,9 +29,12 @@ def _main():
 
     # serve unless connect is set
     if args.connect is not False:
-        start_client(address=args.connect, init_shell=True).join()
+        client(address=args.connect, init_shell=True)
     else:
-        start_server(address=args.serve, init_shell=True).join()
+        server(address=args.serve, init_shell=True)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

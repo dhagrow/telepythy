@@ -55,7 +55,7 @@ def main():
     win.show()
 
     # enable clean shutdown on ctrl+c
-    setup_int_handler(win)
+    # setup_int_handler(win)
 
     sys.exit(app.exec())
 

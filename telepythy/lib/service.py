@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import sys
 import threading
+import traceback
 try:
     import queue
 except ImportError:
@@ -66,10 +67,15 @@ class Service(object):
         with self._inter.hooked():
             while not shutdown.is_set():
                 try:
-                    data = q.get(timeout=timeout)
-                except queue.Empty:
-                    continue
-                self.evaluate(**data)
+                    try:
+                        data = q.get(timeout=timeout)
+                    except queue.Empty:
+                        continue
+                    self.evaluate(**data)
+                except Exception:
+                    traceback.print_exc()
+                except KeyboardInterrupt:
+                    traceback.print_exc()
 
     def stop(self):
         self._shutdown.set()
@@ -90,7 +96,7 @@ class Service(object):
                 self.add_event('done')
 
     def interrupt(self):
-        self._inter.interrupt()
+        utils.interrupt()
 
     def complete(self, prefix):
         matches = self._inter.complete(prefix)

@@ -1,6 +1,14 @@
 from .service import Client, Server
 from . import utils
 
+def client(locals=None, address=None, init_shell=False):
+    svc = Client(locals, init_shell=init_shell)
+    svc.connect(address or utils.DEFAULT_ADDR)
+
+def server(locals=None, address=None, init_shell=False):
+    svc = Server(locals, init_shell=init_shell)
+    svc.serve(address or utils.DEFAULT_ADDR)
+
 def start_client(locals=None, address=None, init_shell=False):
     """Starts a client in a thread.
 

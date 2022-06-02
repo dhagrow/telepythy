@@ -4,7 +4,6 @@ import pprint
 import keyword
 import itertools
 import linecache
-import traceback
 import threading
 import contextlib
 import collections
@@ -58,23 +57,12 @@ class Interpreter(object):
             len(source), None, source.splitlines(True), fname)
 
         with self._run_lock:
-            try:
-                mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
-                inter = ast.Interactive(mod.body)
-                codeob = compile(inter, fname, 'single')
-
-                exec(codeob, self.locals)
-            except Exception:
-                traceback.print_exc()
-            except KeyboardInterrupt:
-                traceback.print_exc()
+            mod = compile(source, fname, 'exec', ast.PyCF_ONLY_AST)
+            inter = ast.Interactive(mod.body)
+            codeob = compile(inter, fname, 'single')
+            exec(codeob, self.locals)
 
             self._store_result()
-
-    def interrupt(self):
-        # XXX: potential race-condition
-        if self._run_lock.locked():
-            utils.interrupt()
 
     def complete(self, prefix):
         matches = []

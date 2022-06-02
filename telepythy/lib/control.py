@@ -1,5 +1,7 @@
+import time
 import shlex
 import threading
+import subprocess
 import collections
 try:
     import queue
@@ -9,7 +11,6 @@ except ImportError:
 from . import logs
 from . import utils
 from . import sockio
-from . import killableprocess
 
 TIMEOUT = 0.01
 KILL_TIMEOUT = 5
@@ -169,13 +170,14 @@ class ProcessControl(ServerControl):
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
         kwargs = {}
-        if killableprocess.mswindows:
-            kwargs['creationflags'] = killableprocess.winprocess.CREATE_NEW_CONSOLE
-            kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
-            info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
+        # if killableprocess.mswindows:
+        #     kwargs['creationflags'] = killableprocess.winprocess.CREATE_NEW_CONSOLE
+        #     kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
+        #     info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
 
         log.debug('starting process: %s', cmd)
-        self._proc = killableprocess.Popen(cmd, **kwargs)
+        self._proc = subprocess.Popen(cmd, **kwargs)
+        log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
         super().stop()
@@ -190,6 +192,15 @@ class ProcessControl(ServerControl):
         proc.kill()
         proc.wait(self._timeout)
         self._proc = None
+
+    def interrupt(self):
+        # all processes in the group will recieve the interrupt
+        # sleeping allows us to catch and ignore it here
+        try:
+            utils.interrupt()
+            time.sleep(10)
+        except KeyboardInterrupt:
+            pass
 
 class ServiceProxy(object):
     def __init__(self, sock):
