@@ -280,9 +280,12 @@ class OutputEdit(textedit.TextEdit):
         end_block = cur.block()
 
         # find source blocks
+        # XXX: should be something more efficient here using chains
+        # XXX: should only copy selected text
         text = []
         for block in doc.blocks(start_block, end_block):
-            if block.userState() == BlockState.source:
+            chain = self._get_chain(block)
+            if chain.state == BlockState.source:
                 text.append(self._source_line(block.text()))
 
         clip.setText('\n'.join(text))
