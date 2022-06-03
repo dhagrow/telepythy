@@ -169,14 +169,8 @@ class ProcessControl(ServerControl):
         cmd.extend(['-v'] * self._verbose)
         cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
-        kwargs = {}
-        # if killableprocess.mswindows:
-        #     kwargs['creationflags'] = killableprocess.winprocess.CREATE_NEW_CONSOLE
-        #     kwargs['startupinfo'] = info = killableprocess.STARTUPINFO()
-        #     info.dwFlags |= killableprocess.STARTF_USESHOWWINDOW
-
         log.debug('starting process: %s', cmd)
-        self._proc = subprocess.Popen(cmd, **kwargs)
+        self._proc = subprocess.Popen(cmd)
         log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
