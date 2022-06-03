@@ -152,43 +152,46 @@ class Window(QtWidgets.QMainWindow):
             actions[name] = act
 
     def setup_menus(self):
-        self.main_menu = QtWidgets.QMenu('File', self)
-        self.main_menu.addAction(self.action_about)
-        self.main_menu.addSeparator()
-        self.main_menu.addAction(self.action_interrupt)
-        self.main_menu.addAction(self.action_restart)
-        self.main_menu.addSeparator()
-        self.main_menu.addAction(self.action_quit)
+        self.main_menu = menu = QtWidgets.QMenu('File', self)
+        menu.addAction(self.action_about)
+        menu.addSeparator()
+        menu.addAction(self.action_interrupt)
+        menu.addAction(self.action_restart)
+        menu.addSeparator()
+        menu.addAction(self.action_quit)
 
-        self.edit_menu = QtWidgets.QMenu('Edit', self)
-        self.edit_menu.addAction(self.output_edit.action_clear)
+        self.output_menu = menu = QtWidgets.QMenu('Output', self)
+        menu.addAction(self.output_edit.action_fold_last_block)
+        menu.addAction(self.output_edit.action_unfold_last_block)
+        menu.addSeparator()
+        menu.addAction(self.output_edit.action_clear)
 
-        self.view_menu = QtWidgets.QMenu('View', self)
-        self.view_menu.addAction(self.action_toggle_menu)
-        self.view_menu.addAction(self.style_dock.toggleViewAction())
-        self.view_menu.addAction(self.source_dock.toggleViewAction())
-        self.view_menu.addAction(self.action_toggle_source_title)
+        self.view_menu = menu = QtWidgets.QMenu('View', self)
+        menu.addAction(self.action_toggle_menu)
+        menu.addAction(self.style_dock.toggleViewAction())
+        menu.addAction(self.source_dock.toggleViewAction())
+        menu.addAction(self.action_toggle_source_title)
 
         if self._debug:
-            self.debug_menu = QtWidgets.QMenu('Debug', self)
-            self.debug_menu.addAction(self.action_debug_start)
-            self.debug_menu.addAction(self.action_debug_stop)
+            self.debug_menu = menu = QtWidgets.QMenu('Debug', self)
+            menu.addAction(self.action_debug_start)
+            menu.addAction(self.action_debug_stop)
 
         bar = self.menuBar()
         bar.addMenu(self.main_menu)
-        bar.addMenu(self.edit_menu)
+        bar.addMenu(self.output_menu)
         bar.addMenu(self.view_menu)
         bar.addMenu(self.profile_menu)
         if self._debug:
             bar.addMenu(self.debug_menu)
 
-        self.status_menu = QtWidgets.QMenu()
-        self.status_menu.addMenu(self.main_menu)
-        self.status_menu.addMenu(self.edit_menu)
-        self.status_menu.addMenu(self.view_menu)
-        self.status_menu.addMenu(self.profile_menu)
+        self.status_menu = menu = QtWidgets.QMenu()
+        menu.addMenu(self.main_menu)
+        menu.addMenu(self.output_menu)
+        menu.addMenu(self.view_menu)
+        menu.addMenu(self.profile_menu)
         if self._debug:
-            self.status_menu.addMenu(self.debug_menu)
+            menu.addMenu(self.debug_menu)
 
     def setup_statusbar(self):
         bar = self.statusBar()

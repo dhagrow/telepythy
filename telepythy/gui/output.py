@@ -131,14 +131,22 @@ class OutputEdit(textedit.TextEdit):
         self.addAction(self.action_clear)
 
         self.action_fold_block = QtWidgets.QAction('Fold Block')
-        self.action_fold_block.setShortcut('Ctrl+-')
         self.action_fold_block.triggered.connect(lambda: self.fold_block())
         self.addAction(self.action_fold_block)
 
         self.action_unfold_block = QtWidgets.QAction('Unfold Block')
-        self.action_unfold_block.setShortcut('Ctrl+=')
         self.action_unfold_block.triggered.connect(lambda: self.unfold_block())
         self.addAction(self.action_unfold_block)
+
+        self.action_fold_last_block = QtWidgets.QAction('Fold Last Block')
+        self.action_fold_last_block.setShortcut('Ctrl+-')
+        self.action_fold_last_block.triggered.connect(lambda: self.fold_block(last=True))
+        self.addAction(self.action_fold_last_block)
+
+        self.action_unfold_last_block = QtWidgets.QAction('Unfold Last Block')
+        self.action_unfold_last_block.setShortcut('Ctrl+=')
+        self.action_unfold_last_block.triggered.connect(lambda: self.unfold_block(last=True))
+        self.addAction(self.action_unfold_last_block)
 
         self.action_copy_source = QtWidgets.QAction('Copy Source')
         self.action_copy_source.setShortcut('Ctrl+Shift+c')
@@ -236,7 +244,7 @@ class OutputEdit(textedit.TextEdit):
                 cur.insertText(text)
 
             # register the block chain for this insertion
-    
+
             end_block = cur.block()
             if not end_block.text():
                 end_block = end_block.previous()
@@ -281,24 +289,32 @@ class OutputEdit(textedit.TextEdit):
 
     ## folding ##
 
-    def fold_block(self, cur_block=None):
-        # XXX: default action here should be to fold the last unfolded
-        # chain
-        if cur_block is None:
-            cur = self._context_cursor or self.textCursor()
-            cur_block = cur.block()
+    def fold_block(self, last=False):
+        if last:
+            # find last unfolded chain
+            for chain in reversed(self._chains.values()):
+                if not chain.is_folded and chain.count() > 1:
+                    break
+            else:
+                return
+        else:
+            cur = self._get_context_cursor()
+            chain = self._get_chain(cur.block())
 
-        self._get_chain(cur_block).fold()
+        chain.fold()
         self.reset()
 
-    def unfold_block(self, cur_block=None):
-        # XXX: default action here should be to unfold the last folded
-        # chain
-        if cur_block is None:
-            cur = self._context_cursor or self.textCursor()
-            cur_block = cur.block()
+    def unfold_block(self, cur_block=None, last=False):
+        if last:
+            # find last folded chain
+            for chain in reversed(self._chains.values()):
+                if chain.is_folded:
+                    break
+        else:
+            cur = self._get_context_cursor()
+            chain = self._get_chain(cur.block())
 
-        self._get_chain(cur_block).unfold()
+        chain.unfold()
         self.reset()
 
     ## internal ##
@@ -307,6 +323,11 @@ class OutputEdit(textedit.TextEdit):
         # solution from here:
         # https://www.qtcentre.org/threads/44803-QPlainTextEdit-inherited-invisibleQTextBlock-INVALID-vertical-scroll-bar
         self.resizeEvent(QtGui.QResizeEvent(self.size(), QtCore.QSize(0, 0)))
+
+    def _get_context_cursor(self):
+        cur = self._context_cursor
+        self._context_cursor = None
+        return cur or self.textCursor()
 
     def _get_chain(self, block):
         return self._chains[block.userState()]
