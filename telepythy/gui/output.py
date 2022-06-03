@@ -108,6 +108,8 @@ class OutputEdit(textedit.TextEdit):
         super().__init__(PythonConsoleLexer(), parent)
 
         self._buffer = []
+        # timer used to flush the buffer at regular intervals
+        # (see timerEvent)
         self.startTimer(BUFFER_TIMEOUT)
 
         self.setReadOnly(True)
@@ -209,6 +211,7 @@ class OutputEdit(textedit.TextEdit):
         self.append_prompt()
 
     def _flush_buffer(self):
+        """Transfers the contents of the output buffer to the widget."""
         buf = self._buffer
         self._buffer = []
 
@@ -232,6 +235,8 @@ class OutputEdit(textedit.TextEdit):
             else:
                 cur.insertText(text)
 
+            # register the block chain for this insertion
+    
             end_block = cur.block()
             if not end_block.text():
                 end_block = end_block.previous()
@@ -277,6 +282,8 @@ class OutputEdit(textedit.TextEdit):
     ## folding ##
 
     def fold_block(self, cur_block=None):
+        # XXX: default action here should be to fold the last unfolded
+        # chain
         if cur_block is None:
             cur = self._context_cursor or self.textCursor()
             cur_block = cur.block()
@@ -285,6 +292,8 @@ class OutputEdit(textedit.TextEdit):
         self.reset()
 
     def unfold_block(self, cur_block=None):
+        # XXX: default action here should be to unfold the last folded
+        # chain
         if cur_block is None:
             cur = self._context_cursor or self.textCursor()
             cur_block = cur.block()

@@ -13,15 +13,14 @@ from . import utils
 from . import sockio
 from . import interpreter
 
-# XXX: do we really need this?
-TIMEOUT = 0.1
+Q_TIMEOUT = 0.1
 
 log = logs.get(__name__)
 
 class Service(object):
     """Base class for client/server services."""
     def __init__(self, locals=None, filename=None, init_shell=False):
-        self._timeout = TIMEOUT
+        self._timeout = Q_TIMEOUT
 
         self._thread = None
         self._stop = threading.Event()
