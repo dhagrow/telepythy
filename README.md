@@ -55,13 +55,32 @@ $ python -m telepythy.gui
 
 ### Configuration
 
-Manually editing the configuration file is currently the only way to persist settings. It is saved according the the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux).
+Manually editing the configuration file is currently the only way to persist settings. It is saved according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy.cfg` on Windows).
+
+### Virtual Environments
+
+Any virtual environments discovered in `~/.virtualenvs` will be accesible automatically in the *Profiles* menu.
+
+### Embedding
+
+To embed a Telepythy service in your code, you can use any of the following
+functions:
+
+```python
+import telepythy
+
+# start a server
+telepythy.start_server()
+
+# or start a client
+telepythy.start_client()
+```
+
+See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
 
 ### Local Interpreters
 
-To use **Telepythy** with a different local Python interpreter, you must create a profile referencing the command for the interpreter in the config file.
-
-To add a different interpreter:
+To add a custom local interpreter, you must create a profile referencing the path for the interpreter in the config file:
 
 ```ini
 [profile.<profile_name>]
@@ -85,7 +104,7 @@ $ telepythy-service --serve '<interface>:<port>'
 $ python -m telepythy ...
 ```
 
-If no arguments are provided, the service will automatically listen as a server on port 7357.
+If no arguments are provided, the service will automatically listen as a server on port 7373.
 
 To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port, in the config file.
 
@@ -109,24 +128,7 @@ You can then use the profile by selecting it in the UI, or with the `--profile` 
 $ telepythy [-p,--profile] <profile_name>
 ```
 
-### Embedding
-
-To embed a Telepythy service in your code, you can use any of the following
-functions:
-
-```python
-import telepythy
-
-# start a server
-telepythy.start_server()
-
-# or start a client
-telepythy.start_client()
-```
-
-See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
-
-## Documentation
+## API
 
 *work in progress*
 
@@ -145,7 +147,6 @@ For connections across machines, I recommend using [SSH port forwarding][6].
 * Style/syntax highlighting configuration UI
 * Smart copy/paste
 * UNIX domain sockets
-* Folding for code and output blocks
 * Code snippets
 * Session import/export
 * Embedded documentation
