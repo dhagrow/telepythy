@@ -179,8 +179,8 @@ class OutputEdit(textedit.TextEdit):
         menu.exec(event.globalPos())
 
     def mouseDoubleClickEvent(self, event):
-        cur = self.cursorForPosition(event.pos())
-        self.unfold_block(cur.block())
+        self._context_cursor = self.cursorForPosition(event.pos())
+        self.unfold_block()
 
     ## append ##
 
@@ -307,7 +307,7 @@ class OutputEdit(textedit.TextEdit):
         chain.fold()
         self.reset()
 
-    def unfold_block(self, cur_block=None, last=False):
+    def unfold_block(self, last=False):
         if last:
             # find last folded chain
             for chain in reversed(self._chains.values()):
