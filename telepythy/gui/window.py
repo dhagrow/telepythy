@@ -163,8 +163,6 @@ class Window(QtWidgets.QMainWindow):
         self.output_menu = menu = QtWidgets.QMenu('Output', self)
         menu.addAction(self.output_edit.action_fold_last_block)
         menu.addAction(self.output_edit.action_unfold_last_block)
-        menu.addSeparator()
-        menu.addAction(self.output_edit.action_clear)
 
         self.view_menu = menu = QtWidgets.QMenu('View', self)
         menu.addAction(self.action_toggle_menu)

@@ -82,7 +82,7 @@ class BlockChain:
         cur = QtGui.QTextCursor(first_block)
         cur.movePosition(cur.EndOfBlock)
         cur.insertBlock()
-        fold_block = self._fold_block = cur.block()
+        self._fold_block = fold_block = cur.block()
         fold_block.setUserState(self.id)
 
         tpl = (' <div style="background: #49A0AE">'
@@ -125,11 +125,6 @@ class OutputEdit(textedit.TextEdit):
         self.setup_actions()
 
     def setup_actions(self):
-        self.action_clear = QtWidgets.QAction('Clear Output')
-        self.action_clear.setShortcut('Ctrl+l')
-        self.action_clear.triggered.connect(self.clear_output)
-        self.addAction(self.action_clear)
-
         self.action_fold_block = QtWidgets.QAction('Fold Block')
         self.action_fold_block.triggered.connect(lambda: self.fold_block())
         self.addAction(self.action_fold_block)
