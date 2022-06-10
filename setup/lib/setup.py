@@ -2,7 +2,7 @@ import os
 import sys
 from setuptools import setup, find_packages
 
-os.chdir(os.path.dirname(__file__))
+os.chdir(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.insert(0, '.')
 
 import telepythy

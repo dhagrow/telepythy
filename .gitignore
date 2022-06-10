@@ -3,6 +3,5 @@ __pycache__/
 *.pyc
 dist/
 build/
-setup/
 *.egg-info/
 tasks.todo
