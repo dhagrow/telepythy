@@ -13,6 +13,7 @@ from . import textedit
 PS1 = '>>> '
 PS2 = '... '
 BUFFER_TIMEOUT = 50 # ms
+BUFFER_CHUNK_SIZE = 1000 # lines
 
 # regex to remove prompts
 rx_ps = re.compile('^({}|{})'.format(PS1, PS2))
@@ -60,7 +61,7 @@ class BlockChain:
             cur.movePosition(cur.NextCharacter)
             cur.movePosition(cur.NextWord, cur.KeepAnchor)
             cur.removeSelectedText()
-            cur.insertText(f'{self.count() - 1} ')
+            cur.insertText(f'{self.count() - 2} ')
 
     def count(self):
         return (self._end_block.blockNumber() -
@@ -215,11 +216,11 @@ class OutputEdit(textedit.TextEdit):
 
     def _flush_buffer(self):
         """Transfers the contents of the output buffer to the widget."""
-        buf = self._buffer
-        self._buffer = []
 
-        if not buf:
-            return
+        buf = self._buffer
+        if not buf: return
+        # pull a chunk to prevent long rendering delays
+        buf, self._buffer = buf[:BUFFER_CHUNK_SIZE], buf[BUFFER_CHUNK_SIZE:]
 
         doc = self.document()
         cur = self.textCursor()
