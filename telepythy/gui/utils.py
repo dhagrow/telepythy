@@ -5,6 +5,10 @@ import traceback
 
 from qtpy import QtWidgets
 
+from ..lib import logs
+
+log = logs.get(__name__)
+
 APPID = 'dhagrow.telepythy'
 if os.path.exists('.git'):
     APPID = '.'.join([APPID, 'dev'])
@@ -12,6 +16,8 @@ if os.path.exists('.git'):
 def excepthook(type, value, tb):
     err = ''.join(traceback.format_exception_only(type, value))
     exc = ''.join(traceback.format_exception(type, value, tb))
+
+    log.error('unexpected error\n%s', exc)
 
     box = ErrorBox()
     box.setWindowTitle('Unexpected Exception')
