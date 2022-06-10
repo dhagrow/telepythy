@@ -9,7 +9,7 @@ from ..lib import start_server
 from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
-from .style import StyleWidget
+from .settings import SettingsWidget
 from .profiles import Profiles
 
 log = logs.get(__name__)
@@ -50,10 +50,10 @@ class Window(QtWidgets.QMainWindow):
         self.output_edit.setFont(QtGui.QFont(family, size))
         self.source_edit.setFont(QtGui.QFont(family, size))
 
-        # style
+        # settings
         sec = config.style
-        self.style_chooser.set_app_style(sec.app)
-        self.style_chooser.set_highlight_style(sec.highlight)
+        self.settings.set_app_style(sec.app)
+        self.settings.set_highlight_style(sec.highlight)
 
         # menus
         view_menu = config.window.view.menu
@@ -71,7 +71,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_about_dialog()
         self.setup_output_edit()
         self.setup_source_edit()
-        self.setup_style_widget()
+        self.setup_settings_widget()
         self.setup_profiles()
         self.setup_menus()
         self.setup_statusbar()
@@ -122,14 +122,14 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.BottomDockWidgetArea, self.source_dock)
 
-    def setup_style_widget(self):
-        self.style_chooser = StyleWidget()
+    def setup_settings_widget(self):
+        self.settings = SettingsWidget()
 
-        self.style_dock = QtWidgets.QDockWidget('Styles')
-        self.style_dock.setWidget(self.style_chooser)
-        self.style_dock.setVisible(False)
+        self.settings_dock = QtWidgets.QDockWidget('Settings')
+        self.settings_dock.setWidget(self.settings)
+        self.settings_dock.setVisible(False)
 
-        self.addDockWidget(Qt.RightDockWidgetArea, self.style_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.settings_dock)
 
     def setup_profiles(self):
         self.profile_menu = menu = QtWidgets.QMenu('Profiles', self)
@@ -166,7 +166,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.view_menu = menu = QtWidgets.QMenu('View', self)
         menu.addAction(self.action_toggle_menu)
-        menu.addAction(self.style_dock.toggleViewAction())
+        menu.addAction(self.settings_dock.toggleViewAction())
         menu.addAction(self.source_dock.toggleViewAction())
         menu.addAction(self.action_toggle_source_title)
 
@@ -255,9 +255,9 @@ class Window(QtWidgets.QMainWindow):
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
-        self.style_chooser.highlight_style_changed.connect(
+        self.settings.highlight_style_changed.connect(
             self.output_edit.set_style)
-        self.style_chooser.highlight_style_changed.connect(
+        self.settings.highlight_style_changed.connect(
             self.source_edit.set_style)
 
     ## events ##

@@ -1,9 +1,11 @@
 from qtpy import QtCore, QtWidgets
 import qdarkstyle
+from qdarkstyle import utils
 
-from pygments import styles
+from . import palette
+from . import styles
 
-class StyleWidget(QtWidgets.QWidget):
+class SettingsWidget(QtWidgets.QWidget):
     app_style_changed = QtCore.Signal(str)
     highlight_style_changed = QtCore.Signal(str)
 
@@ -30,7 +32,7 @@ class StyleWidget(QtWidgets.QWidget):
         for style in sorted(QtWidgets.QStyleFactory.keys()):
             self.app_combo.addItem(style.lower())
 
-        for style in sorted(styles.get_all_styles()):
+        for style in sorted(styles.get_styles()):
             self.highlight_combo.addItem(style)
 
         self.setup_actions()
@@ -42,7 +44,10 @@ class StyleWidget(QtWidgets.QWidget):
     def set_app_style(self, style):
         app = QtWidgets.QApplication.instance()
         if style == 'qdarkstyle':
-            app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api='qtpy'))
+            pal = palette.TelePalette
+            pal.COLOR_BACKGROUND_1 = '#1E1E1E'
+            stylesheet = utils.create_qss(pal)
+            app.setStyleSheet(stylesheet)
         else:
             app.setStyleSheet('')
             app.setStyle(style)

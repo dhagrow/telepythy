@@ -87,7 +87,6 @@ from contextlib import contextmanager
 
 @contextmanager
 def _lexpatch():
-
     try:
         orig = RegexLexer.get_tokens_unprocessed
         RegexLexer.get_tokens_unprocessed = get_tokens_unprocessed
