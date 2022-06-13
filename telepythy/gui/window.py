@@ -6,6 +6,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from ..lib import logs
 from ..lib import start_server
 
+from . import styles
 from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
@@ -52,8 +53,8 @@ class Window(QtWidgets.QMainWindow):
 
         # settings
         sec = config.style
-        self.settings.set_app_style(sec.app)
-        self.settings.set_highlight_style(sec.highlight)
+        self.set_app_style(sec.app)
+        self.set_highlight_style(sec.highlight)
 
         # menus
         view_menu = config.window.view.menu
@@ -255,10 +256,8 @@ class Window(QtWidgets.QMainWindow):
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
-        self.settings.highlight_style_changed.connect(
-            self.output_edit.set_style)
-        self.settings.highlight_style_changed.connect(
-            self.source_edit.set_style)
+        self.settings.app_style_changed.connect(self.set_app_style)
+        self.settings.highlight_style_changed.connect(self.set_highlight_style)
 
     ## events ##
 
@@ -313,6 +312,27 @@ class Window(QtWidgets.QMainWindow):
     def restart(self):
         self._control.restart()
         self._set_disconnected(force=True)
+
+    ## styles ##
+
+    def set_app_style(self, name):
+        app = QtWidgets.QApplication.instance()
+
+        if name in ('dark', 'light'):
+            stylesheet = styles.get_app_stylesheet(name)
+        else:
+            stylesheet = ''
+            app.setStyle(name)
+
+        app.setStyleSheet(stylesheet)
+
+        self.settings.set_app_style(name)
+
+    def set_highlight_style(self, name):
+        self.output_edit.set_style(name)
+        self.source_edit.set_style(name)
+
+        self.settings.set_highlight_style(name)
 
     ## commands ##
 

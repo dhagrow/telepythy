@@ -11,7 +11,7 @@ from pygments.token import (Token, Operator, Name, Comment, Generic,
 
 class CodedarkStyle(Style):
 
-    background_color = None
+    background_color = '#1E1E1E'
     default_style = ''
 
     styles = {
@@ -23,7 +23,7 @@ class CodedarkStyle(Style):
         Generic.Error:      '#F44747 bg:#1E1E1E',
         Generic.Heading:    'bold',
         Generic.Inserted:   'bg:#4B5632 bold',
-        Generic.Output:     '#5A5A5A bold',
+        Generic.Output:     '#E1E1E1',
         Generic.Subheading: 'bold',
         Generic.Traceback:  '#F44747 bg:#1E1E1E',
 
@@ -34,7 +34,7 @@ class CodedarkStyle(Style):
         Name.Constant:      '#569CD6 underline',
         Name.Entity:        '#D7BA7D bold',
         Name.Exception:     '#C586C0',
-        Name.Function:      '#DCDCAA',
+        Name.Function:      '#CBDAA8',
         Name.Label:         '#C586C0',
         Name.Tag:           '#C586C0 bold',
         Name.Variable:      '#9CDCFE underline',

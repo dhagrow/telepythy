@@ -2,6 +2,7 @@ import os
 import sys
 import pathlib
 import traceback
+import contextlib
 
 from qtpy import QtWidgets
 
@@ -47,6 +48,14 @@ class ErrorBox(QtWidgets.QMessageBox):
         txt.setFixedSize(txt.sizeHint())
 
         return result
+
+@contextlib.contextmanager
+def block_signals(widget):
+    widget.blockSignals(True)
+    try:
+        yield
+    finally:
+        widget.blockSignals(False)
 
 def virtualenvs(home_path=None):
     home_path = pathlib.Path(home_path or pathlib.Path.home())

@@ -1,9 +1,7 @@
 from qtpy import QtCore, QtWidgets
-import qdarkstyle
-from qdarkstyle import utils
 
-from . import palette
 from . import styles
+from . import utils
 
 class SettingsWidget(QtWidgets.QWidget):
     app_style_changed = QtCore.Signal(str)
@@ -18,19 +16,17 @@ class SettingsWidget(QtWidgets.QWidget):
         self.layout = QtWidgets.QFormLayout()
         self.setLayout(self.layout)
 
-        # workaround: https://github.com/ColinDuquesnoy/QDarkStyleSheet/issues/200
-        delegate = QtWidgets.QStyledItemDelegate()
         self.app_combo = QtWidgets.QComboBox()
-        self.app_combo.setItemDelegate(delegate)
         self.layout.addRow('Application style', self.app_combo)
 
         self.highlight_combo = QtWidgets.QComboBox()
         self.layout.addRow('Syntax highlight style', self.highlight_combo)
 
         # add styles
-        self.app_combo.addItem('qdarkstyle')
+        self.app_combo.addItem('dark')
+        self.app_combo.addItem('light')
         for style in sorted(QtWidgets.QStyleFactory.keys()):
-            self.app_combo.addItem(style.lower())
+            self.app_combo.addItem(style)
 
         for style in sorted(styles.get_styles()):
             self.highlight_combo.addItem(style)
@@ -38,21 +34,14 @@ class SettingsWidget(QtWidgets.QWidget):
         self.setup_actions()
 
     def setup_actions(self):
-        self.app_combo.currentTextChanged.connect(self.set_app_style)
-        self.highlight_combo.currentTextChanged.connect(self.highlight_style_changed)
+        self.app_combo.currentTextChanged.connect(self.app_style_changed)
+        self.highlight_combo.currentTextChanged.connect(
+            self.highlight_style_changed)
 
     def set_app_style(self, style):
-        app = QtWidgets.QApplication.instance()
-        if style == 'qdarkstyle':
-            pal = palette.TelePalette
-            pal.COLOR_BACKGROUND_1 = '#1E1E1E'
-            stylesheet = utils.create_qss(pal)
-            app.setStyleSheet(stylesheet)
-        else:
-            app.setStyleSheet('')
-            app.setStyle(style)
-
-        self.app_combo.setCurrentText(style)
+        with utils.block_signals(self.app_combo):
+            self.app_combo.setCurrentText(style)
 
     def set_highlight_style(self, style):
-        self.highlight_combo.setCurrentText(style)
+        with utils.block_signals(self.highlight_combo):
+            self.highlight_combo.setCurrentText(style)

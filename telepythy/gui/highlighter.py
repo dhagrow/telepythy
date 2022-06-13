@@ -10,14 +10,6 @@ from pygments.formatters.html import HtmlFormatter
 from pygments.lexer import RegexLexer, _TokenType, Text, Error
 from pygments.lexers import Python3Lexer
 from pygments.styles import get_style_by_name
-from pygments import token
-
-# tweaked from: https://stackoverflow.com/a/38478744
-def complementary_color(hexstr):
-    hexstr = hexstr.lstrip('#')
-    rgb = (hexstr[0:2], hexstr[2:4], hexstr[4:6])
-    comp = ['%02x' % (255 - int(a, 16)) for a in rgb]
-    return ''.join(comp)
 
 def get_tokens_unprocessed(self, text, stack=('root',)):
     """ Split ``text`` into (tokentype, text) pairs.
@@ -83,7 +75,6 @@ def get_tokens_unprocessed(self, text, stack=('root',)):
 
 # Monkeypatch!
 from contextlib import contextmanager
-
 
 @contextmanager
 def _lexpatch():
@@ -160,17 +151,6 @@ class PygmentsHighlighter(QtGui.QSyntaxHighlighter):
     #---------------------------------------------------------------------------
     # 'PygmentsHighlighter' interface
     #---------------------------------------------------------------------------
-
-    def background_color(self):
-        return self._style.background_color
-
-    def highlight_color(self):
-        return self._style.highlight_color
-
-    def text_color(self):
-        style = self._style
-        return (style.styles[token.Text]
-            or '#' + complementary_color(style.background_color))
 
     def set_style(self, style):
         """ Sets the style to the specified Pygments style.

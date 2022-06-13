@@ -204,12 +204,8 @@ class OutputEdit(textedit.TextEdit):
     def append_session(self, version):
         text = []
         if self.blockCount() > 1:
-            text.append('<br>')
-
-        # TODO: take style into account
-        tpl = '<div style="background: {};">{}</div>'
-        text.append(tpl.format('#49A0AE', version))
-        text.append('<p></p>')
+            text.append('\n')
+        text.append(f'{version}\n')
 
         self.append(''.join(text), BlockState.session)
         self.append_prompt()
@@ -232,12 +228,19 @@ class OutputEdit(textedit.TextEdit):
         key = lambda item: item[1]
         for state, items in itertools.groupby(buf, key):
             start_block = cur.block()
+            fmt = QtGui.QTextCharFormat()
+
+            print(start_block.userState())
+
+            if state == BlockState.session:
+                style = self.highlighter._style
+                fmt.setForeground(QtGui.QBrush(style.highlight_text_color))
+                fmt.setBackground(QtGui.QBrush(style.highlight_color))
+
+            cur.setBlockCharFormat(fmt)
 
             text = ''.join(item[0] for item in items)
-            if state == BlockState.session:
-                cur.insertHtml(text)
-            else:
-                cur.insertText(text)
+            cur.insertText(text)
 
             # register the block chain for this insertion
 
