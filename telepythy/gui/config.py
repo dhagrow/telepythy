@@ -1,6 +1,5 @@
 import toml
 import appdirs
-from attrdict import AttrDict
 
 from ..lib import logs
 from ..lib import utils
@@ -10,6 +9,22 @@ log = logs.get(__name__)
 DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
 # when blank, sys.executable will be used
 DEFAULT_INTERPRETER = 'python'
+
+class AttrDict(dict):
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            try:
+                val = self[name]
+            except KeyError:
+                raise AttributeError(name)
+            if isinstance(val, dict):
+                return self.__class__(val)
+            return val
+
+    def __or__(self, other):
+        return AttrDict(super().__or__(other))
 
 def init(path=None):
     path = path or DEFAULT_PATH
@@ -43,7 +58,7 @@ def init(path=None):
     except FileNotFoundError:
         cfg = {}
 
-    cfg = defaults + cfg
+    cfg = defaults | cfg
 
     with open(path, 'w') as f:
         toml.dump(cfg, f)

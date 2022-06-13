@@ -29,7 +29,6 @@ setup(
         },
     install_requires=[
         'appdirs>=1.4.4',
-        'attrdict>=2.0.1',
         'colorlog>=6.6.0',
         'Pygments>=2.12.0',
         'pyqtdarktheme>=1.1.0',

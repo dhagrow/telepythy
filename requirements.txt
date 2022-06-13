@@ -1,5 +1,4 @@
 appdirs==1.4.4
-attrdict==2.0.1
 colorama==0.4.4
 colorlog==6.6.0
 packaging==21.3
