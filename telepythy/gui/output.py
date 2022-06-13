@@ -230,8 +230,6 @@ class OutputEdit(textedit.TextEdit):
             start_block = cur.block()
             fmt = QtGui.QTextCharFormat()
 
-            print(start_block.userState())
-
             if state == BlockState.session:
                 style = self.highlighter._style
                 fmt.setForeground(QtGui.QBrush(style.highlight_text_color))

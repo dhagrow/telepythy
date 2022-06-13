@@ -3,7 +3,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 
 from . import styles
 from . import document
-from .highlighter import PygmentsHighlighter
+from .highlighter import Highlighter
 
 DEFAULT_STYLESHEET = 'QPlainTextEdit:focus { border: none; }'
 
@@ -16,7 +16,7 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         doc = document.TextDocument(self)
         self.setDocument(doc)
 
-        self.highlighter = PygmentsHighlighter(doc, lexer)
+        self.highlighter = Highlighter(doc, lexer)
 
         self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
         self.setStyleSheet(DEFAULT_STYLESHEET)
