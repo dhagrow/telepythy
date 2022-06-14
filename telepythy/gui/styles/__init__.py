@@ -36,7 +36,7 @@ def get_style(name, search_paths=None):
         style.highlight_color = _complementary_color(style.background_color)
     style.highlight_text_color = _color_from_brightness(style.highlight_color)
 
-    style.text_color = style.styles[Text] = _ensure_hash(style.text_color)
+    style.text_color = _ensure_hash(style.text_color)
     style.background_color = _ensure_hash(style.background_color)
     style.highlight_text_color = _ensure_hash(style.highlight_text_color)
     style.highlight_color = _ensure_hash(style.highlight_color)

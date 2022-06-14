@@ -25,8 +25,8 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         style = styles.get_style(name)
         self.highlighter.set_style(style)
 
-        tpl = 'QPlainTextEdit { background: %s; }' + DEFAULT_STYLESHEET
-        self.setStyleSheet(tpl % (style.background_color,))
+        tpl = 'QPlainTextEdit { color: %s; background: %s; }' + DEFAULT_STYLESHEET
+        self.setStyleSheet(tpl % (style.text_color, style.background_color))
 
     def scroll_to_bottom(self):
         scroll = self.verticalScrollBar()
