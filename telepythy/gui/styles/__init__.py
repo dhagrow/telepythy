@@ -1,5 +1,6 @@
 import os
 import importlib
+import collections
 
 import qdarktheme
 from pygments import styles
@@ -25,15 +26,15 @@ def get_style(name, search_paths=None):
     style.text_color = style.styles[Text]
     if not any((style.text_color, style.background_color)):
         style.text_color = '#000000'
-        style.background_color = '#ffffff'
+        style.background_color = '#FFFFFF'
     elif not style.text_color:
-        style.text_color = _complementary_color(style.background_color)
+        style.text_color = _color_from_brightness(style.background_color)
     elif not style.background_color:
-        style.background_color = _complementary_color(style.text_color)
+        style.background_color = _color_from_brightness(style.text_color)
 
     if not style.highlight_color:
-        style.highlight_color = '#49a0ae'
-    style.highlight_text_color = _complementary_color(style.highlight_color)
+        style.highlight_color = _complementary_color(style.background_color)
+    style.highlight_text_color = _color_from_brightness(style.highlight_color)
 
     style.text_color = style.styles[Text] = _ensure_hash(style.text_color)
     style.background_color = _ensure_hash(style.background_color)
@@ -79,10 +80,21 @@ def _import_path(name, path):
 
 # tweaked from: https://stackoverflow.com/a/38478744
 def _complementary_color(hexstr):
-    hexstr = hexstr.lstrip('#')
-    rgb = (hexstr[0:2], hexstr[2:4], hexstr[4:6])
-    comp = ['%02x' % (255 - int(a, 16)) for a in rgb]
+    rgb = _hex2rgb(hexstr)
+    comp = ['%02x' % (255 - c) for c in rgb]
     return ''.join(comp)
+
+def _color_from_brightness(hexstr):
+    return '#FFFFFF' if _color_brightness(hexstr) < 186 else '#000000'
+
+def _color_brightness(hexstr):
+    rgb = _hex2rgb(hexstr)
+    return (0.212 * rgb.r) + (0.701 * rgb.g) + (0.087 * rgb.b)
+
+RGB = collections.namedtuple('RGB', 'r g b')
+def _hex2rgb(hexstr):
+    hexstr = hexstr.lstrip('#')
+    return RGB(*(int(c, 16) for c in (hexstr[0:2], hexstr[2:4], hexstr[4:6])))
 
 def _ensure_hash(s):
     if s and not s.startswith('#'):

@@ -39,7 +39,7 @@ def init(path=None):
             },
         'startup': {'source': ''},
         'style': {
-            'app': 'qdarkstyle',
+            'app': 'dark',
             'highlight': 'gruvbox-dark',
             'font_family': 'fira mono',
             'font_size': 12,

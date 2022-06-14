@@ -27,6 +27,11 @@ class Window(QtWidgets.QMainWindow):
     def __init__(self, config, profile, verbose=0, debug=False):
         super().__init__()
 
+        # XXX: something to experiment with sometime
+        # self.setStyleSheet("background:88ffffff;");
+        # self.setAttribute(Qt.WA_TranslucentBackground);
+        # self.setWindowFlags(Qt.FramelessWindowHint);
+
         self._control = None
         self._profiles = Profiles(config, verbose)
 
@@ -325,6 +330,8 @@ class Window(QtWidgets.QMainWindow):
             app.setStyle(name)
 
         app.setStyleSheet(stylesheet)
+        self.output_edit.highlighter.rehighlight()
+        self.source_edit.highlighter.rehighlight()
 
         self.settings.set_app_style(name)
 

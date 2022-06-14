@@ -11,14 +11,15 @@ from pygments.token import (Token, Operator, Name, Comment, Generic,
 
 class CodedarkStyle(Style):
 
-    background_color = '#1E1E1E'
     default_style = ''
+    background_color = '#1E1E1E'
+    highlight_color = '#49A0AE'
 
     styles = {
         Comment:            '#6A9955 bold',
         Comment.Preproc:    '#C586C0 underline',
 
-        Generic.Deleted:    '#8a2be2 bg:#6F1313 bold',
+        Generic.Deleted:    '#8A2bE2 bg:#6F1313 bold',
         Generic.Emph:       'underline',
         Generic.Error:      '#F44747 bg:#1E1E1E',
         Generic.Heading:    'bold',

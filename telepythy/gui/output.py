@@ -1,5 +1,4 @@
 import re
-import enum
 import itertools
 import collections
 
@@ -9,6 +8,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from pygments.lexers import PythonConsoleLexer
 
 from . import textedit
+from .highlighter import BlockState
 
 PS1 = '>>> '
 PS2 = '... '
@@ -17,11 +17,6 @@ BUFFER_CHUNK_SIZE = 1000 # lines
 
 # regex to remove prompts
 rx_ps = re.compile('^({}|{})'.format(PS1, PS2))
-
-class BlockState(enum.IntEnum):
-    source = 0
-    output = 1
-    session = 2
 
 class BlockChain:
     """This shell is powered by blockchain technology."""
@@ -71,7 +66,7 @@ class BlockChain:
         yield from self._doc.blocks(self._start_block, self._end_block)
 
     def fold(self):
-        if self.is_folded:
+        if self.is_folded or self.count() < 3:
             return
 
         blocks = self.blocks()
@@ -86,9 +81,10 @@ class BlockChain:
         self._fold_block = fold_block = cur.block()
         fold_block.setUserState(self.id)
 
-        tpl = (' <div style="background: #49A0AE">'
-            '[{} more lines. Double-click to unfold)]</div>')
-        cur.insertHtml(tpl.format(self.count() - 2))
+        # set state context for the highlighter
+        with self._doc.using_context(state=BlockState.fold):
+            tpl = '[{} more lines. Double-click to unfold)]'
+            cur.insertText(tpl.format(self.count() - 2))
 
     def unfold(self):
         if not self.is_folded:
@@ -181,7 +177,7 @@ class OutputEdit(textedit.TextEdit):
     ## append ##
 
     @QtCore.Slot(str)
-    def append(self, text, state=None):
+    def append(self, text='\n', state=None):
         state = BlockState.output if state is None else state
         self._buffer.append((text, state))
 
@@ -202,12 +198,10 @@ class OutputEdit(textedit.TextEdit):
         self.append(''.join(text), BlockState.source)
 
     def append_session(self, version):
-        text = []
         if self.blockCount() > 1:
-            text.append('\n')
-        text.append(f'{version}\n')
+            self.append()
 
-        self.append(''.join(text), BlockState.session)
+        self.append(f'{version}\n', BlockState.session)
         self.append_prompt()
 
     def _flush_buffer(self):
@@ -228,17 +222,11 @@ class OutputEdit(textedit.TextEdit):
         key = lambda item: item[1]
         for state, items in itertools.groupby(buf, key):
             start_block = cur.block()
-            fmt = QtGui.QTextCharFormat()
-
-            if state == BlockState.session:
-                style = self.highlighter._style
-                fmt.setForeground(QtGui.QBrush(style.highlight_text_color))
-                fmt.setBackground(QtGui.QBrush(style.highlight_color))
-
-            cur.setBlockCharFormat(fmt)
 
             text = ''.join(item[0] for item in items)
-            cur.insertText(text)
+            # set state context for the highlighter
+            with doc.using_context(state=state):
+                cur.insertText(text)
 
             # register the block chain for this insertion
 
@@ -293,7 +281,7 @@ class OutputEdit(textedit.TextEdit):
         if last:
             # find last unfolded chain
             for chain in reversed(self._chains.values()):
-                if not chain.is_folded and chain.count() > 1:
+                if not chain.is_folded and chain.count() > 2:
                     break
             else:
                 return

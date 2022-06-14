@@ -3,19 +3,38 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import enum
+
 from qtpy import QtGui
 
 from pygments import styles
 from pygments import lexers
 
+class BlockState(enum.IntEnum):
+    source = 0
+    output = 1
+    session = 2
+    fold = 3
+
 class BlockData(QtGui.QTextBlockUserData):
     """Storage for the user data associated with each line."""
     syntax_stack = ('root',)
 
-    def __init__(self, **kwds):
-        for key, value in kwds.items():
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.update(**kwargs)
+
+    @classmethod
+    def update_block(cls, block, **kwargs):
+        data = block.userData()
+        if not data:
+            data = cls()
+        data.update(**kwargs)
+        block.setUserData(data)
+
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
             setattr(self, key, value)
-        QtGui.QTextBlockUserData.__init__(self)
 
     def __repr__(self):
         attrs = ['syntax_stack']
@@ -35,8 +54,28 @@ class Highlighter(QtGui.QSyntaxHighlighter):
 
     def highlightBlock(self, string):
         """Highlight a block of text."""
-        prev_data = self.currentBlock().previous().userData()
+        if not string:
+            return
 
+        doc = self.document()
+        block = self.currentBlock()
+        data = self.currentBlockUserData()
+
+        state = data and data.state
+        if state is None:
+            state = doc.context.get('state')
+
+        if state in (BlockState.session, BlockState.fold):
+            style = self._style
+            fmt = QtGui.QTextCharFormat()
+            fmt.setForeground(QtGui.QBrush(style.highlight_text_color))
+            fmt.setBackground(QtGui.QBrush(style.highlight_color))
+            self.setFormat(0, block.length(), fmt)
+
+            BlockData.update_block(block, state=state)
+            return
+
+        prev_data = block.previous().userData()
         if prev_data is not None:
             self._lexer._stack = prev_data.syntax_stack
 
@@ -47,8 +86,8 @@ class Highlighter(QtGui.QSyntaxHighlighter):
             self.setFormat(index, length, self._get_format(token))
             index += length
 
-        data = BlockData(syntax_stack=self._lexer._stack)
-        self.currentBlock().setUserData(data)
+        BlockData.update_block(block, state=state,
+            syntax_stack=self._lexer._stack)
 
     def set_style(self, style):
         """Sets the style to the specified Pygments style."""
