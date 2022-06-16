@@ -6,13 +6,11 @@ import qdarktheme
 from pygments import styles
 from pygments.lexer import Text
 
-BASE_PATH = os.path.dirname(__file__)
-
 def get_app_stylesheet(theme='dark'):
     return qdarktheme.load_stylesheet(theme)
 
 def get_style(name, search_paths=None):
-    paths = (search_paths or []) + [BASE_PATH]
+    paths = search_paths or []
     for path in paths:
         try:
             style = _get_local_style(name, path)
@@ -44,7 +42,7 @@ def get_style(name, search_paths=None):
     return style
 
 def get_styles(search_paths=None):
-    paths = (search_paths or []) + [BASE_PATH]
+    paths = search_paths or []
     names = set()
     for path in paths:
         names.update(_get_local_styles(path))
