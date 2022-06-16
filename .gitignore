@@ -5,3 +5,5 @@ dist/
 build/
 *.egg-info/
 tasks.todo
+setup/gui/telepythy
+setup/lib/telepythy
