@@ -16,8 +16,11 @@ def get_config_path(*names):
 def get_config_file_path():
     return get_config_path('telepythy.cfg')
 
+def expand_path(path):
+    return os.path.expanduser(os.path.expandvars(path))
+
 def init(path=None):
-    path = path or get_config_file_path()
+    path = expand_path(path or get_config_file_path())
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
     log.debug('config: %s', path)
@@ -27,12 +30,14 @@ def init(path=None):
 
     cfg = snekcfg.Config()
 
+    cfg.register_type('path', None, expand_path)
+
     sct = cfg.section('profiles', create=True)
     sct.init('default.command', utils.DEFAULT_COMMAND)
     sct.init('connect.connect', utils.DEFAULT_ADDR)
     sct.init('serve.serve', utils.DEFAULT_ADDR)
 
-    cfg.init('startup.source_path', get_config_path('startup.py'))
+    cfg.init('startup.source_path', get_config_path('startup.py'), 'path')
 
     sct = cfg.section('style', create=True)
     sct.init('app', 'dark')
