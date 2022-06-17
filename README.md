@@ -1,6 +1,6 @@
 # Telepythy
 
-Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable additional features. It is designed to streamline a prototyping workflow.
+Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable additional features, such as remote connections. It is designed to streamline a prototyping workflow.
 
 ## Features
 
@@ -39,7 +39,7 @@ At the moment there is no installer available for **Telepythy**. The easiest opt
 $ pip install telepythy
 ```
 
-**NOTE**: This will pull in [PySide6][4], which weighs in at >100mb. I expect the eventual installer to be <20mb.
+**NOTE**: This will pull in [PySide6][4], which weighs in at ~76 MB.
 
 ## Usage
 
@@ -55,7 +55,7 @@ $ python -m telepythy.gui
 
 ### Configuration
 
-Manually editing the configuration file is currently the only way to persist settings. It is saved according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy.cfg` on Windows).
+Manually editing the configuration file is currently the only way to persist settings. It is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy.cfg` on Windows).
 
 ### Virtual Environments
 
@@ -69,11 +69,15 @@ functions:
 ```python
 import telepythy
 
-# start a server
+# start a server thread
 telepythy.start_server()
 
-# or start a client
+# or start a client thread
 telepythy.start_client()
+
+# or start a client/server directly (blocking)
+telepythy.client()
+telepythy.server()
 ```
 
 See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
@@ -89,7 +93,7 @@ command = "<command-for-interpreter>"
 
 ### Remote Interpreters
 
-The remote service needs to be installed as a package for whichever interpreter you intend to use. A minimal, service-only package can be installed from PyPI:
+The remote service needs to be accessible by whichever interpreter you intend to use. A minimal, service-only package can be installed from PyPI:
 
 ```shell
 $ pip install telepythy-service
@@ -142,9 +146,7 @@ For connections across machines, I recommend using [SSH port forwarding][6].
 
 **Telepythy** is very much a work in progress. Here are some features that are planned for future releases (in no particular order):
 
-* Configuration UI
 * Profile configuration UI
-* Style/syntax highlighting configuration UI
 * Smart copy/paste
 * UNIX domain sockets
 * Code snippets
