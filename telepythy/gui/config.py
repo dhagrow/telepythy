@@ -1,63 +1,49 @@
-import toml
-import appdirs
+import os
 
+import appdirs
+from qtpy import QtWidgets
+
+from . import snekcfg
 from ..lib import logs
 from ..lib import utils
 
 log = logs.get(__name__)
 
-DEFAULT_PATH = appdirs.user_config_dir('telepythy.cfg', False)
-# when blank, sys.executable will be used
-DEFAULT_INTERPRETER = 'python'
+def get_config_path(*names):
+    cfg_dir = appdirs.user_config_dir('telepythy', False)
+    return os.path.join(cfg_dir, *names)
 
-class AttrDict(dict):
-    def __getattr__(self, name):
-        try:
-            return super().__getattr__(name)
-        except AttributeError:
-            try:
-                val = self[name]
-            except KeyError:
-                raise AttributeError(name)
-            if isinstance(val, dict):
-                return self.__class__(val)
-            return val
+def get_config_file_path():
+    return get_config_path('telepythy.cfg')
 
 def init(path=None):
-    path = path or DEFAULT_PATH
+    path = path or get_config_file_path()
 
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     log.debug('config: %s', path)
 
-    defaults = {
-        'profile': {
-            'default': {'command': DEFAULT_INTERPRETER},
-            'connect': {'connect': utils.DEFAULT_ADDR},
-            'serve': {'serve': utils.DEFAULT_ADDR},
-            },
-        'startup': {'source': ''},
-        'style': {
-            'app': 'dark',
-            'highlight': 'gruvbox-dark',
-            'font_family': 'fira mono',
-            'font_size': 12,
-            },
-        'window': {
-            'size': [820, 820],
-            'view': {
-                'menu': True,
-                },
-            },
-        }
+    size = QtWidgets.QApplication.primaryScreen().availableSize()
+    default_size = (int(size.width() / 2), int(size.height() / 2))
 
-    try:
-        with open(path) as f:
-            cfg = toml.load(f)
-    except FileNotFoundError:
-        cfg = {}
+    cfg = snekcfg.Config()
 
-    cfg = AttrDict({**defaults, **cfg})
+    sct = cfg.section('profiles', create=True)
+    sct.init('default.command', utils.DEFAULT_COMMAND)
+    sct.init('connect.connect', utils.DEFAULT_ADDR)
+    sct.init('serve.serve', utils.DEFAULT_ADDR)
 
-    with open(path, 'w') as f:
-        toml.dump(cfg, f)
+    cfg.init('startup.source_path', get_config_path('startup.py'))
+
+    sct = cfg.section('style', create=True)
+    sct.init('app', 'dark')
+    sct.init('highlight', 'gruvbox-dark')
+    sct.init('font.family', 'monospace')
+    sct.init('font.size', 12)
+
+    sct = cfg.section('window', create=True)
+    sct.init('size', default_size, tuple[int])
+    sct.init('view.menu', True)
+
+    cfg.sync(path)
 
     return cfg

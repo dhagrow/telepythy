@@ -21,7 +21,7 @@ def main():
     parser.add_argument('-l', '--list-profiles', action='store_true',
         help='list the configured profiles')
 
-    parser.add_argument('--config', default=config.DEFAULT_PATH,
+    parser.add_argument('--config', default=config.get_config_file_path(),
         help='path to the config file (default: %(default)s)')
 
     parser.add_argument('-v', '--verbose', action='count', default=0,
@@ -33,15 +33,15 @@ def main():
 
     args = parser.parse_args()
 
+    app = QtWidgets.QApplication()
+    app.setWindowIcon(QtGui.QIcon(':icon'))
+
     logs.init(args.verbose, mode='ctl', log_exceptions=True)
     cfg = config.init(args.config)
 
     if args.list_profiles:
         list_profiles(cfg)
         return
-
-    app = QtWidgets.QApplication()
-    app.setWindowIcon(QtGui.QIcon(':icon'))
 
     utils.set_app_id()
     utils.hook_exceptions()

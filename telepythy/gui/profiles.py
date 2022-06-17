@@ -4,20 +4,20 @@ from ..lib import control
 from .utils import virtualenvs
 
 class Profiles:
-    def __init__(self, config, verbose=0):
-        self._config = config
+    def __init__(self, profiles, verbose=0):
+        self._profiles = dict(self._parse_profiles(profiles))
         self._venvs = {name: {'command': path} for name, path in virtualenvs()}
         self._verbose = verbose
 
     def get_config_profiles(self):
-        yield from self._config.profile.keys()
+        yield from self._profiles.keys()
 
     def get_virtualenv_profiles(self):
         yield from self._venvs.keys()
 
     def get_profile(self, name):
         try:
-            sec = self._config.profile[name]
+            sec = self._profiles[name]
         except KeyError:
             sec = self._venvs[name]
         return next(iter(sec.items()))
@@ -38,3 +38,8 @@ class Profiles:
             return control.ServerControl(addr)
 
         assert False, 'invalid control init'
+
+    def _parse_profiles(self, profiles):
+        for profile, value in profiles.items():
+            name, type = profile.split('.')
+            yield (name, {type: value})

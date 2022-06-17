@@ -33,7 +33,7 @@ class Window(QtWidgets.QMainWindow):
         # self.setWindowFlags(Qt.FramelessWindowHint);
 
         self._control = None
-        self._profiles = Profiles(config, verbose)
+        self._profiles = Profiles(config.section('profiles'), verbose)
 
         self._connected = None
         self._history_result = collections.OrderedDict()
@@ -49,26 +49,27 @@ class Window(QtWidgets.QMainWindow):
 
     def config(self, config):
         self._config = config
+        style = config.section('style')
+        window = config.section('window')
 
         # font
-        family = config.style.font_family
-        size = config.style.font_size
+        family = style['font.family']
+        size = style['font.size']
         self.output_edit.setFont(QtGui.QFont(family, size))
         self.source_edit.setFont(QtGui.QFont(family, size))
 
         # settings
-        sec = config.style
-        self.set_app_style(sec.app)
-        self.set_highlight_style(sec.highlight)
+        self.set_app_style(style['app'])
+        self.set_highlight_style(style['highlight'])
 
         # menus
-        view_menu = config.window.view.menu
+        view_menu = window['view.menu']
         self.menuBar().setVisible(view_menu)
         self.action_toggle_menu.setChecked(view_menu)
 
         self.action_toggle_source_title.setChecked(False)
 
-        self.resize(*config.window.size)
+        self.resize(*window['size'])
 
     ## setup ##
 
@@ -346,9 +347,17 @@ class Window(QtWidgets.QMainWindow):
     def start_session(self, version):
         self.output_edit.append_session(version)
 
-        source = self._config.startup.source
-        if source:
-            self._control.evaluate(source, notify=False)
+        path = self._config['startup.source_path']
+        try:
+            with open(path) as f:
+                source = f.read()
+        except FileNotFoundError:
+            log.debug('startup file not found: %s', path)
+        except OSError as e:
+            log.error('failed to read startup file: %s', e)
+        else:
+            if source:
+                self._control.evaluate(source, notify=False)
 
     def evaluate(self, source):
         try:

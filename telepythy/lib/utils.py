@@ -7,7 +7,7 @@ from . import logs
 
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-DEFAULT_COMMAND = sys.executable
+DEFAULT_COMMAND = 'python'
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 7373
 DEFAULT_ADDR = '{}:{}'.format(DEFAULT_HOST, DEFAULT_PORT)
