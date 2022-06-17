@@ -23,15 +23,12 @@ class AttrDict(dict):
                 return self.__class__(val)
             return val
 
-    def __or__(self, other):
-        return AttrDict(super().__or__(other))
-
 def init(path=None):
     path = path or DEFAULT_PATH
 
     log.debug('config: %s', path)
 
-    defaults = AttrDict({
+    defaults = {
         'profile': {
             'default': {'command': DEFAULT_INTERPRETER},
             'connect': {'connect': utils.DEFAULT_ADDR},
@@ -50,7 +47,7 @@ def init(path=None):
                 'menu': True,
                 },
             },
-        })
+        }
 
     try:
         with open(path) as f:
@@ -58,7 +55,7 @@ def init(path=None):
     except FileNotFoundError:
         cfg = {}
 
-    cfg = defaults | cfg
+    cfg = AttrDict({**defaults, **cfg})
 
     with open(path, 'w') as f:
         toml.dump(cfg, f)
