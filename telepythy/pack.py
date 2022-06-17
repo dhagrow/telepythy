@@ -13,25 +13,27 @@ def get_path(*names):
     return os.path.abspath(os.path.join(BASE_PATH, *names))
 
 MAIN = """\
-from telepythy.__main__ import main
+from telepythy_service.__main__ import main
 main()
 """
 
 log = logs.get('telepythy.pack')
 
 def pack():
-    src_path = get_path('telepythy/**/*.py')
-    dst_path = get_path('telepythy.pyz')
-
     # don't run if frozen
     if getattr(sys, 'frozen', False):
         return
+
+    src_path = get_path('telepythy/**/*.py')
+    dst_path = get_path('telepythy/telepythy_service.pyz')
 
     with zipfile.ZipFile(dst_path, 'w', zipfile.ZIP_DEFLATED,
             allowZip64=False) as zip:
         for path in glob.iglob(src_path, recursive=True):
             if 'gui' in path: continue
-            zip.write(path, os.path.relpath(path))
+            dst = os.path.relpath(path).replace('telepythy', 'telepythy_service')
+            log.debug('+ %s', dst)
+            zip.write(path, dst)
         zip.writestr('__main__.py', MAIN)
 
     log.debug('packed lib stored to: %s', dst_path)
@@ -40,7 +42,7 @@ def pack():
 
 if __name__ == '__main__':
     try:
-        logs.init(2)
+        logs.init(2, format='%(message)s')
         pack()
     except KeyboardInterrupt:
         pass

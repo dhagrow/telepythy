@@ -13,8 +13,6 @@ from telepythy.gui import resources # import ensures availability
 from telepythy.gui import config
 from telepythy.gui import utils
 
-from telepythy import pack
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -41,8 +39,6 @@ def main():
     if args.list_profiles:
         list_profiles(cfg)
         return
-
-    pack.pack()
 
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))

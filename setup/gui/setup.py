@@ -17,6 +17,7 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     packages=find_packages() + ['telepythy.gui'],
+    package_data={'telepythy': ['telepythy_service.pyz']},
     entry_points={
         'gui_scripts': [
             'telepythy=telepythy.gui.__main__:main',

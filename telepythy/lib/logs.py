@@ -11,12 +11,12 @@ iswindows = sys.platform == 'win32'
 get = getLogger
 log = get(__name__)
 
-def init(verbose=0, mode=None, log_exceptions=False):
+def init(verbose=0, mode=None, format=None, log_exceptions=False):
     """Initializes simple logging defaults."""
     root_log = get('telepythy')
     root_log.propagate = False
 
-    fmt = '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
+    fmt = format or '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
 
     if verbose == 0:
         handler = NullHandler()
@@ -43,9 +43,6 @@ def init(verbose=0, mode=None, log_exceptions=False):
 
     if log_exceptions:
         sys.excepthook = handle_exception
-
-    # manage third-party loggers
-    get('qdarkstyle').setLevel(WARNING)
 
 def handle_exception(etype, evalue, etb):
     if not issubclass(etype, Exception):

@@ -1,12 +1,15 @@
+"""
+NOTE: This is the only module in `telepythy.lib` that only
+supports Python 3 (3.7+).
+"""
+
 import time
 import shlex
+import queue
+import importlib
 import threading
 import subprocess
 import collections
-try:
-    import queue
-except ImportError:
-    import Queue as queue
 
 from . import logs
 from . import utils
@@ -17,7 +20,7 @@ KILL_TIMEOUT = 5
 
 log = logs.get(__name__)
 
-class Control(object):
+class Control:
     def __init__(self, address):
         self._address = address
 
@@ -162,16 +165,16 @@ class ProcessControl(ServerControl):
     def start(self):
         super().start()
 
-        lib_path = utils.get_path('telepythy.pyz')
+        lib_name = 'telepythy_service.pyz'
+        with importlib.resources.path('telepythy', lib_name) as lib_path:
+            python = self._command
+            cmd = shlex.split(python, posix=False) + [lib_path]
+            cmd.extend(['-v'] * self._verbose)
+            cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
-        python = self._command
-        cmd = shlex.split(python, posix=False) + [lib_path]
-        cmd.extend(['-v'] * self._verbose)
-        cmd.extend(['-c', '{}:{}'.format(*self._address)])
-
-        log.debug('starting process: %s', cmd)
-        self._proc = subprocess.Popen(cmd)
-        log.debug('started process: %s', self._proc.pid)
+            log.debug('starting process: %s', cmd)
+            self._proc = subprocess.Popen(cmd)
+            log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
         super().stop()
