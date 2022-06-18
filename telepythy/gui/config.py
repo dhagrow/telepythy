@@ -26,7 +26,7 @@ def init(path=None):
     log.debug('config: %s', path)
 
     size = QtWidgets.QApplication.primaryScreen().availableSize()
-    default_size = (int(size.width() / 2), int(size.height() / 2))
+    default_size = (int(size.width() / 2.5), int(size.height() / 1.5))
 
     cfg = snekcfg.Config()
 

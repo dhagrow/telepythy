@@ -196,7 +196,7 @@ class ProcessControl(ServerControl):
             if utils.IS_WINDOWS:
                 # all processes in the group will recieve the interrupt
                 # sleeping allows us to catch and ignore it here
-                time.sleep(10)
+                time.sleep(5)
         except KeyboardInterrupt:
             pass
 
