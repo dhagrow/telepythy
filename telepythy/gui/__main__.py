@@ -6,6 +6,7 @@ import argparse
 # https://github.com/pyinstaller/pyinstaller/issues/2560
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from telepythy import pack
 from telepythy.lib import logs
 
 from telepythy.gui.window import Window
@@ -38,6 +39,9 @@ def main():
 
     logs.init(args.verbose, mode='ctl', log_exceptions=True)
     cfg = config.init(args.config)
+
+    if args.debug:
+        pack.pack()
 
     if args.list_profiles:
         list_profiles(cfg)
