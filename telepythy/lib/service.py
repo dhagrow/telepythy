@@ -64,16 +64,16 @@ class Service(object):
         q = self._code_queue
         timeout = self._timeout
 
-        with self._inter.hooked():
-            while not shutdown.is_set():
-                try:
-                    try:
-                        data = q.get(timeout=timeout)
-                    except queue.Empty:
-                        continue
+        while not shutdown.is_set():
+            try:
+                data = q.get(timeout=timeout)
+            except queue.Empty:
+                continue
+            try:
+                with self._inter.hooked():
                     self.evaluate(**data)
-                except KeyboardInterrupt:
-                    pass
+            except KeyboardInterrupt:
+                pass
 
     def stop(self):
         self._shutdown.set()
