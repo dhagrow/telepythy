@@ -65,7 +65,7 @@ class Interpreter(object):
 
     def complete(self, prefix):
         matches = []
-        log.error('prefix: %s', prefix)
+        # log.error('prefix: %s', prefix)
 
         if '.' not in prefix:
             # return global matches
@@ -82,9 +82,10 @@ class Interpreter(object):
             try:
                 obj = eval(ctx, self.locals)
             except Exception:
-                log.error('ctx failed to resolve: %r', ctx)
+                # log.error('ctx failed to resolve: %r', ctx)
+                pass
             else:
-                log.error('obj: %s', obj)
+                # log.error('obj: %s', obj)
 
                 for name in dir(obj):
                     matches.append(name)
