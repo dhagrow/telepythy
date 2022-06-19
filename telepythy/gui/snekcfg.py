@@ -24,10 +24,10 @@ class Config:
             lambda x: 'true' if x else 'false',
             lambda x: _boolean_states[x.lower()])
 
-        self.register_type(tuple[str],
+        self.register_type(typing.Tuple[str],
             lambda v: ','.join(v),
             lambda v: tuple(x.strip() for x in v.split(',')))
-        self.register_type(tuple[int],
+        self.register_type(typing.Tuple[int],
             lambda v: ','.join(str(x) for x in v),
             lambda v: tuple(int(x.strip()) for x in v.split(',')))
 

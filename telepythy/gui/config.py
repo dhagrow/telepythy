@@ -1,4 +1,5 @@
 import os
+import typing
 
 import appdirs
 from qtpy import QtWidgets
@@ -46,7 +47,7 @@ def init(path=None):
     sct.init('font.size', 12)
 
     sct = cfg.section('window', create=True)
-    sct.init('size', default_size, tuple[int])
+    sct.init('size', default_size, typing.Tuple[int])
     sct.init('view.menu', True)
 
     cfg.sync(path)
