@@ -3,13 +3,14 @@ NOTE: This is the only module in `telepythy.lib` that only
 supports Python 3 (3.7+).
 """
 
+import sys
 import time
 import shlex
 import queue
-import importlib
 import threading
 import subprocess
 import collections
+from importlib import resources
 
 from . import logs
 from . import utils
@@ -17,6 +18,8 @@ from . import sockio
 
 TIMEOUT = 0.01
 KILL_TIMEOUT = 5
+
+iswindows = sys.platform == 'win32'
 
 log = logs.get(__name__)
 
@@ -166,14 +169,19 @@ class ProcessControl(ServerControl):
         super().start()
 
         lib_name = 'telepythy_service.pyz'
-        with importlib.resources.path('telepythy', lib_name) as lib_path:
+        with resources.path('telepythy', lib_name) as lib_path:
             python = self._command
             cmd = shlex.split(python, posix=False) + [lib_path]
             cmd.extend(['-v'] * self._verbose)
             cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
+            kwargs = {}
+            if iswindows:
+                kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
+                sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
             log.debug('starting process: %s', cmd)
-            self._proc = subprocess.Popen(cmd)
+            self._proc = subprocess.Popen(cmd, **kwargs)
             log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
