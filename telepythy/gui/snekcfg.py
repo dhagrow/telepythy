@@ -14,33 +14,7 @@ class Config:
         self._items = {}
         self._types = {}
 
-        self.register_type(str, None, None)
-        self.register_type(int, str, int)
-        self.register_type(float, str, float)
-
-        _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
-            '0': False, 'no': False, 'false': False, 'off': False}
-        self.register_type(bool,
-            lambda x: 'true' if x else 'false',
-            lambda x: _boolean_states[x.lower()])
-
-        self.register_type(typing.Tuple[str],
-            lambda v: ','.join(v),
-            lambda v: tuple(x.strip() for x in v.split(',')))
-        self.register_type(typing.Tuple[int],
-            lambda v: ','.join(str(x) for x in v),
-            lambda v: tuple(int(x.strip()) for x in v.split(',')))
-
-    def read(self, path):
-        self._parser.read(path)
-
-    def write(self, path):
-        with open(path, 'w') as f:
-            self._parser.write(f)
-
-    def sync(self, path):
-        self.read(path)
-        self.write(path)
+        self._register_default_types()
 
     def init(self, key, default, type=None):
         self._items[key] = ConfigItem(default, type or _type(default))
@@ -86,6 +60,28 @@ class Config:
     def sections(self):
         return self._parser.sections()
 
+    def __iter__(self):
+        yield from self.sections()
+
+    def todict(self):
+        return {section: dict(self.section(section).items())
+            for section in self.sections()}
+
+    ## persistence ##
+
+    def read(self, path):
+        self._parser.read(path)
+
+    def write(self, path):
+        with open(path, 'w') as f:
+            self._parser.write(f)
+
+    def sync(self, path):
+        self.read(path)
+        self.write(path)
+
+    ## encoding ##
+
     def encode(self, value, typename):
         typename = self._typename(typename)
         try:
@@ -102,6 +98,8 @@ class Config:
             raise UnknownType(typename)
         return decode(value)
 
+    ## types ##
+
     def register_type(self, name, encode, decode):
         name = self._typename(name)
         self._types[name] = ConfigType(
@@ -109,12 +107,38 @@ class Config:
             decode or (lambda v: v),
             )
 
-    def todict(self):
-        return {section: dict(self.section(section).items())
-            for section in self.sections()}
+    def unregister_type(self, name):
+        name = self._typename(name)
+        del self._types[name]
+
+    def unregister_all_types(self):
+        self._types.clear()
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, self.todict())
+
+    ## internal ##
+
+    def _register_default_types(self):
+        self.register_type(str, None, None)
+        self.register_type(int, str, int)
+        self.register_type(float, str, float)
+
+        _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
+            '0': False, 'no': False, 'false': False, 'off': False}
+        self.register_type(bool,
+            lambda x: 'true' if x else 'false',
+            lambda x: _boolean_states[x.lower()])
+
+        # it would technically be more correct to use typing.Tuple[str, ...]
+        # to register the generic case of an unbounded tuple, but for general
+        # use it's simpler to let the user decide if they want to be that strict
+        self.register_type(typing.Tuple[str],
+            lambda v: ','.join(v),
+            lambda v: tuple(x.strip() for x in v.split(',')))
+        self.register_type(typing.Tuple[int],
+            lambda v: ','.join(str(x) for x in v),
+            lambda v: tuple(int(x.strip()) for x in v.split(',')))
 
     def _split_key(self, key):
         return key.split('.', 1)
@@ -139,20 +163,22 @@ class ConfigSection:
     def get(self, name, default=None):
         return self._config.get(self._key(name), default)
 
-    def options(self):
-        return self._config.options(self._name)
-
-    def __iter__(self):
-        yield from self.options()
-
-    def items(self):
-        return self._config.items(self._name)
-
     def __getitem__(self, name):
         return self._config[self._key(name)]
 
     def __setitem__(self, name, value):
         self._config[self._key(name)] = value
+
+    def options(self):
+        return self._config.options(self._name)
+
+    def items(self):
+        return self._config.items(self._name)
+
+    def __iter__(self):
+        yield from self.options()
+
+    ## internal ##
 
     def _key(self, *names):
         return '.'.join((self._name,) + names)
