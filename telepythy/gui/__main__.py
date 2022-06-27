@@ -37,7 +37,7 @@ def main():
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))
 
-    logs.init(args.verbose, mode='ctl', log_exceptions=True)
+    logs.init(args.verbose, mode='ctl', color=True, log_exceptions=True)
     cfg = config.init(args.config)
 
     if args.debug:

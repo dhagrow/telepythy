@@ -1,17 +1,12 @@
 import sys
 from logging import *
 
-try:
-    import colorlog
-except ImportError:
-    colorlog = None
-
 iswindows = sys.platform == 'win32'
 
 get = getLogger
 log = get(__name__)
 
-def init(verbose=0, mode=None, format=None, log_exceptions=False):
+def init(verbose=0, mode=None, format=None, color=False, log_exceptions=False):
     """Initializes simple logging defaults."""
     root_log = get('telepythy')
     root_log.propagate = False
@@ -30,10 +25,17 @@ def init(verbose=0, mode=None, format=None, log_exceptions=False):
         formatter = Formatter(fmt)
     else:
         handler = StreamHandler()
-        if colorlog:
-            formatter = colorlog.ColoredFormatter('%(log_color)s' + fmt)
-        else:
-            formatter = Formatter(fmt)
+        formatter = Formatter(fmt)
+
+        if color:
+            # try to enable color formatting
+            try:
+                import colorlog
+            except ImportError:
+                # fail silently. no color
+                pass
+            else:
+                formatter = colorlog.ColoredFormatter('%(log_color)s' + fmt)
 
     handler.setFormatter(formatter)
     handler.addFilter(ModeFilter(mode))
