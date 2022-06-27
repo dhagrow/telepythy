@@ -23,7 +23,8 @@ class SourceEdit(textedit.TextEdit):
         super().__init__(parent)
 
         self._history = History()
-        self._current = None
+        # keep track of the last text entered by the user
+        self._user_source = None
 
         self.setLineWrapMode(self.NoWrap)
 
@@ -97,20 +98,22 @@ class SourceEdit(textedit.TextEdit):
 
         return get_completion_context(sel)
 
-    def previous(self):
+    def history_previous(self):
+        """Loads previous history state."""
         if not self._history:
             return
 
         match = self.toPlainText()
-        if self._current is None:
-            self._current = match
+        if self._user_source is None:
+            self._user_source = match
 
         source = self._history.previous(match)
         if source:
             self.setPlainText(source)
             self.move_cursor(QtGui.QTextCursor.End)
 
-    def next(self):
+    def history_next(self):
+        """Loads next history state."""
         if not self._history:
             return
 
@@ -119,13 +122,13 @@ class SourceEdit(textedit.TextEdit):
         if source:
             self.setPlainText(source)
         else:
-            self.setPlainText(self._current)
+            self.setPlainText(self._user_source)
         self.move_cursor(QtGui.QTextCursor.End)
 
-    def reset(self):
-        # clear history browsing state
+    def history_reset(self):
+        """Clears history state."""
         self._history.reset()
-        self._current = None
+        self._user_source = None
 
     def setPlainText(self, text):
         """Overridden to prevent clearing undo history."""
@@ -133,13 +136,14 @@ class SourceEdit(textedit.TextEdit):
         self.insertPlainText(text)
 
     def clear(self):
+        """Clears source edit."""
         cur = self.textCursor()
         cur.movePosition(cur.Start)
         cur.movePosition(cur.End, cur.KeepAnchor)
         cur.deleteChar()
 
     def next_cell(self):
-        self.reset()
+        self.history_reset()
 
         source = self.toPlainText()
         self._history.append(source)
@@ -214,11 +218,11 @@ class SourceEdit(textedit.TextEdit):
             return
 
         elif ctrl and key == Qt.Key_Up:
-            self.previous()
+            self.history_previous()
             return
 
         elif ctrl and key == Qt.Key_Down:
-            self.next()
+            self.history_next()
             return
 
         elif key == Qt.Key_Backspace:
@@ -230,7 +234,7 @@ class SourceEdit(textedit.TextEdit):
                 cursor.deleteChar()
                 return
 
-        self.reset()
+        self.history_reset()
         super().keyPressEvent(event)
 
     ## utils ##
