@@ -234,7 +234,10 @@ class SourceEdit(textedit.TextEdit):
                 cursor.deleteChar()
                 return
 
-        self.history_reset()
+        if not Qt.Key_Home <= key <= Qt.Key_ScrollLock:
+            # only reset for non-navigation keys
+            self.history_reset()
+
         super().keyPressEvent(event)
 
     ## utils ##
