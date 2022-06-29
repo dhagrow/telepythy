@@ -13,8 +13,9 @@ class TextDocument(QtGui.QTextDocument):
         self.context = {}
 
     def blocks(self, start=None, end=None):
-        return BlockIterator(start or self.firstBlock(),
-            end or self.lastBlock())
+        if start is None: start = self.firstBlock()
+        if end is None: end = self.lastBlock()
+        return BlockIterator(start, end)
 
     def block_indentation(self, block):
         match = rx_indent.match(block.text())
@@ -48,10 +49,10 @@ class BlockIterator:
             block = block.next()
 
     def __reversed__(self):
-        block = self._start
-        end = self._end
+        block = self._end
+        start = self._start
         while block.isValid():
             yield block
-            if block == end:
+            if block == start:
                 return
             block = block.previous()

@@ -242,52 +242,37 @@ class SourceEdit(textedit.TextEdit):
 
     ## utils ##
 
-    def indent(self):
+    def selected_blocks(self):
+        cur = self.textCursor()
         doc = self.document()
-        cursor = self.textCursor()
-        block = cursor.block()
+        start = doc.findBlock(cur.selectionStart())
+        end = doc.findBlock(cur.selectionEnd())
+        return doc.blocks(start, end)
+
+    def indent(self):
+        cur = self.textCursor()
+        doc = self.document()
         indent = 4
-        with cursor_edit(cursor):
-            if cursor.hasSelection():
-                start = cursor.selectionStart()
-                end = cursor.selectionEnd()
-                for block in reversed(doc.blocks(doc.findBlock(end))):
-                    blockEnd = block.position() + block.length() - 1
-                    if blockEnd < start:
-                        break
-                    offset = doc.block_indentation(block) % indent
-                    cursor.setPosition(block.position())
-                    cursor.insertText(' ' * (indent - offset))
-            else:
+        with cursor_edit(cur):
+            for block in self.selected_blocks():
                 offset = doc.block_indentation(block) % indent
-                cursor.setPosition(block.position())
-                cursor.insertText(' ' * (indent - offset))
+                cur.setPosition(block.position())
+                cur.insertText(' ' * (indent - offset))
 
     def dedent(self):
+        cur = self.textCursor()
         doc = self.document()
         indent = 4
-        cursor = self.textCursor()
-        with cursor_edit(cursor):
-            if cursor.hasSelection():
-                start = cursor.selectionStart()
-                end = cursor.selectionEnd()
-                blocks = reversed(doc.blocks(doc.findBlock(end)))
-            else:
-                start = 0
-                blocks = [cursor.block()]
+        with cursor_edit(cur):
+            for block in self.selected_blocks():
+                block_indent = doc.block_indentation(block)
+                offset = block_indent % indent
 
-            for block in blocks:
-                blockEnd = block.position() + block.length() - 1
-                if blockEnd < start:
-                    break
-
-                blockIndent = doc.block_indentation(block)
-                offset = blockIndent % indent
-
-                cursor.setPosition(block.position() + blockIndent)
-                n = min(cursor.columnNumber(), indent - offset)
-                cursor.movePosition(cursor.PreviousCharacter, cursor.KeepAnchor, n)
-                cursor.removeSelectedText()
+                cur.setPosition(block.position() + block_indent)
+                # don't go past the beginning of the line
+                n = min(cur.columnNumber(), indent - offset)
+                cur.movePosition(cur.PreviousCharacter, cur.KeepAnchor, n)
+                cur.removeSelectedText()
 
     def move_cursor(self, position):
         cursor = self.textCursor()
