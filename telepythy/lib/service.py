@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import sys
+import time
 import threading
 import traceback
 try:
@@ -65,6 +66,8 @@ class Service(object):
         timeout = self._timeout
 
         while not shutdown.is_set():
+            self._handle_guis()
+
             try:
                 data = q.get(timeout=timeout)
             except queue.Empty:
@@ -177,6 +180,28 @@ class Service(object):
         except sockio.error as e:
             log.error('handle_commands error: %s', repr(e))
             stop.set()
+
+    def _handle_guis(self):
+        try:
+            QtCore = sys.modules['PySide6'].QtCore
+        except (KeyError, AttributeError):
+            print('no pyside')
+            return
+
+        app = QtCore.QCoreApplication.instance()
+        if app is None:
+            print('no app')
+            return
+
+        print('handle')
+        delay = 0.1
+        app.processEvents(QtCore.QEventLoop.AllEvents, int(delay*1000))
+        timer = QtCore.QTimer()
+        event_loop = QtCore.QEventLoop()
+        timer.timeout.connect(event_loop.quit)
+        timer.start(int(delay*1000))
+        event_loop.exec_()
+        timer.stop()
 
 class Client(Service):
     def start(self, addr):
