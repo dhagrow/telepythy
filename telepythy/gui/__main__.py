@@ -60,8 +60,12 @@ def main():
     sys.exit(app.exec())
 
 def list_profiles(cfg):
-    for name, profile in sorted(cfg.profile.items()):
-        print(name, profile)
+    items = cfg.section('profiles').items()
+    width = max(len(n.split('.')[0]) for n, _ in items)
+
+    for name, profile in sorted(items):
+        name, action = name.split('.')
+        print(f'{name:>{width}} | {action:<7}: {profile}')
 
 def setup_int_handler(win):
     signal.signal(signal.SIGINT, get_int_handler(win))
