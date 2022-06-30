@@ -1,10 +1,9 @@
 import sys
-import signal
 import argparse
 
 # absolute imports to support PyInstaller
 # https://github.com/pyinstaller/pyinstaller/issues/2560
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
 from telepythy import pack
 from telepythy.lib import logs
@@ -55,7 +54,7 @@ def main():
     win.show()
 
     # enable clean shutdown on ctrl+c
-    setup_int_handler(win)
+    utils.set_interrupt_handler(win)
 
     sys.exit(app.exec())
 
@@ -66,17 +65,6 @@ def list_profiles(cfg):
     for name, profile in sorted(items):
         name, action = name.split('.')
         print(f'{name:>{width}} | {action:<7}: {profile}')
-
-def setup_int_handler(win):
-    signal.signal(signal.SIGINT, get_int_handler(win))
-    def timer():
-        QtCore.QTimer.singleShot(100, timer)
-    timer()
-
-def get_int_handler(win):
-    def handler(signum, frame):
-        win.close()
-    return handler
 
 if __name__ == '__main__':
     try:

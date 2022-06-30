@@ -1,10 +1,11 @@
 import os
 import sys
+import signal
 import pathlib
 import traceback
 import contextlib
 
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from ..lib import logs
 
@@ -35,6 +36,17 @@ def hook_exceptions():
 
 def unhook_exceptions():
     sys.excepthook = sys.__excepthook__
+
+def set_interrupt_handler(win):
+    signal.signal(signal.SIGINT, get_interrupt_handler(win))
+    def timer():
+        QtCore.QTimer.singleShot(100, timer)
+    timer()
+
+def get_interrupt_handler(win):
+    def handler(signum, frame):
+        win.close()
+    return handler
 
 class ErrorBox(QtWidgets.QMessageBox):
     def __init__(self, parent=None):
