@@ -3,6 +3,14 @@ from qtpy import QtGui, QtWidgets
 
 from .. import __version__
 
+DESCRIPTION = """\
+<b>A desktop shell for Python.</b><br>
+<a href="https://github.com/dhagrow/telepythy">
+    https://github.com/dhagrow/telepythy
+</a><br>
+Copyright © Miguel Turner 2022
+"""
+
 class AboutDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         flags = Qt.WindowTitleHint | Qt.WindowSystemMenuHint
@@ -15,27 +23,38 @@ class AboutDialog(QtWidgets.QDialog):
         icon_label = QtWidgets.QLabel()
         icon_label.setAlignment(Qt.AlignCenter)
         icon = QtGui.QIcon(':icon')
-        icon_label.setPixmap(icon.pixmap(32))
+        icon_label.setPixmap(icon.pixmap(48))
 
-        title = f'Telepythy {__version__}'
-        title_label = QtWidgets.QLabel(title)
+        title_label = QtWidgets.QLabel('Telepythy')
         title_label.setAlignment(Qt.AlignCenter)
         font = title_label.font()
         font.setPointSize(16)
         font.setWeight(font.Bold)
         title_label.setFont(font)
 
-        button = QtWidgets.QPushButton('Close')
-        button.clicked.connect(self.accept)
+        version_label = QtWidgets.QLabel(f'Version {__version__}')
 
-        button_layout = QtWidgets.QHBoxLayout()
-        button_layout.addStretch(1)
-        button_layout.addWidget(button)
-        button_layout.addStretch(1)
+        title_layout = QtWidgets.QGridLayout()
+        title_layout.addWidget(icon_label, 0, 0, 2, 1)
+        title_layout.addWidget(title_label, 0, 1, 1, 1)
+        title_layout.addWidget(version_label, 1, 1, 1, 1)
+        title_layout.setColumnStretch(2, 2)
+
+        frame = QtWidgets.QFrame()
+        frame.setFrameShape(frame.StyledPanel)
+        frame.setFrameShadow(frame.Raised)
+        frame.setLayout(title_layout)
+
+        desc_label = QtWidgets.QLabel(DESCRIPTION)
+        desc_label.setOpenExternalLinks(True)
+
+        buttons = QtWidgets.QDialogButtonBox()
+        buttons.setStandardButtons(buttons.Close)
+        buttons.rejected.connect(self.accept)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(icon_label)
-        layout.addWidget(title_label)
-        layout.addLayout(button_layout)
+        layout.addWidget(frame)
+        layout.addWidget(desc_label)
+        layout.addWidget(buttons)
 
         self.setLayout(layout)

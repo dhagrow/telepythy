@@ -9,7 +9,6 @@ from telepythy import pack
 from telepythy.lib import logs
 
 from telepythy.gui.window import Window
-from telepythy.gui import resources # import ensures availability
 from telepythy.gui import config
 from telepythy.gui import utils
 
@@ -48,6 +47,12 @@ def main():
 
     utils.set_app_id()
     utils.hook_exceptions()
+
+    # set default link color to something a little more light/dark friendly
+    app = QtWidgets.QApplication.instance()
+    pal = app.palette()
+    pal.setColor(pal.Link, 'cadetblue')
+    app.setPalette(pal)
 
     win = Window(cfg, args.profile, args.verbose, args.debug)
     win.setWindowTitle('Telepythy')

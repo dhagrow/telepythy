@@ -1,7 +1,6 @@
 from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
-from . import styles
 from . import document
 from .highlighter import Highlighter
 
@@ -21,8 +20,7 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
         self.setStyleSheet(DEFAULT_STYLESHEET)
 
-    def set_style(self, name):
-        style = styles.get_style(name)
+    def set_style(self, style):
         self.highlighter.set_style(style)
 
         tpl = 'QPlainTextEdit { color: %s; background: %s; }' + DEFAULT_STYLESHEET

@@ -13,6 +13,9 @@ from .output import OutputEdit
 from .settings import SettingsWidget
 from .profiles import Profiles
 
+# required to make resources available
+from . import resources_rc
+
 log = logs.get(__name__)
 
 class Window(QtWidgets.QMainWindow):
@@ -331,14 +334,17 @@ class Window(QtWidgets.QMainWindow):
             app.setStyle(name)
 
         app.setStyleSheet(stylesheet)
+
         self.output_edit.highlighter.rehighlight()
         self.source_edit.highlighter.rehighlight()
 
         self.settings.set_app_style(name)
 
     def set_highlight_style(self, name):
-        self.output_edit.set_style(name)
-        self.source_edit.set_style(name)
+        style = styles.get_style(name)
+
+        self.output_edit.set_style(style)
+        self.source_edit.set_style(style)
 
         self.settings.set_highlight_style(name)
 
