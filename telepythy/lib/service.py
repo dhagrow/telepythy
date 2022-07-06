@@ -185,15 +185,12 @@ class Service(object):
         try:
             QtCore = sys.modules['PySide6'].QtCore
         except (KeyError, AttributeError):
-            print('no pyside')
             return
 
         app = QtCore.QCoreApplication.instance()
         if app is None:
-            print('no app')
             return
 
-        print('handle')
         delay = 0.1
         app.processEvents(QtCore.QEventLoop.AllEvents, int(delay*1000))
         timer = QtCore.QTimer()
