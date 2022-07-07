@@ -27,6 +27,8 @@ class Window(QtWidgets.QMainWindow):
     def __init__(self, config, profile, verbose=0, debug=False):
         super().__init__()
 
+        self._config = config
+
         # XXX: something to experiment with sometime
         # self.setStyleSheet("background:88ffffff;");
         # self.setAttribute(Qt.WA_TranslucentBackground);
@@ -42,34 +44,7 @@ class Window(QtWidgets.QMainWindow):
         self._debug_server = None
 
         self.setup()
-        self.config(config)
         self.set_profile(profile)
-
-    ## config ##
-
-    def config(self, config):
-        self._config = config
-        style = config.section('style')
-        window = config.section('window')
-
-        # font
-        family = style['font.family']
-        size = style['font.size']
-        self.output_edit.setFont(QtGui.QFont(family, size))
-        self.source_edit.setFont(QtGui.QFont(family, size))
-
-        # settings
-        self.set_app_style(style['app'])
-        self.set_highlight_style(style['highlight'])
-
-        # menus
-        view_menu = window['view.menu']
-        self.menuBar().setVisible(view_menu)
-        self.action_toggle_menu.setChecked(view_menu)
-
-        self.action_toggle_source_title.setChecked(False)
-
-        self.resize(*window['size'])
 
     ## setup ##
 
@@ -83,6 +58,8 @@ class Window(QtWidgets.QMainWindow):
         self.setup_menus()
         self.setup_statusbar()
         self.setup_signals()
+
+        self.settings.from_config()
 
         self.source_edit.setFocus()
 
@@ -130,7 +107,7 @@ class Window(QtWidgets.QMainWindow):
         self.addDockWidget(Qt.BottomDockWidgetArea, self.source_dock)
 
     def setup_settings_widget(self):
-        self.settings = SettingsWidget()
+        self.settings = SettingsWidget(self._config, self)
 
         self.settings_dock = QtWidgets.QDockWidget('Settings')
         self.settings_dock.setWidget(self.settings)
@@ -173,7 +150,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.view_menu = menu = QtWidgets.QMenu('View', self)
         menu.addAction(self.action_toggle_menu)
-        menu.addAction(self.settings_dock.toggleViewAction())
+        action = self.settings_dock.toggleViewAction()
+        action.setShortcut('F12')
+        menu.addAction(action)
         menu.addAction(self.source_dock.toggleViewAction())
         menu.addAction(self.action_toggle_source_title)
 
@@ -262,9 +241,6 @@ class Window(QtWidgets.QMainWindow):
         self.status_connected.connect(self._set_connected)
         self.status_disconnected.connect(self._set_disconnected)
 
-        self.settings.app_style_changed.connect(self.set_app_style)
-        self.settings.highlight_style_changed.connect(self.set_highlight_style)
-
     ## events ##
 
     def contextMenuEvent(self, event):
@@ -318,29 +294,6 @@ class Window(QtWidgets.QMainWindow):
     def restart(self):
         self._control.restart()
         self._set_disconnected(force=True)
-
-    ## styles ##
-
-    def set_app_style(self, name):
-        app = QtWidgets.QApplication.instance()
-
-        if name in ('dark', 'light'):
-            stylesheet = styles.get_app_stylesheet(name)
-        else:
-            stylesheet = ''
-            app.setStyle(name)
-
-        app.setStyleSheet(stylesheet)
-        self.output_edit.highlighter.rehighlight()
-        self.source_edit.highlighter.rehighlight()
-
-        self.settings.set_app_style(name)
-
-    def set_highlight_style(self, name):
-        self.output_edit.set_style(name)
-        self.source_edit.set_style(name)
-
-        self.settings.set_highlight_style(name)
 
     ## commands ##
 

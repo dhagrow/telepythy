@@ -9,7 +9,8 @@ ConfigItem = collections.namedtuple('ConfigItem', 'default, type')
 ConfigType = collections.namedtuple('ConfigType', 'encode, decode')
 
 class Config:
-    def __init__(self):
+    def __init__(self, path):
+        self._path = path
         self._parser = configparser.ConfigParser(interpolation=None)
         self._items = {}
         self._types = {}
@@ -69,16 +70,16 @@ class Config:
 
     ## persistence ##
 
-    def read(self, path):
-        self._parser.read(path)
+    def read(self):
+        self._parser.read(self._path)
 
-    def write(self, path):
-        with open(path, 'w') as f:
+    def write(self):
+        with open(self._path, 'w') as f:
             self._parser.write(f)
 
-    def sync(self, path):
-        self.read(path)
-        self.write(path)
+    def sync(self):
+        self.read()
+        self.write()
 
     ## encoding ##
 
