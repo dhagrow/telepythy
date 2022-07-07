@@ -111,9 +111,10 @@ class SettingsWidget(QtWidgets.QWidget):
 
     def set_highlight_style(self):
         name = self._config['style.highlight']
+        style = styles.get_style(name)
 
-        self._window.output_edit.set_style(name)
-        self._window.source_edit.set_style(name)
+        self._window.output_edit.set_style(style)
+        self._window.source_edit.set_style(style)
 
         with utils.block_signals(self.highlight_combo):
             self.highlight_combo.setCurrentText(name)
