@@ -1,47 +1,128 @@
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 
 from . import styles
 from . import utils
 
 class SettingsWidget(QtWidgets.QWidget):
-    app_style_changed = QtCore.Signal(str)
-    highlight_style_changed = QtCore.Signal(str)
+    def __init__(self, config, window):
+        super().__init__(window)
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+        self._config = config
+        self._window = window
 
         self.setup()
 
     def setup(self):
-        self.layout = QtWidgets.QFormLayout()
-        self.setLayout(self.layout)
+        ## styles
 
-        self.app_combo = QtWidgets.QComboBox()
-        self.layout.addRow('Application style', self.app_combo)
+        style_box = QtWidgets.QGroupBox('Styles')
+        layout = QtWidgets.QFormLayout()
+        style_box.setLayout(layout)
 
-        self.highlight_combo = QtWidgets.QComboBox()
-        self.layout.addRow('Syntax highlight style', self.highlight_combo)
-
-        # add styles
-        self.app_combo.addItem('dark')
-        self.app_combo.addItem('light')
+        self.app_combo = combo = QtWidgets.QComboBox()
+        combo.addItem('dark')
+        combo.addItem('light')
         for style in sorted(QtWidgets.QStyleFactory.keys()):
-            self.app_combo.addItem(style)
+            combo.addItem(style)
+        combo.currentTextChanged.connect(self.to_config)
+        layout.addRow('Application style', combo)
 
+        self.highlight_combo = combo = QtWidgets.QComboBox()
         for style in sorted(styles.get_styles()):
-            self.highlight_combo.addItem(style)
+            combo.addItem(style)
+        combo.currentTextChanged.connect(self.to_config)
+        layout.addRow('Syntax highlight style', combo)
 
-        self.setup_actions()
+        self.font_combo = combo = QtWidgets.QFontComboBox()
+        combo.setFontFilters(combo.MonospacedFonts)
+        combo.currentFontChanged.connect(self.to_config)
+        layout.addRow('Font', combo)
 
-    def setup_actions(self):
-        self.app_combo.currentTextChanged.connect(self.app_style_changed)
-        self.highlight_combo.currentTextChanged.connect(
-            self.highlight_style_changed)
+        all_font_toggle = QtWidgets.QCheckBox('Show all fonts')
+        def state_changed(state):
+            flt = (combo.AllFonts
+                if state == QtCore.Qt.Checked else combo.MonospacedFonts)
+            self.font_combo.clear()
+            self.font_combo.setFontFilters(flt)
+        all_font_toggle.stateChanged.connect(state_changed)
+        layout.addRow('', all_font_toggle)
 
-    def set_app_style(self, style):
+        ## profiles
+
+        pass
+
+        ##
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(style_box)
+        self.setLayout(layout)
+
+    def from_config(self):
+        config = self._config
+
+        # styles
+        self.set_app_style()
+        self.set_highlight_style()
+        self.set_font()
+
+        window = config.section('window')
+
+        # menus
+        view_menu = window['view.menu']
+        self._window.menuBar().setVisible(view_menu)
+        self._window.action_toggle_menu.setChecked(view_menu)
+
+        self._window.action_toggle_source_title.setChecked(False)
+
+        self._window.resize(*window['size'])
+
+    def to_config(self):
+        config = self._config
+
+        style = config.section('style')
+        style['app'] = self.app_combo.currentText()
+        style['highlight'] = self.highlight_combo.currentText()
+        style['font'] = self.font_combo.currentFont()
+
+        self.set_app_style()
+        self.set_highlight_style()
+        self.set_font()
+
+        config.write()
+
+    ## styles ##
+
+    def set_app_style(self):
+        name = self._config['style.app']
+        app = QtWidgets.QApplication.instance()
+
+        if name in ('dark', 'light'):
+            stylesheet = styles.get_app_stylesheet(name)
+        else:
+            stylesheet = ''
+            app.setStyle(name)
+
+        app.setStyleSheet(stylesheet)
+        self._window.output_edit.highlighter.rehighlight()
+        self._window.source_edit.highlighter.rehighlight()
+
         with utils.block_signals(self.app_combo):
-            self.app_combo.setCurrentText(style)
+            self.app_combo.setCurrentText(name)
 
-    def set_highlight_style(self, style):
+    def set_highlight_style(self):
+        name = self._config['style.highlight']
+
+        self._window.output_edit.set_style(name)
+        self._window.source_edit.set_style(name)
+
         with utils.block_signals(self.highlight_combo):
-            self.highlight_combo.setCurrentText(style)
+            self.highlight_combo.setCurrentText(name)
+
+    def set_font(self):
+        font = self._config['style.font']
+
+        self._window.output_edit.setFont(font)
+        self._window.source_edit.setFont(font)
+
+        with utils.block_signals(self.font_combo):
+            self.font_combo.setCurrentFont(font)

@@ -8,6 +8,12 @@ import threading
 import contextlib
 import collections
 
+try:
+    import builtins
+except ImportError:
+    import __builtin__ as builtins
+_builtins = builtins.__dict__
+
 from . import logs
 
 log = logs.get(__name__)
@@ -75,7 +81,7 @@ class Interpreter(object):
             for name in self.locals.keys():
                 matches.append(name)
 
-            for name in self.locals['__builtins__'].keys():
+            for name in _builtins.keys():
                 matches.append(name)
         else:
             ctx = prefix.rsplit('.', 1)[0]
@@ -106,7 +112,7 @@ class Interpreter(object):
                 if name.startswith(prefix_0):
                     matches.append(name)
 
-            for name in self.locals['__builtins__'].keys():
+            for name in _builtins.keys():
                 if name.startswith(prefix_0):
                     matches.append(name)
 
@@ -116,7 +122,7 @@ class Interpreter(object):
 
             obj = self.locals.get(parents[0])
             if not obj:
-                obj = self.locals['__builtins__'].get(parents[0])
+                obj = _builtins.get(parents[0])
                 if not obj:
                     return []
 

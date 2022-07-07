@@ -2,7 +2,7 @@ import os
 import typing
 
 import appdirs
-from qtpy import QtWidgets
+from qtpy import QtGui, QtWidgets
 
 from . import snekcfg
 from ..lib import logs
@@ -26,10 +26,8 @@ def init(path=None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     log.debug('config: %s', path)
 
-    size = QtWidgets.QApplication.primaryScreen().availableSize()
-    default_size = (int(size.width() / 2.5), int(size.height() / 1.5))
-
-    cfg = snekcfg.Config()
+    cfg = snekcfg.Config(path)
+    register_types(cfg)
 
     cfg.register_type('path', None, expand_path)
 
@@ -43,13 +41,25 @@ def init(path=None):
     sct = cfg.section('style', create=True)
     sct.init('app', 'dark')
     sct.init('highlight', 'gruvbox-dark')
-    sct.init('font.family', 'monospace')
-    sct.init('font.size', 12)
+    sct.init('font', QtGui.QFont('monospace', 12))
 
     sct = cfg.section('window', create=True)
+
+    size = QtWidgets.QApplication.primaryScreen().availableSize()
+    default_size = (int(size.width() / 2.5), int(size.height() / 1.5))
     sct.init('size', default_size, typing.Tuple[int])
+
     sct.init('view.menu', True)
 
-    cfg.sync(path)
+    cfg.sync()
 
     return cfg
+
+def register_types(cfg):
+    def str2font(v):
+        family, size = v.split(',')
+        return QtGui.QFont(family.strip(), int(size.strip()))
+    cfg.register_type(QtGui.QFont,
+        lambda v: f'{v.family()},{v.pointSize()}',
+        str2font,
+        )
