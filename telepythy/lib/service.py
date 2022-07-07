@@ -12,6 +12,7 @@ from . import logs
 from . import utils
 from . import sockio
 from . import interpreter
+from . import event_handlers
 
 Q_TIMEOUT = 0.1
 
@@ -28,6 +29,8 @@ class Service(object):
 
         self._events = queue.Queue()
         self._code_queue = queue.Queue()
+
+        self._event_handlers = event_handlers.default_handlers()
 
         self._is_evaluating = False
 
@@ -65,7 +68,8 @@ class Service(object):
         timeout = self._timeout
 
         while not shutdown.is_set():
-            self._handle_guis()
+            for handler in self._event_handlers:
+                handler()
 
             try:
                 data = q.get(timeout=timeout)
@@ -121,6 +125,9 @@ class Service(object):
 
         event = {'evt': name, 'data': data}
         self._events.put(event)
+
+    def register_event_handler(self, handler):
+        self._event_handlers.append(handler)
 
     def _handle(self, sock):
         self._stop.clear()
@@ -179,25 +186,6 @@ class Service(object):
         except sockio.error as e:
             log.error('handle_commands error: %s', repr(e))
             stop.set()
-
-    def _handle_guis(self):
-        try:
-            QtCore = sys.modules['PySide6'].QtCore
-        except (KeyError, AttributeError):
-            return
-
-        app = QtCore.QCoreApplication.instance()
-        if app is None:
-            return
-
-        delay = 0.1
-        app.processEvents(QtCore.QEventLoop.AllEvents, int(delay*1000))
-        timer = QtCore.QTimer()
-        event_loop = QtCore.QEventLoop()
-        timer.timeout.connect(event_loop.quit)
-        timer.start(int(delay*1000))
-        event_loop.exec_()
-        timer.stop()
 
 class Client(Service):
     def start(self, addr):
