@@ -1,10 +1,9 @@
 import os
-import typing
 
 import appdirs
+import snekcfg
 from qtpy import QtGui, QtWidgets
 
-from . import snekcfg
 from ..lib import logs
 from ..lib import utils
 
@@ -47,7 +46,7 @@ def init(path=None):
 
     size = QtWidgets.QApplication.primaryScreen().availableSize()
     default_size = (int(size.width() / 2.5), int(size.height() / 1.5))
-    sct.init('size', default_size, typing.Tuple[int])
+    sct.init('size', default_size, 'tuple[int, ...]')
 
     sct.init('view.menu', True)
 

@@ -9,3 +9,4 @@ PySide6-Essentials==6.3.0
 QtPy==2.1.0
 shiboken6==6.3.0
 six==1.16.0
+snekcfg @ git+https://github.com/dhagrow/snekcfg@c917559ea819c3f83c0449576228b6c3d24
