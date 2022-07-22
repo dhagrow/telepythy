@@ -25,32 +25,36 @@ def init(path=None):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     log.debug('config: %s', path)
 
+    # rename the snekcfg logger
+    snekcfg.log = logs.get(log.name)
+
     cfg = snekcfg.Config(path)
     register_types(cfg)
 
     cfg.register_type('path', None, expand_path)
 
-    sct = cfg.section('profiles', create=True)
-    sct.init('default.command', utils.DEFAULT_COMMAND)
-    sct.init('connect.connect', utils.DEFAULT_ADDR)
-    sct.init('serve.serve', utils.DEFAULT_ADDR)
+    sct = cfg.section('profiles')
+    sct.define('default.command', utils.DEFAULT_COMMAND)
+    sct.define('connect.connect', utils.DEFAULT_ADDR)
+    sct.define('serve.serve', utils.DEFAULT_ADDR)
 
-    cfg.init('startup.source_path', get_config_path('startup.py'), 'path')
+    cfg.define('startup.source_path', get_config_path('startup.py'), 'path')
 
-    sct = cfg.section('style', create=True)
-    sct.init('app', 'dark')
-    sct.init('highlight', 'gruvbox-dark')
-    sct.init('font', QtGui.QFont('monospace', 12))
+    sct = cfg.section('style')
+    sct.define('app', 'dark')
+    sct.define('highlight', 'gruvbox-dark')
+    sct.define('font', QtGui.QFont('monospace', 12))
 
-    sct = cfg.section('window', create=True)
+    sct = cfg.section('window')
 
     size = QtWidgets.QApplication.primaryScreen().availableSize()
     default_size = (int(size.width() / 2.5), int(size.height() / 1.5))
-    sct.init('size', default_size, 'tuple[int, ...]')
+    sct.define('size', default_size, 'tuple[int, ...]')
 
-    sct.init('view.menu', True)
+    sct.define('view.menu', True)
 
-    cfg.sync()
+    cfg.read()
+    cfg.write()
 
     return cfg
 
