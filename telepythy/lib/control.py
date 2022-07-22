@@ -185,8 +185,6 @@ class ProcessControl(ServerControl):
             log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
-        super().stop()
-
         proc = self._proc
         if not proc:
             log.debug('process not running')
@@ -197,6 +195,9 @@ class ProcessControl(ServerControl):
         proc.kill()
         proc.wait(self._timeout)
         self._proc = None
+
+        # stop server
+        super().stop()
 
     def interrupt(self):
         try:

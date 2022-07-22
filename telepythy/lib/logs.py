@@ -8,6 +8,7 @@ log = get(__name__)
 
 def init(verbose=0, mode=None, format=None, color=False, log_exceptions=False):
     """Initializes simple logging defaults."""
+
     root_log = get('telepythy')
     root_log.propagate = False
 
