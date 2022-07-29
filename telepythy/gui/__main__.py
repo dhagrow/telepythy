@@ -58,9 +58,6 @@ def main():
     win.setWindowTitle('Telepythy')
     win.show()
 
-    # enable clean shutdown on ctrl+c
-    utils.set_interrupt_handler(win)
-
     sys.exit(app.exec())
 
 def list_profiles(cfg):

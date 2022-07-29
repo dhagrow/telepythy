@@ -44,13 +44,6 @@ def start_thread(func, *args, **kwargs):
     t.start()
     return t
 
-# if IS_WINDOWS:
-#     import ctypes as ct
-#     from ctypes import wintypes as wt
-#     GenerateConsoleCtrlEvent = ct.windll.kernel32.GenerateConsoleCtrlEvent
-#     GenerateConsoleCtrlEvent.argtypes = (wt.DWORD, wt.DWORD)
-#     GenerateConsoleCtrlEvent.restype = wt.BOOL
-
 def interrupt(pid=None):
     pid = os.getpid() if pid is None else pid
     log.debug('interrupting process: %s', pid)

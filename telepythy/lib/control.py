@@ -3,7 +3,6 @@ NOTE: This is the only module in `telepythy.lib` that only
 supports Python 3 (3.7+).
 """
 
-import sys
 import time
 import shlex
 import queue
@@ -18,8 +17,6 @@ from . import sockio
 
 TIMEOUT = 0.01
 KILL_TIMEOUT = 5
-
-iswindows = sys.platform == 'win32'
 
 log = logs.get(__name__)
 
@@ -171,12 +168,12 @@ class ProcessControl(ServerControl):
         lib_name = 'telepythy_service.pyz'
         with resources.path('telepythy', lib_name) as lib_path:
             python = self._command
-            cmd = shlex.split(python, posix=False) + [lib_path]
+            cmd = shlex.split(python, posix=False) + [str(lib_path)]
             cmd.extend(['-v'] * self._verbose)
             cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
             kwargs = {}
-            if iswindows:
+            if utils.IS_WINDOWS:
                 kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
                 sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
@@ -200,14 +197,14 @@ class ProcessControl(ServerControl):
         super().stop()
 
     def interrupt(self):
-        try:
-            utils.interrupt(self._proc.pid)
-            if utils.IS_WINDOWS:
-                # all processes in the group will recieve the interrupt
-                # sleeping allows us to catch and ignore it here
+        utils.interrupt(self._proc.pid)
+        if utils.IS_WINDOWS:
+            # all processes in the group will recieve the interrupt
+            # sleeping allows us to catch and ignore it here
+            try:
                 time.sleep(5)
-        except KeyboardInterrupt:
-            pass
+            except KeyboardInterrupt:
+                pass
 
 class ServiceProxy(object):
     def __init__(self, sock):
