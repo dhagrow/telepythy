@@ -48,3 +48,21 @@ def interrupt(pid=None):
     pid = os.getpid() if pid is None else pid
     log.debug('interrupting process: %s', pid)
     os.kill(pid, signal.CTRL_C_EVENT if IS_WINDOWS else signal.SIGINT)
+
+if IS_WINDOWS:
+    import ctypes as ct
+    from ctypes import wintypes as wt
+
+    HandlerRoutine = ct.WINFUNCTYPE(wt.BOOL, wt.DWORD)
+
+    SetConsoleCtrlHandler = ct.windll.kernel32.SetConsoleCtrlHandler
+    SetConsoleCtrlHandler.argtypes = (HandlerRoutine, wt.BOOL)
+    SetConsoleCtrlHandler.restype = wt.BOOL
+
+    def set_console_ctrl_handler():
+        if not SetConsoleCtrlHandler(None, False):
+            log.warning('failed to set console ctrl handler')
+
+else:
+    def set_console_ctrl_handler():
+        pass

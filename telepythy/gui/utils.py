@@ -1,12 +1,15 @@
 import os
 import sys
+import signal
 import pathlib
 import traceback
 import contextlib
 
-from qtpy import QtWidgets
+from qtpy import QtCore, QtWidgets
 
 from ..lib import logs
+
+IS_WINDOWS = sys.platform == 'win32'
 
 log = logs.get(__name__)
 
@@ -74,7 +77,18 @@ def virtualenvs(home_path=None):
     for path in venv_path.glob('**/Scripts/python.exe'):
         yield (get_name(path), str(path))
 
-if sys.platform == 'win32':
+def set_interrupt_handler(win):
+    signal.signal(signal.SIGINT, get_interrupt_handler(win))
+    def timer():
+        QtCore.QTimer.singleShot(100, timer)
+    timer()
+
+def get_interrupt_handler(win):
+    def handler(signum, frame):
+        win.close()
+    return handler
+
+if IS_WINDOWS:
     import ctypes as ct
     from ctypes import wintypes as wt
 

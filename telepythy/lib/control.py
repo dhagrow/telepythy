@@ -3,7 +3,6 @@ NOTE: This is the only module in `telepythy.lib` that only
 supports Python 3 (3.7+).
 """
 
-import time
 import shlex
 import queue
 import threading
@@ -174,6 +173,7 @@ class ProcessControl(ServerControl):
 
             kwargs = {}
             if utils.IS_WINDOWS:
+                kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
                 kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
                 sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
@@ -198,13 +198,6 @@ class ProcessControl(ServerControl):
 
     def interrupt(self):
         utils.interrupt(self._proc.pid)
-        if utils.IS_WINDOWS:
-            # all processes in the group will recieve the interrupt
-            # sleeping allows us to catch and ignore it here
-            try:
-                time.sleep(5)
-            except KeyboardInterrupt:
-                pass
 
 class ServiceProxy(object):
     def __init__(self, sock):

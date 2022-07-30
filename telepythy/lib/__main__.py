@@ -27,6 +27,9 @@ def main():
 
     logs.init(args.verbose, mode='svc')
 
+    # enable reception of ctrl+c events as part of a new console group (win)
+    utils.set_console_ctrl_handler()
+
     # serve unless connect is set
     if args.connect is not False:
         client(address=args.connect, init_shell=True)
