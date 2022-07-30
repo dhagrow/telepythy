@@ -1,6 +1,5 @@
 """
-NOTE: This is the only module in `telepythy.lib` that only
-supports Python 3 (3.7+).
+NOTE: This is the only module in `telepythy.lib` that requires Python 3 (3.7+).
 """
 
 import shlex
