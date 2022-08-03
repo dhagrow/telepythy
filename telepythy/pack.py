@@ -13,7 +13,7 @@ def get_path(*names):
     return os.path.abspath(os.path.join(BASE_PATH, *names))
 
 MAIN = """\
-from telepythy_service.__main__ import main
+from telepythy.__main__ import main
 main()
 """
 
@@ -31,7 +31,7 @@ def pack():
             allowZip64=False) as zip:
         for path in glob.iglob(src_path, recursive=True):
             if 'gui' in path: continue
-            dst = os.path.relpath(path).replace('telepythy', 'telepythy_service')
+            dst = os.path.relpath(path)
             log.debug('+ %s', dst)
             zip.write(path, dst)
         zip.writestr('__main__.py', MAIN)
