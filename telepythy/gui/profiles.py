@@ -1,6 +1,6 @@
 from ..lib import utils
-from ..lib import control
 
+from . import control
 from .utils import virtualenvs
 
 class Profiles:
