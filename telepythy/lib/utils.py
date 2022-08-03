@@ -60,7 +60,7 @@ if IS_WINDOWS:
     SetConsoleCtrlHandler.restype = wt.BOOL
 
     def set_console_ctrl_handler():
-        if not SetConsoleCtrlHandler(None, False):
+        if not SetConsoleCtrlHandler(HandlerRoutine(0), False):
             log.warning('failed to set console ctrl handler')
 
 else:

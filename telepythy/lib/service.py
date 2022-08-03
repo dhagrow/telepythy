@@ -104,7 +104,8 @@ class Service(object):
                 self.add_event('done')
 
     def interrupt(self):
-        utils.interrupt()
+        if self._is_evaluating:
+            utils.interrupt()
 
     def complete(self, prefix):
         matches = self._inter.complete(prefix)

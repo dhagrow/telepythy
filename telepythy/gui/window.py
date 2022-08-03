@@ -6,7 +6,6 @@ from qtpy import QtCore, QtGui, QtWidgets
 from ..lib import logs
 from ..lib import start_server
 
-from . import styles
 from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
@@ -210,8 +209,7 @@ class Window(QtWidgets.QMainWindow):
     def setup_signals(self):
         self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
-        self.action_interrupt.triggered.connect(
-            lambda: self.focusWidget().handle_ctrl_c())
+        self.action_interrupt.triggered.connect(self.interrupt)
         self.action_restart.triggered.connect(self.restart)
 
         self.action_toggle_menu.toggled.connect(self.menuBar().setVisible)
