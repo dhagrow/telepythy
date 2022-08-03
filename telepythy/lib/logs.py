@@ -6,17 +6,29 @@ iswindows = sys.platform == 'win32'
 get = getLogger
 log = get(__name__)
 
-def init(verbose=0, mode=None, format=None, color=False, log_exceptions=False):
+def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
     """Initializes simple logging defaults."""
 
-    root_log = get('telepythy')
-    root_log.propagate = False
+    level = {
+        0: WARNING,
+        1: INFO,
+        2: DEBUG,
+        }[verbose]
+
+    root_log = get()
+    # don't increase the level if it's already been set
+    root_log.setLevel(min(level, root_log.level))
+
+    tele_log = get('telepythy')
+    # do not propagate logs to parent
+    tele_log.propagate = False
+    tele_log.setLevel(level)
 
     fmt = format or '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
 
     if verbose == 0:
         handler = NullHandler()
-        root_log.addHandler(handler)
+        tele_log.addHandler(handler)
         return
     elif sys.stderr is None:
         if not iswindows:
@@ -41,10 +53,9 @@ def init(verbose=0, mode=None, format=None, color=False, log_exceptions=False):
     handler.setFormatter(formatter)
     handler.addFilter(ModeFilter(mode))
 
-    root_log.addHandler(handler)
-    root_log.setLevel(INFO if verbose == 1 else DEBUG)
+    tele_log.addHandler(handler)
 
-    if log_exceptions:
+    if set_excepthook:
         sys.excepthook = handle_exception
 
 def handle_exception(etype, evalue, etb):
