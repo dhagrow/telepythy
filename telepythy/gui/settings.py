@@ -1,7 +1,11 @@
-from qtpy import QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtWidgets
+
+from ..lib import logs
 
 from . import styles
 from . import utils
+
+log = logs.get(__name__)
 
 class SettingsWidget(QtWidgets.QWidget):
     def __init__(self, config, window):
@@ -100,7 +104,8 @@ class SettingsWidget(QtWidgets.QWidget):
             stylesheet = styles.get_app_stylesheet(name)
         else:
             stylesheet = ''
-            app.setStyle(name)
+            if not app.setStyle(name):
+                log.error('unknown app style: %s', name)
 
         app.setStyleSheet(stylesheet)
         self._window.output_edit.highlighter.rehighlight()
