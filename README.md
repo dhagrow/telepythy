@@ -5,8 +5,8 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 ## Features
 
 * Combines the flow of a REPL with the expressiveness of an editor
-* Syntax highlighting based on [Pygments][7]
 * UI based on [Qt 6][8]
+* Syntax highlighting based on [Pygments][7]
 * Embeddable service with no third-party dependencies
 * Remote connections (as client or server via TCP)
 * Seamless swapping between multiple interpreter profiles
@@ -55,7 +55,7 @@ $ python -m telepythy.gui
 
 ### Configuration
 
-Manually editing the configuration file is currently the only way to persist settings. It is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy.cfg` on Windows).
+Manually editing the configuration file is currently the only way to persist settings. It is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy\telepythy.cfg` on Windows).
 
 ### Virtual Environments
 
@@ -87,8 +87,8 @@ See the `<telepythy>/examples` directory from the repository for examples on how
 To add a custom local interpreter, you must create a profile referencing the path for the interpreter in the config file:
 
 ```ini
-[profile.<profile_name>]
-command = "<command-for-interpreter>"
+[profiles]
+<profile-name>.command = "<command-for-interpreter>"
 ```
 
 ### Remote Interpreters
@@ -102,34 +102,34 @@ $ pip install telepythy-service
 It can then be started using one of the following commands:
 
 ```shell
-$ telepythy-service --connect '<host>:<port>'
-$ telepythy-service --serve '<interface>:<port>'
+$ telepythy-service [-c,--connect] '<host>:<port>'
+$ telepythy-service [-s,--serve] '<interface>:<port>'
 # or
 $ python -m telepythy ...
 ```
 
-If no arguments are provided, the service will automatically listen as a server on port 7373.
+If no arguments are provided, the service will automatically listen as a server on localhost port 7373.
 
 To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port, in the config file.
 
 To add a connect profile:
 
 ```ini
-[profile.<profile_name>]
-connect = "<host>:<port>"
+[profiles]
+<profile-name>.connect = "<host>:<port>"
 ```
 
 To add a serve profile:
 
 ```ini
-[profile.<profile_name>]
-serve = "<interface>:<port>"
+[profiles]
+<profile-name>.serve = "<interface>:<port>"
 ```
 
 You can then use the profile by selecting it in the UI, or with the `--profile` command-line option:
 
 ```shell
-$ telepythy [-p,--profile] <profile_name>
+$ telepythy [-p,--profile] <profile-name>
 ```
 
 ## API
@@ -138,7 +138,7 @@ $ telepythy [-p,--profile] <profile_name>
 
 ## Security
 
-To be explicit, there are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the source code in transit will remain the responsibility of the user.
+There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the source code in transit will remain the responsibility of the user.
 
 For connections across machines, I recommend using [SSH port forwarding][6].
 
