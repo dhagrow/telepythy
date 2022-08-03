@@ -42,6 +42,14 @@ class BlockChain:
     def is_folded(self):
         return bool(self._fold_block)
 
+    @property
+    def start_block(self):
+        return self._start_block
+
+    @property
+    def end_block(self):
+        return self._end_block
+
     def add_blocks(self, start_block, end_block):
         chain_id = self.id
         visible = not self.is_folded
@@ -304,6 +312,7 @@ class OutputEdit(textedit.TextEdit):
 
         chain.unfold()
         self.reset()
+        self.scroll_to_block(chain.end_block)
 
     ## internal ##
 

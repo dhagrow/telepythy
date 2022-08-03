@@ -26,6 +26,10 @@ class TextEdit(QtWidgets.QPlainTextEdit):
         tpl = 'QPlainTextEdit { color: %s; background: %s; }' + DEFAULT_STYLESHEET
         self.setStyleSheet(tpl % (style.text_color, style.background_color))
 
+    def scroll_to_block(self, block):
+        scroll = self.verticalScrollBar()
+        scroll.setValue(block.blockNumber())
+
     def scroll_to_bottom(self):
         scroll = self.verticalScrollBar()
         scroll.setValue(scroll.maximum())
