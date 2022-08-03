@@ -1,7 +1,3 @@
-"""
-NOTE: This is the only module in `telepythy.lib` that requires Python 3 (3.7+).
-"""
-
 import shlex
 import queue
 import threading
@@ -9,9 +5,9 @@ import subprocess
 import collections
 from importlib import resources
 
-from . import logs
-from . import utils
-from . import sockio
+from ..lib import logs
+from ..lib import utils
+from ..lib import sockio
 
 TIMEOUT = 0.01
 KILL_TIMEOUT = 5
@@ -194,9 +190,6 @@ class ProcessControl(ServerControl):
 
         # stop server
         super().stop()
-
-    def interrupt(self):
-        utils.interrupt(self._proc.pid)
 
 class ServiceProxy(object):
     def __init__(self, sock):
