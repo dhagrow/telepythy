@@ -26,11 +26,7 @@ def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
 
     fmt = format or '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
 
-    if verbose == 0:
-        handler = NullHandler()
-        tele_log.addHandler(handler)
-        return
-    elif sys.stderr is None:
+    if sys.stderr is None:
         if not iswindows:
             # TODO: maybe try syslog on linux?
             return
@@ -73,10 +69,6 @@ class ModeFilter(Filter):
     def filter(self, record):
         record.mode = self._mode
         return True
-
-class NullHandler(Handler):
-    def emit(self, record):
-        pass
 
 if iswindows:
     import ctypes as ct
