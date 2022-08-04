@@ -32,7 +32,6 @@ def client_loop(address, handler, stop, retry_limit, retry_interval):
     while not stop.is_set():
         try:
             with connect(address, timeout) as sock:
-                sock.sendinit()
                 handler(sock)
         except socket.error as e:
             log.error('connection error: %s', e)
@@ -72,7 +71,6 @@ def server_loop(server_sock, handler, stop):
 
         log.info('connected: %s:%s', *addr)
         with SockIO(s) as sock:
-            sock.recvinit()
             sock.settimeout(timeout)
             handler(sock)
 
@@ -86,16 +84,6 @@ class SockIO(object):
     def __init__(self, sock, chunk_size=None):
         self._sock = sock
         self._chunk_size = chunk_size or CHUNK_SIZE
-
-    def sendinit(self):
-        log.debug('sendinit')
-        self.sendmsg({'cmd': 'init'})
-
-    def recvinit(self):
-        msg = self.recvmsg()
-        log.debug('recvinit: %s', msg)
-        if msg.get('cmd') != 'init':
-            raise InvalidInitialization()
 
     def sendmsg(self, msg):
         data = json.dumps(msg).encode('utf8')
@@ -162,9 +150,6 @@ class StoppableThread(object):
         self._thread.join()
 
 class SockIOError(Exception):
-    pass
-
-class InvalidInitialization(SockIOError):
     pass
 
 class ReceiveInterrupted(SockIOError, error):
