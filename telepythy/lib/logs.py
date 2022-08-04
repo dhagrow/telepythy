@@ -24,7 +24,7 @@ def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
     tele_log.propagate = False
     tele_log.setLevel(level)
 
-    fmt = format or '%(levelname).1s %(asctime)s [%(mode)s%(name)s] %(message)s'
+    fmt = format or '%(levelname).1s %(asctime)s [%(mode)s:%(name)s] %(message)s'
 
     if sys.stderr is None:
         if not iswindows:
@@ -64,7 +64,7 @@ def handle_exception(etype, evalue, etb):
 class ModeFilter(Filter):
     def __init__(self, mode):
         super(ModeFilter, self).__init__()
-        self._mode = mode + ':' if mode else ''
+        self._mode = mode
 
     def filter(self, record):
         record.mode = self._mode
