@@ -37,13 +37,22 @@ class Control:
     ## commands ##
 
     def evaluate(self, source, notify=True):
-        self._cmd_queue.put(('evaluate', source, notify))
+        try:
+            self._cmd_queue.put(('evaluate', source, notify), block=False)
+        except queue.Full:
+            log.debug('[evaluate] command queue is full')
 
     def interrupt(self):
-        self._cmd_queue.put(('interrupt',))
+        try:
+            self._cmd_queue.put(('interrupt',), block=False)
+        except queue.Full:
+            log.debug('[interrupt] command queue is full')
 
     def complete(self, prefix):
-        self._cmd_queue.put(('complete', prefix))
+        try:
+            self._cmd_queue.put(('complete', prefix), block=False)
+        except queue.Full:
+            log.debug('[complete] command queue is full')
 
     ## events ##
 
