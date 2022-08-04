@@ -25,7 +25,6 @@ class Service(object):
 
         self._thread = None
         self._stop = threading.Event()
-        self._shutdown = threading.Event()
 
         self._events = queue.Queue()
         self._code_queue = queue.Queue()
@@ -56,33 +55,32 @@ class Service(object):
         self._thread.join(timeout)
         if self._thread.is_alive():
             raise Timeout()
-        self._thread = None
 
     ## execution ##
 
     def run(self):
-        shutdown = self._shutdown
-        shutdown.clear()
+        stop = self._stop
+        stop.clear()
 
         q = self._code_queue
         timeout = self._timeout
 
-        while not shutdown.is_set():
-            for handler in self._event_handlers:
-                handler()
+        try:
+            while not stop.is_set():
+                for handler in self._event_handlers:
+                    handler()
 
-            try:
-                data = q.get(timeout=timeout)
-            except queue.Empty:
-                continue
-            try:
-                with self._inter.hooked():
-                    self.evaluate(**data)
-            except KeyboardInterrupt:
-                pass
+                try:
+                    data = q.get(timeout=timeout)
+                except queue.Empty:
+                    continue
+
+                self.evaluate(**data)
+        finally:
+            self._thread = None
 
     def stop(self):
-        self._shutdown.set()
+        self._stop.set()
 
     ## interpreter ##
 
@@ -92,16 +90,17 @@ class Service(object):
 
     def evaluate(self, source, notify=True):
         self._is_evaluating = True
-        try:
-            self._inter.evaluate(source)
-        except Exception:
-            traceback.print_exc()
-        except KeyboardInterrupt:
-            traceback.print_exc()
-        finally:
-            self._is_evaluating = False
-            if notify:
-                self.add_event('done')
+        with self._inter.hooked():
+            try:
+                self._inter.evaluate(source)
+            except Exception:
+                traceback.print_exc()
+            except KeyboardInterrupt:
+                traceback.print_exc()
+            finally:
+                self._is_evaluating = False
+                if notify:
+                    self.add_event('done')
 
     def interrupt(self):
         if self._is_evaluating:
