@@ -5,7 +5,7 @@ import itertools
 import telepythy
 from telepythy.lib import logs
 
-logs.init(2)
+logs.init(verbose=2)
 
 server = telepythy.start_server()
 
@@ -14,9 +14,4 @@ for i in itertools.count():
     time.sleep(1)
     server.locals.update(locals())
 
-    if i == 10:
-        print('stopping')
-        server.stop()
-
-print('joining')
-server.join()
+    print(i)
