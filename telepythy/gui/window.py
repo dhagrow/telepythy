@@ -37,6 +37,7 @@ class Window(QtWidgets.QMainWindow):
         # self.setWindowFlags(Qt.FramelessWindowHint);
 
         self._control = None
+        self._profile = None
         self._profiles = Profiles(config.section('profiles'), verbose)
 
         self._connected = None
@@ -164,10 +165,10 @@ class Window(QtWidgets.QMainWindow):
 
     def setup_profiles(self):
         menu = self.profile_menu
-        actions = self._profile_actions
         group = QtWidgets.QActionGroup(menu)
 
-        actions.clear()
+        checked = False # used to prioritize config profiles
+        current = self._profile
         menu.clear()
 
         for name in sorted(self._profiles.get_config_profiles()):
@@ -175,8 +176,11 @@ class Window(QtWidgets.QMainWindow):
             act.setCheckable(True)
             act.setActionGroup(group)
 
+            if name == current:
+                act.setChecked(True)
+                checked = True
+
             menu.addAction(act)
-            actions[name] = act
 
         menu.addSection('virtualenvs')
         for name in sorted(self._profiles.get_virtualenv_profiles()):
@@ -184,8 +188,10 @@ class Window(QtWidgets.QMainWindow):
             act.setCheckable(True)
             act.setActionGroup(group)
 
+            if name == current and not checked:
+                act.setChecked(True)
+
             menu.addAction(act)
-            actions[name] = act
 
     def setup_statusbar(self):
         bar = self.statusBar()
@@ -298,10 +304,8 @@ class Window(QtWidgets.QMainWindow):
         ctl.start()
 
         self.profile_button.setText(name)
-        try:
-            self._profile_actions[name].setChecked(True)
-        except KeyError:
-            pass
+
+        self._profile = name
 
     def restart(self):
         self._control.restart()
