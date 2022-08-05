@@ -6,8 +6,11 @@ from .utils import virtualenvs
 class Profiles:
     def __init__(self, profiles, verbose=0):
         self._profiles = dict(self._parse_profiles(profiles))
-        self._venvs = {name: {'command': path} for name, path in virtualenvs()}
         self._verbose = verbose
+
+    @property
+    def _venvs(self):
+        return {name: {'command': path} for name, path in virtualenvs()}
 
     def get_config_profiles(self):
         yield from self._profiles.keys()

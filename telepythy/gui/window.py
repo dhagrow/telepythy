@@ -56,7 +56,6 @@ class Window(QtWidgets.QMainWindow):
         self.setup_output_edit()
         self.setup_source_edit()
         self.setup_settings_widget()
-        self.setup_profiles()
         self.setup_menus()
         self.setup_statusbar()
         self.setup_signals()
@@ -117,26 +116,6 @@ class Window(QtWidgets.QMainWindow):
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.settings_dock)
 
-    def setup_profiles(self):
-        self.profile_menu = menu = QtWidgets.QMenu('Profiles', self)
-        self.profile_group = group = QtWidgets.QActionGroup(self.profile_menu)
-        self._profile_actions = actions = {}
-
-        for name in sorted(self._profiles.get_config_profiles()):
-            act = QtWidgets.QAction(name, self)
-            act.setCheckable(True)
-            act.setActionGroup(group)
-            menu.addAction(act)
-            actions[name] = act
-
-        menu.addSection('virtualenvs')
-        for name in sorted(self._profiles.get_virtualenv_profiles()):
-            act = QtWidgets.QAction(name, self)
-            act.setCheckable(True)
-            act.setActionGroup(group)
-            menu.addAction(act)
-            actions[name] = act
-
     def setup_menus(self):
         self.main_menu = menu = QtWidgets.QMenu('File', self)
         menu.addAction(self.action_about)
@@ -158,6 +137,10 @@ class Window(QtWidgets.QMainWindow):
         menu.addAction(self.source_dock.toggleViewAction())
         menu.addAction(self.action_toggle_source_title)
 
+        self.profile_menu = menu = QtWidgets.QMenu('Profiles', self)
+        menu.aboutToShow.connect(self.setup_profiles)
+        self._profile_actions = {}
+
         if self._debug:
             self.debug_menu = menu = QtWidgets.QMenu('Debug', self)
             menu.addAction(self.action_debug_start)
@@ -178,6 +161,31 @@ class Window(QtWidgets.QMainWindow):
         menu.addMenu(self.profile_menu)
         if self._debug:
             menu.addMenu(self.debug_menu)
+
+    def setup_profiles(self):
+        menu = self.profile_menu
+        actions = self._profile_actions
+        group = QtWidgets.QActionGroup(menu)
+
+        actions.clear()
+        menu.clear()
+
+        for name in sorted(self._profiles.get_config_profiles()):
+            act = QtWidgets.QAction(name, self)
+            act.setCheckable(True)
+            act.setActionGroup(group)
+
+            menu.addAction(act)
+            actions[name] = act
+
+        menu.addSection('virtualenvs')
+        for name in sorted(self._profiles.get_virtualenv_profiles()):
+            act = QtWidgets.QAction(name, self)
+            act.setCheckable(True)
+            act.setActionGroup(group)
+
+            menu.addAction(act)
+            actions[name] = act
 
     def setup_statusbar(self):
         bar = self.statusBar()
@@ -290,7 +298,10 @@ class Window(QtWidgets.QMainWindow):
         ctl.start()
 
         self.profile_button.setText(name)
-        self._profile_actions[name].setChecked(True)
+        try:
+            self._profile_actions[name].setChecked(True)
+        except KeyError:
+            pass
 
     def restart(self):
         self._control.restart()
