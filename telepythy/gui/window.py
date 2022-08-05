@@ -217,7 +217,7 @@ class Window(QtWidgets.QMainWindow):
     def setup_signals(self):
         self.action_about.triggered.connect(self.about_dialog.exec)
         self.action_quit.triggered.connect(self.close)
-        self.action_interrupt.triggered.connect(self.interrupt)
+        self.action_interrupt.triggered.connect(self.check_interrupt)
         self.action_restart.triggered.connect(self.restart)
 
         self.action_toggle_menu.toggled.connect(self.menuBar().setVisible)
@@ -306,6 +306,12 @@ class Window(QtWidgets.QMainWindow):
     def restart(self):
         self._control.restart()
         self._set_disconnected(force=True)
+
+    def check_interrupt(self):
+        try:
+            self.focusWidget().handle_ctrl_c()
+        except AttributeError:
+            self.interrupt()
 
     ## commands ##
 
