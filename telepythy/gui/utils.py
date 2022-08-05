@@ -18,10 +18,6 @@ if os.path.exists('.git'):
     APPID = '.'.join([APPID, 'dev'])
 
 def excepthook(type, value, tb):
-    if isinstance(value, KeyboardInterrupt):
-        # a little dirty, but we're in the muck here
-        raise SystemExit()
-
     err = ''.join(traceback.format_exception_only(type, value))
     exc = ''.join(traceback.format_exception(type, value, tb))
 

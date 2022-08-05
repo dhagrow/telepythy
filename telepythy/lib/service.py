@@ -93,9 +93,7 @@ class Service(object):
         with self._inter.hooked():
             try:
                 self._inter.evaluate(source)
-            except Exception:
-                traceback.print_exc()
-            except KeyboardInterrupt:
+            except (Exception, KeyboardInterrupt):
                 traceback.print_exc()
             finally:
                 self._is_evaluating = False
