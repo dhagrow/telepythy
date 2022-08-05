@@ -50,6 +50,25 @@ def interrupt(pid=None):
     os.kill(pid, signal.CTRL_C_EVENT if IS_WINDOWS else signal.SIGINT)
 
 if IS_WINDOWS:
+    # Handling Ctrl+C cleanly on Windows for child processes is tricky.
+    # Dreampie uses a commonly recommended technique that calls
+    # GenerateConsoleCtrlEvent, sending SIGINT to every process in the process
+    # group, including the parent. It works around this by having the parent
+    # sleep in order to catch KeyboardInterrupt and ignore it. Not too clean
+    # but it does work.
+    #
+    # Another approach is to use CREATE_NEW_PROCESS_GROUP for the child,
+    # ensuring that the parent will not get the signal. Unfortunately, it
+    # seemed like GenerateConsoleCtrlEvent would not work if you did that,
+    # and people came up with a lot of hacky workarounds for this problem.
+    #
+    # Then I stumbled on this buried StackOverflow comment:
+    # https://stackoverflow.com/questions/7085604/sending-c-to-python-subprocess-objects-on-windows#comment99085177_7980368
+    #
+    # The child simply needs to enable Ctrl+C handling with
+    # SetConsoleCtrlHandler. So now all is right in the universe (except for
+    # everything else that isn't).
+
     import ctypes as ct
     from ctypes import wintypes as wt
 
