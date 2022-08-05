@@ -1,7 +1,7 @@
 import os
 import sys
+import glob
 import signal
-import pathlib
 import traceback
 import contextlib
 
@@ -65,16 +65,16 @@ def block_signals(widget):
         widget.blockSignals(False)
 
 def virtualenvs(home_path=None):
-    home_path = pathlib.Path(home_path or pathlib.Path.home())
-    venv_path = home_path / '.virtualenvs'
+    home_path = home_path or os.path.expanduser('~')
+    venv_path = os.path.join(home_path, '.virtualenvs')
 
-    get_name = lambda p: p.parent.parent.name
+    get_name = lambda p: os.path.basename(os.path.dirname(os.path.dirname(p)))
 
     # linux
-    for path in venv_path.glob('**/bin/python'):
+    for path in glob.iglob(os.path.join(venv_path, '**/bin/python')):
         yield (get_name(path), str(path))
     # windows
-    for path in venv_path.glob('**/Scripts/python.exe'):
+    for path in glob.iglob(os.path.join(venv_path, '**/Scripts/python.exe')):
         yield (get_name(path), str(path))
 
 def set_interrupt_handler(win):
