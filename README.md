@@ -33,13 +33,19 @@ So, I decided to start from scratch, and **Telepythy** is the result.
 
 ## Installation
 
-At the moment there is no installer available for **Telepythy**. The easiest option is to use `pip`:
+The recommended way to install `telepythy` is with [pipx][9]:
 
 ```shell
-$ pip install telepythy
+$ pipx install telepythy
 ```
 
-**NOTE**: This will pull in [PySide6][4], which weighs in at ~76 MB.
+This will install **Telepythy** in an isolated environment for the current user.
+
+A service-only package, with no dependencies is also available to install into the environment of any project you wish to embed into. This should be installed using regular `pip`:
+
+```shell
+$ pip install telepythy-service
+```
 
 ## Usage
 
@@ -166,3 +172,4 @@ If you have additional feature suggestions, please don't hesistate to create an 
 [6]: https://help.ubuntu.com/community/SSH/OpenSSH/PortForwarding
 [7]: https://pygments.org
 [8]: https://www.qt.io
+[9]: https://pypa.github.io/pipx/
