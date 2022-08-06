@@ -178,8 +178,8 @@ class ProcessControl(ServerControl):
             kwargs = {}
             if utils.IS_WINDOWS:
                 kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
-                kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
-                sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                # kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
+                # sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
             log.debug('starting process: %s', cmd)
             self._proc = subprocess.Popen(cmd, **kwargs)

@@ -25,6 +25,7 @@ class Service(object):
 
         self._thread = None
         self._stop = threading.Event()
+        self._shutdown = threading.Event()
 
         self._events = queue.Queue()
         self._code_queue = queue.Queue()
@@ -59,14 +60,14 @@ class Service(object):
     ## execution ##
 
     def run(self):
-        stop = self._stop
-        stop.clear()
+        shutdown = self._shutdown
+        shutdown.clear()
 
         q = self._code_queue
         timeout = self._timeout
 
         try:
-            while not stop.is_set():
+            while not shutdown.is_set():
                 for handler in self._event_handlers:
                     handler()
 
@@ -81,6 +82,7 @@ class Service(object):
 
     def stop(self):
         self._stop.set()
+        self._shutdown.set()
 
     ## interpreter ##
 
