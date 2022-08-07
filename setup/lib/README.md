@@ -11,12 +11,13 @@ $pip install telepythy-service
 You can start the service directly on the command-line:
 
 ```shell
-$ telepythy
+$ telepythy-service [-c,--connect] '<host>:<port>'
+$ telepythy-service [-s,--serve] '<interface>:<port>'
 # or
-$ python -m telepythy
+$ python -m telepythy ...
 ```
 
-This will start a server listening on the default interface: `localhost:7373`. See the command-line options for other ways to run the service.
+With no options, a server will start listening on the default interface and port: `localhost:7373`.
 
 To embed a **Telepythy** service in your code, you can use any of the following functions:
 

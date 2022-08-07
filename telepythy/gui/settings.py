@@ -37,10 +37,18 @@ class SettingsWidget(QtWidgets.QWidget):
         combo.currentTextChanged.connect(self.to_config)
         layout.addRow('Syntax highlight style', combo)
 
+        font_layout = QtWidgets.QHBoxLayout()
+        layout.addRow('Font', font_layout)
+
         self.font_combo = combo = QtWidgets.QFontComboBox()
         combo.setFontFilters(combo.MonospacedFonts)
         combo.currentFontChanged.connect(self.to_config)
-        layout.addRow('Font', combo)
+        font_layout.addWidget(combo)
+
+        self.font_size_box = box = QtWidgets.QSpinBox()
+        box.setMinimum(1)
+        box.valueChanged.connect(self.to_config)
+        font_layout.addWidget(box)
 
         all_font_toggle = QtWidgets.QCheckBox('Show all fonts')
         def state_changed(state):
@@ -86,7 +94,10 @@ class SettingsWidget(QtWidgets.QWidget):
         style = config.section('style')
         style['app'] = self.app_combo.currentText()
         style['highlight'] = self.highlight_combo.currentText()
-        style['font'] = self.font_combo.currentFont()
+
+        font = self.font_combo.currentFont()
+        font.setPointSize(self.font_size_box.value())
+        style['font'] = font
 
         self.set_app_style()
         self.set_highlight_style()
@@ -132,3 +143,4 @@ class SettingsWidget(QtWidgets.QWidget):
 
         with utils.block_signals(self.font_combo):
             self.font_combo.setCurrentFont(font)
+            self.font_size_box.setValue(font.pointSize())
