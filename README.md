@@ -1,6 +1,6 @@
 # Telepythy
 
-Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable additional features, such as remote connections. It is designed to streamline a prototyping workflow.
+Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable additional features, such as remote interpreters. It is designed to streamline a prototyping workflow.
 
 ## Features
 
@@ -20,7 +20,8 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 
 **Windows**
 ![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_2.png)
-**Linux/i3**<br>
+
+**Linux/i3**
 ![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_0.png)
 
 ## Motivation
@@ -40,12 +41,6 @@ $ pipx install telepythy
 ```
 
 This will install **Telepythy** in an isolated environment for the current user.
-
-A service-only package, with no dependencies is also available to install into the environment of any project you wish to embed into. This should be installed using regular `pip`:
-
-```shell
-$ pip install telepythy-service
-```
 
 ## Usage
 
@@ -69,8 +64,7 @@ Any virtual environments discovered in `~/.virtualenvs` will be accesible automa
 
 ### Embedding
 
-To embed a Telepythy service in your code, you can use any of the following
-functions:
+To embed a **Telepythy** service in your code, you can use any of the following functions:
 
 ```python
 import telepythy
@@ -81,9 +75,9 @@ telepythy.start_server()
 # or start a client thread
 telepythy.start_client()
 
-# or start a client/server directly (blocking)
-telepythy.client()
-telepythy.server()
+# or start a client/server directly (blocking), with optional arguments
+telepythy.client(locals={'client': True}, address='localhost:7373')
+telepythy.server(locals={'client': False}, address='localhost:1337')
 ```
 
 See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
@@ -114,7 +108,7 @@ $ telepythy-service [-s,--serve] '<interface>:<port>'
 $ python -m telepythy ...
 ```
 
-If no arguments are provided, the service will automatically listen as a server on localhost port 7373.
+With no options, a server will start listening on the default interface and port: `localhost:7373`.
 
 To use **Telepythy** with a remote service, you must create a profile to either connect to a remote port, or serve on a port, in the config file.
 
@@ -144,7 +138,7 @@ $ telepythy [-p,--profile] <profile-name>
 
 ## Security
 
-There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, I may change the default to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing the source code in transit will remain the responsibility of the user.
+There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, the default may change to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing communications in transit will remain the responsibility of the user.
 
 For connections across machines, I recommend using [SSH port forwarding][6].
 
