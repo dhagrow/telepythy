@@ -34,6 +34,6 @@ setup(
         'PySide6-Essentials>=6.3.0',
         'QtPy>=2.1.0',
         'shiboken6>=6.3.0',
-        'toml>=0.10.2',
+        'snekcfg>=0.1.0',
         ],
     )
