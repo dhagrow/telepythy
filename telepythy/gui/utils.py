@@ -15,7 +15,7 @@ log = logs.get(__name__)
 
 APPID = 'dhagrow.telepythy'
 if os.path.exists('.git'):
-    APPID = '.'.join([APPID, 'dev'])
+    APPID += '.dev'
 
 def excepthook(type, value, tb):
     err = ''.join(traceback.format_exception_only(type, value))
