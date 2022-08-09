@@ -1,1 +1,1 @@
-python -m telepythy.pack
+python -m telepythy.pack "$@"
