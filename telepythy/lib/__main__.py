@@ -36,8 +36,12 @@ def main():
     else:
         server(address=args.serve, init_shell=True)
 
-if __name__ == '__main__':
+def run():
+    """This is here for setuptools."""
     try:
         main()
     except KeyboardInterrupt:
         pass
+
+if __name__ == '__main__':
+    run()

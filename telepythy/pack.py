@@ -14,8 +14,8 @@ def get_path(*names):
     return os.path.abspath(os.path.join(BASE_PATH, *names))
 
 MAIN = """\
-from telepythy.__main__ import main
-main()
+from telepythy.__main__ import run
+run()
 """
 
 log = logs.get('telepythy.pack')
@@ -44,7 +44,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-o', '--output-path',
-        default=get_path('telepythy_service.pyz'),
+        default=get_path('telepythy/telepythy_service.pyz'),
         help='path for the service package (default: %(default)s)')
 
     parser.add_argument('-v', '--verbose', action='count', default=0,

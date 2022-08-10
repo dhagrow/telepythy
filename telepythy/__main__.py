@@ -1,7 +1,4 @@
-from .lib.__main__ import main
+from .lib.__main__ import run
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    run()

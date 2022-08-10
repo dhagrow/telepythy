@@ -20,10 +20,10 @@ setup(
     package_data={'telepythy': ['telepythy_service.pyz']},
     entry_points={
         'gui_scripts': [
-            'telepythy=telepythy.gui.__main__:main',
+            'telepythy-gui=telepythy.gui.__main__:run',
             ],
         'console_scripts': [
-            'telepythy-service=telepythy.lib.__main__:main',
+            'telepythy-service=telepythy.lib.__main__:run',
             ]
         },
     install_requires=[

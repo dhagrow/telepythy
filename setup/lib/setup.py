@@ -19,7 +19,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'telepythy-service=telepythy.lib.__main__:main'
+            'telepythy-service=telepythy.lib.__main__:run'
             ]
         },
     )

@@ -71,8 +71,12 @@ def list_profiles(cfg):
         name, action = name.split('.')
         print(f'{name:>{width}} | {action:<7}: {profile}')
 
-if __name__ == '__main__':
+def run():
+    """This is here for setuptools."""
     try:
         main()
     except KeyboardInterrupt:
         pass
+
+if __name__ == '__main__':
+    run()

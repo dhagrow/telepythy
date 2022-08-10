@@ -47,7 +47,7 @@ This will install **Telepythy** in an isolated environment for the current user.
 Once **Telepythy** and its dependencies have been installed, you can start the UI with:
 
 ```shell
-$ telepythy
+$ telepythy-gui
 # or
 $ python -m telepythy.gui
 ```
@@ -129,7 +129,7 @@ To add a serve profile:
 You can then use the profile by selecting it in the UI, or with the `--profile` command-line option:
 
 ```shell
-$ telepythy [-p,--profile] <profile-name>
+$ telepythy-gui [-p,--profile] <profile-name>
 ```
 
 ## API

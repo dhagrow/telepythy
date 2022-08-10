@@ -3,6 +3,7 @@ import queue
 import threading
 import subprocess
 import collections
+from importlib import resources
 
 from ..lib import logs
 from ..lib import utils
@@ -167,22 +168,22 @@ class ProcessControl(ServerControl):
     def start(self):
         super().start()
 
-        python = self._command
-        lib_path = utils.get_path('telepythy_service.pyz')
+        lib_name = 'telepythy_service.pyz'
+        with resources.path('telepythy', lib_name) as lib_path:
+            python = self._command
+            cmd = shlex.split(python, posix=False) + [lib_path]
+            cmd.extend(['-v'] * self._verbose)
+            cmd.extend(['-c', '{}:{}'.format(*self._address)])
 
-        cmd = shlex.split(python, posix=False) + [lib_path]
-        cmd.extend(['-v'] * self._verbose)
-        cmd.extend(['-c', '{}:{}'.format(*self._address)])
+            kwargs = {}
+            if utils.IS_WINDOWS:
+                kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
+                kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
+                sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-        kwargs = {}
-        if utils.IS_WINDOWS:
-            kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
-            kwargs['startupinfo'] = sinfo = subprocess.STARTUPINFO()
-            sinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-        log.debug('starting process: %s', cmd)
-        self._proc = subprocess.Popen(cmd, **kwargs)
-        log.debug('started process: %s', self._proc.pid)
+            log.debug('starting process: %s', cmd)
+            self._proc = subprocess.Popen(cmd, **kwargs)
+            log.debug('started process: %s', self._proc.pid)
 
     def stop(self):
         proc = self._proc
