@@ -13,7 +13,7 @@ def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
         0: WARNING,
         1: INFO,
         2: DEBUG,
-        }[verbose]
+        }.get(verbose, DEBUG)
 
     root_log = get()
     # don't increase the level if it's already been set
