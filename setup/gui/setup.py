@@ -14,6 +14,8 @@ setup(
     url='https://github.com/dhagrow/telepythy',
     author='Miguel Turner',
     author_email='cymrow@gmail.com',
+    license='MIT',
+    description='An embeddable, remote-capable Python shell',
     long_description=readme,
     long_description_content_type='text/markdown',
     packages=find_packages() + ['telepythy.gui'],
