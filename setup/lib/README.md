@@ -11,8 +11,8 @@ $pip install telepythy-service
 You can start the service directly on the command-line:
 
 ```shell
-$ telepythy-service [-c,--connect] '<host>:<port>'
-$ telepythy-service [-s,--serve] '<interface>:<port>'
+$ telepythy-svc [-c,--connect] '<host>:<port>'
+$ telepythy-svc [-s,--serve] '<interface>:<port>'
 # or
 $ python -m telepythy ...
 ```

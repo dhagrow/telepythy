@@ -23,7 +23,7 @@ setup(
             'telepythy-gui=telepythy.gui.__main__:run',
             ],
         'console_scripts': [
-            'telepythy-service=telepythy.lib.__main__:run',
+            'telepythy-svc=telepythy.lib.__main__:run',
             ]
         },
     install_requires=[
