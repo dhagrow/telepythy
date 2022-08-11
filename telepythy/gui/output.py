@@ -179,8 +179,15 @@ class OutputEdit(textedit.TextEdit):
         menu.exec(event.globalPos())
 
     def mouseDoubleClickEvent(self, event):
-        self._context_cursor = self.cursorForPosition(event.pos())
-        self.unfold_block()
+        cur = self.cursorForPosition(event.pos())
+        block = cur.block()
+
+        if self._is_fold_block(block):
+            self._context_cursor = cur
+            self.unfold_block()
+            return False
+
+        return super().mouseDoubleClickEvent(event)
 
     ## append ##
 
@@ -328,6 +335,10 @@ class OutputEdit(textedit.TextEdit):
 
     def _get_chain(self, block):
         return self._chains[block.userState()]
+
+    def _is_fold_block(self, block):
+        chain = self._get_chain(block)
+        return chain._fold_block == block
 
     def _source_line(self, line):
         return rx_ps.sub('', line).rstrip()
