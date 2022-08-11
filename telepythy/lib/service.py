@@ -67,16 +67,17 @@ class Service(object):
         timeout = self._timeout
 
         try:
-            while not shutdown.is_set():
-                for handler in self._event_handlers:
-                    handler()
+            with self._inter.hooked():
+                while not shutdown.is_set():
+                    for handler in self._event_handlers:
+                        handler()
 
-                try:
-                    data = q.get(timeout=timeout)
-                except queue.Empty:
-                    continue
+                    try:
+                        data = q.get(timeout=timeout)
+                    except queue.Empty:
+                        continue
 
-                self.evaluate(**data)
+                    self.evaluate(**data)
         finally:
             self._thread = None
 
@@ -92,15 +93,14 @@ class Service(object):
 
     def evaluate(self, source, notify=True):
         self._is_evaluating = True
-        with self._inter.hooked():
-            try:
-                self._inter.evaluate(source)
-            except (Exception, KeyboardInterrupt):
-                traceback.print_exc()
-            finally:
-                self._is_evaluating = False
-                if notify:
-                    self.add_event('done')
+        try:
+            self._inter.evaluate(source)
+        except (Exception, KeyboardInterrupt):
+            traceback.print_exc()
+        finally:
+            self._is_evaluating = False
+            if notify:
+                self.add_event('done')
 
     def interrupt(self):
         if self._is_evaluating:
