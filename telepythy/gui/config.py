@@ -33,7 +33,7 @@ def init(path=None):
 
     cfg.register_type('path', None, expand_path)
 
-    sct = cfg.section('profiles')
+    sct = cfg.section('profiles', strict=False)
     sct.define('default.command', utils.DEFAULT_COMMAND)
     sct.define('connect.connect', utils.DEFAULT_ADDR)
     sct.define('serve.serve', utils.DEFAULT_ADDR)
