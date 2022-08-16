@@ -6,7 +6,7 @@ import qdarktheme
 from pygments import styles
 from pygments.lexer import Text
 
-def get_app_stylesheet(theme='dark'):
+def get_theme_stylesheet(theme='dark'):
     return qdarktheme.load_stylesheet(theme)
 
 def get_style(name, search_paths=None):

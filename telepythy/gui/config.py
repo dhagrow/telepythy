@@ -41,8 +41,8 @@ def init(path=None):
     cfg.define('startup.source_path', get_config_path('startup.py'), 'path')
 
     sct = cfg.section('style')
-    sct.define('app', 'dark')
-    sct.define('highlight', 'gruvbox-dark')
+    sct.define('theme', 'dark')
+    sct.define('syntax', 'gruvbox-dark')
     sct.define('font', QtGui.QFont('monospace', 12))
 
     sct = cfg.section('window')

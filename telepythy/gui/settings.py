@@ -23,19 +23,19 @@ class SettingsWidget(QtWidgets.QWidget):
         layout = QtWidgets.QFormLayout()
         style_box.setLayout(layout)
 
-        self.app_combo = combo = QtWidgets.QComboBox()
+        self.theme_combo = combo = QtWidgets.QComboBox()
         combo.addItem('dark')
         combo.addItem('light')
         for style in sorted(QtWidgets.QStyleFactory.keys()):
             combo.addItem(style)
         combo.currentTextChanged.connect(self.to_config)
-        layout.addRow('Application style', combo)
+        layout.addRow('Theme', combo)
 
-        self.highlight_combo = combo = QtWidgets.QComboBox()
+        self.syntax_combo = combo = QtWidgets.QComboBox()
         for style in sorted(styles.get_styles()):
             combo.addItem(style)
         combo.currentTextChanged.connect(self.to_config)
-        layout.addRow('Syntax highlight style', combo)
+        layout.addRow('Syntax style', combo)
 
         font_layout = QtWidgets.QHBoxLayout()
         layout.addRow('Font', font_layout)
@@ -73,8 +73,8 @@ class SettingsWidget(QtWidgets.QWidget):
         config = self._config
 
         # styles
-        self.set_app_style()
-        self.set_highlight_style()
+        self.set_theme()
+        self.set_syntax_style()
         self.set_font()
 
         window = config.section('window')
@@ -92,48 +92,48 @@ class SettingsWidget(QtWidgets.QWidget):
         config = self._config
 
         style = config.section('style')
-        style['app'] = self.app_combo.currentText()
-        style['highlight'] = self.highlight_combo.currentText()
+        style['theme'] = self.theme_combo.currentText()
+        style['syntax'] = self.syntax_combo.currentText()
 
         font = self.font_combo.currentFont()
         font.setPointSize(self.font_size_box.value())
         style['font'] = font
 
-        self.set_app_style()
-        self.set_highlight_style()
+        self.set_theme()
+        self.set_syntax_style()
         self.set_font()
 
         config.write()
 
     ## styles ##
 
-    def set_app_style(self):
-        name = self._config['style.app']
+    def set_theme(self):
+        name = self._config['style.theme']
         app = QtWidgets.QApplication.instance()
 
         if name in ('dark', 'light'):
-            stylesheet = styles.get_app_stylesheet(name)
+            stylesheet = styles.get_theme_stylesheet(name)
         else:
             stylesheet = ''
             if not app.setStyle(name):
-                log.error('unknown app style: %s', name)
+                log.error('unknown theme: %s', name)
 
         app.setStyleSheet(stylesheet)
         self._window.output_edit.highlighter.rehighlight()
         self._window.source_edit.highlighter.rehighlight()
 
-        with utils.block_signals(self.app_combo):
-            self.app_combo.setCurrentText(name)
+        with utils.block_signals(self.theme_combo):
+            self.theme_combo.setCurrentText(name)
 
-    def set_highlight_style(self):
-        name = self._config['style.highlight']
+    def set_syntax_style(self):
+        name = self._config['style.syntax']
         style = styles.get_style(name)
 
         self._window.output_edit.set_style(style)
         self._window.source_edit.set_style(style)
 
-        with utils.block_signals(self.highlight_combo):
-            self.highlight_combo.setCurrentText(name)
+        with utils.block_signals(self.syntax_combo):
+            self.syntax_combo.setCurrentText(name)
 
     def set_font(self):
         font = self._config['style.font']
