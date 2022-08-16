@@ -13,4 +13,4 @@ python -OO -m nuitka^
  --output-dir=build/^
  .\telepythy.py
 
- del telepythy.py
+del telepythy.py
