@@ -9,6 +9,7 @@ from telepythy import pack
 from telepythy.lib import logs
 
 from telepythy.gui.window import Window
+from telepythy.gui.profiles import Profiles
 from telepythy.gui import config
 from telepythy.gui import utils
 
@@ -41,8 +42,10 @@ def main():
     if args.debug:
         pack.pack()
 
+    profs = Profiles(cfg.section('profiles'), args.verbose)
+
     if args.list_profiles:
-        list_profiles(cfg)
+        list_profiles(profs)
         return
 
     utils.set_app_id()
@@ -63,12 +66,15 @@ def main():
 
     sys.exit(app.exec())
 
-def list_profiles(cfg):
-    items = cfg.section('profiles').items()
-    width = max(len(n.split('.')[0]) for n, _ in items)
+def list_profiles(profs):
+    cfg_names = (
+        tuple(profs.get_config_profiles()) +
+        tuple(profs.get_virtualenv_profiles())
+        )
+    width = max(len(n.split('.')[0]) for n in cfg_names)
 
-    for name, profile in sorted(items):
-        name, action = name.split('.')
+    for name in sorted(cfg_names):
+        action, profile = profs.get_profile(name)
         print(f'{name:>{width}} | {action:<7}: {profile}')
 
 def run():

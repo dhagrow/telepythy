@@ -35,7 +35,7 @@ class SettingsWidget(QtWidgets.QWidget):
         for style in sorted(styles.get_styles()):
             combo.addItem(style)
         combo.currentTextChanged.connect(self.to_config)
-        layout.addRow('Syntax style', combo)
+        layout.addRow('Syntax', combo)
 
         font_layout = QtWidgets.QHBoxLayout()
         layout.addRow('Font', font_layout)
