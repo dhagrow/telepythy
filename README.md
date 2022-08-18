@@ -19,28 +19,42 @@ Telepythy is a desktop Python shell inspired by [DreamPie][1] with some notable 
 ## Screenshots
 
 **Windows**
-![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_2.png)
+
+![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_3.png)
+![](res/screenshot_3.png)
 
 **Linux/i3**
-![](https://github.com/dhagrow/telepythy/raw/master/res/screenshot_0.png)
+
+![](res/screenshot_6.png)
 
 ## Motivation
 
-[Jupyter][3] exists and is very powerful. But I have always found the interface and workflow awkward. I don't really want a shareable code notebook. I want a prototyping and debugging tool.
+There are many Python shells:
 
-As a long-time user of [DreamPie][1], I have grown comfortable with the workflow that it offers, though I have often wished for additional features. Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) and refactor an unfamiliar and complex code-base was more than I cared to invest in. Starting a new project seemed much more fun.
+* The standard Python shell
+* [IDLE][12]
+* [IPython/Jupyter][3]
+* [ptpython][11]
+* [bpython][10]
+* [DreamPie][1]
+
+They are all good in their own ways. I frequently use the standard Python shell, because it is always there. But when I have been able to install my preference for my most common use cases (prototyping and debugging), my choice was always DreamPie.
+
+Unfortunately, it looks as if all development [stopped][2] sometime before 2016, and the last official release was in 2012. I looked into creating a fork to add the features I was interested in, but the effort to modernize (i.e. Python 3) and refactor an unfamiliar and complex code-base was more than I cared to invest in. Starting a new project seemed much more fun.
 
 So, I decided to start from scratch, and **Telepythy** is the result.
 
 ## Installation
 
-The recommended way to install `telepythy` is with [pipx][9]:
+The most reliable way to install `telepythy` across platforms is with [pipx][9]:
 
 ```shell
 $ pipx install telepythy
 ```
 
-This will install **Telepythy** in an isolated environment for the current user.
+This will install **Telepythy** in an isolated environment for the current user, and should work on Windows, Linux, and OSX (untested).
+
+# For Windows users, you can download an installer [here]
 
 ## Usage
 
@@ -56,11 +70,13 @@ $ python -m telepythy.gui
 
 ### Configuration
 
-Manually editing the configuration file is currently the only way to persist settings. It is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy\telepythy.cfg` on Windows).
+Style and font options can be configured with the UI. Manually editing the config file is currently the only way to persist any other options.
+
+The config file is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy\telepythy.cfg` on Windows).
 
 ### Virtual Environments
 
-Any virtual environments discovered in `~/.virtualenvs` will be accesible automatically in the *Profiles* menu.
+Any virtual environments discovered in `~/.virtualenvs` will be accessible automatically in the *Profiles* menu.
 
 ### Embedding
 
@@ -76,8 +92,8 @@ telepythy.start_server()
 telepythy.start_client()
 
 # or start a client/server directly (blocking), with optional arguments
-telepythy.client(locals={'client': True}, address='localhost:7373')
-telepythy.server(locals={'client': False}, address='localhost:1337')
+telepythy.client(locals={'foo': True}, address='localhost:7373')
+telepythy.server(locals={'bar': False}, address='localhost:1337')
 ```
 
 See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
@@ -138,25 +154,24 @@ $ telepythy-gui [-p,--profile] <profile-name>
 
 ## Security
 
-There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, the default may change to use UNIX domain sockets on Linux, and named pipes on Windows. However, securing communications in transit will remain the responsibility of the user.
+There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, the default may change to use UNIX domain sockets on Linux, and named pipes on Windows. An option for SSL is possible for those willing to manage certificates. However, securing communications in transit will always remain a responsibility of the user.
 
 For connections across machines, I recommend using [SSH port forwarding][6].
 
 ## Roadmap
 
-**Telepythy** is very much a work in progress. Here are some features that are planned for future releases (in no particular order):
+**Telepythy** is very much a work in progress. Here are some features that might be queued up for future releases (in no particular order):
 
+* Better completion (next on the docket)
 * Profile configuration UI
 * Smart copy/paste
 * UNIX domain sockets
-* Code snippets
-* Session import/export
+* SSL sockets
+* Session autosave/import/export
 * Embedded documentation
-* Platform installers
-* Localization
-* Website/logo
+* Localization (at least Spanish)
 
-If you have additional feature suggestions, please don't hesistate to create an [issue][5]. Note that I work on this project in my free time and I don't expect to work on features that I don't personally find useful. I do, however, welcome pull requests.
+If you experience bugs or have additional feature suggestions, please don't hesistate to create an [issue][5]. Note that I work on this project in my free time and I don't expect to work on features that I don't personally find useful. I do prioritize bugs, and welcome pull requests.
 
 [1]: http://www.dreampie.org/
 [2]: https://github.com/noamraph/dreampie/issues/65
@@ -167,3 +182,6 @@ If you have additional feature suggestions, please don't hesistate to create an 
 [7]: https://pygments.org
 [8]: https://www.qt.io
 [9]: https://pypa.github.io/pipx/
+[10]: https://bpython-interpreter.org
+[11]: https://github.com/prompt-toolkit/ptpython
+[12]: https://docs.python.org/3/library/idle.html
