@@ -22,9 +22,8 @@ def get_path(*names):
 def parse_address(address):
     s = address.split(':', 1)
     host = s[0].strip() or DEFAULT_HOST
-    if len(s) == 1 or not s[1]:
-        return (host, DEFAULT_PORT)
-    return (host, int(s[1]))
+    port = int(s[1]) if len(s) == 2 and s[1] else DEFAULT_PORT
+    return (host, port)
 
 def start_thread(func, *args, **kwargs):
     def thread(func, *args, **kwargs):
