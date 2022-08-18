@@ -52,6 +52,7 @@ class Window(QtWidgets.QMainWindow):
     ## setup ##
 
     def setup(self):
+        self.setup_palette()
         self.setup_actions()
         self.setup_about_dialog()
         self.setup_output_edit()
@@ -64,6 +65,13 @@ class Window(QtWidgets.QMainWindow):
         self.settings.from_config()
 
         self.source_edit.setFocus()
+
+    def setup_palette(self):
+        # set default link color to something a little more light/dark friendly
+        app = QtWidgets.QApplication.instance()
+        pal = app.palette()
+        pal.setColor(pal.Link, 'cadetblue')
+        app.setPalette(pal)
 
     def setup_actions(self):
         self.action_about = QtWidgets.QAction('About')

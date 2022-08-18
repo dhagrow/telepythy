@@ -51,12 +51,6 @@ def main():
     utils.set_app_id()
     utils.hook_exceptions()
 
-    # set default link color to something a little more light/dark friendly
-    app = QtWidgets.QApplication.instance()
-    pal = app.palette()
-    pal.setColor(pal.Link, 'cadetblue')
-    app.setPalette(pal)
-
     win = Window(cfg, args.profile, args.verbose, args.debug)
     win.setWindowTitle('Telepythy')
     win.show()
