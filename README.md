@@ -95,12 +95,12 @@ import telepythy
 # start a server thread
 telepythy.start_server()
 
-# or start a client thread
-telepythy.start_client()
+# or start a client thread (with optional arguments)
+telepythy.start_client(locals={'bar': False}, address='localhost:1337')
 
-# or start a client/server directly (blocking), with optional arguments
-telepythy.client(locals={'foo': True}, address='localhost:7373')
-telepythy.server(locals={'bar': False}, address='localhost:1337')
+# or start a client/server directly (blocking)
+telepythy.client()
+telepythy.server()
 ```
 
 See the `<telepythy>/examples` directory from the repository for examples on how to embed the service into existing code.
@@ -163,19 +163,19 @@ $ telepythy-gui [-p,--profile] <profile-name>
 
 There are no security measures in place within **Telepythy** to secure your source code in transit. The UI controller connects to the embedded service using a regular TCP connection. By default, the UI starts a server listening on *localhost* and executes a Python process that connects to it. In the future, the default may change to use UNIX domain sockets on Linux, and named pipes on Windows. An option for SSL is possible for those willing to manage certificates. However, securing communications in transit will always remain a responsibility of the user.
 
-For connections across machines, I recommend using [SSH port forwarding][6].
+For connections across machines, I recommend using [SSH port forwarding][6]. <- (If you're still reading, this is something you should know about.)
 
 ## Roadmap
 
 **Telepythy** is very much a work in progress. Here are some features that might be queued up for future releases (in no particular order):
 
 * Better completion (next on the docket)
-* Profile configuration UI
+* Embedded documentation (i.e. docstring popups)
 * Smart copy/paste
+* Profile configuration UI
 * UNIX domain sockets
 * SSL sockets
 * Session autosave/import/export
-* Embedded documentation
 * Localization (at least Spanish)
 
 If you experience bugs or have additional feature suggestions, please don't hesistate to create an [issue][5]. Note that I work on this project in my free time and I don't expect to work on features that I don't personally find useful. I do prioritize bugs, and welcome pull requests.
