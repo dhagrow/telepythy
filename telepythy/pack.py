@@ -21,14 +21,19 @@ def pack(dst_path=None):
     src_path = utils.get_path('telepythy/**/*.py')
     dst_path  = dst_path or utils.get_path('telepythy/telepythy_service.pyz')
 
-    with zipfile.ZipFile(dst_path, 'w', zipfile.ZIP_DEFLATED,
-            allowZip64=False) as zip:
-        for path in glob.iglob(src_path, recursive=True):
-            if 'gui' in path: continue
-            dst = os.path.relpath(path)
-            log.debug('+ %s', dst)
-            zip.write(path, dst)
-        zip.writestr('__main__.py', MAIN)
+    with open(dst_path, 'wb') as f:
+        f.write(b'#! /usr/bin/env python\n')
+
+        with zipfile.ZipFile(f, 'w', zipfile.ZIP_DEFLATED,
+                allowZip64=False) as zip:
+            for path in glob.iglob(src_path, recursive=True):
+                if 'gui' in path: continue
+                dst = os.path.relpath(path)
+                log.debug('+ %s', dst)
+                zip.write(path, dst)
+            zip.writestr('__main__.py', MAIN)
+
+    os.chmod(dst_path, 0o755)
 
     log.info('packed lib stored to: %s', dst_path)
 
