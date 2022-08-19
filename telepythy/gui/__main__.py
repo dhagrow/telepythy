@@ -51,7 +51,7 @@ def main():
     utils.set_app_id()
     utils.hook_exceptions()
 
-    win = Window(cfg, args.profile, args.verbose, args.debug)
+    win = Window(cfg, args.profile, profs, args.debug)
     win.setWindowTitle('Telepythy')
     win.show()
 

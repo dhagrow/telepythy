@@ -26,7 +26,7 @@ class Window(QtWidgets.QMainWindow):
     status_connected = QtCore.Signal(tuple)
     status_disconnected = QtCore.Signal(str)
 
-    def __init__(self, config, profile, verbose=0, debug=False):
+    def __init__(self, config, profile, profiles, debug=False):
         super().__init__()
 
         self._config = config
@@ -38,7 +38,7 @@ class Window(QtWidgets.QMainWindow):
 
         self._control = None
         self._profile = None
-        self._profiles = Profiles(config.section('profiles'), verbose)
+        self._profiles = profiles
 
         self._connected = None
         self._history_result = collections.OrderedDict()
