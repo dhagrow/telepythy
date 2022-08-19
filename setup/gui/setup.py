@@ -38,4 +38,14 @@ setup(
         'shiboken6>=6.3.0',
         'snekcfg>=0.1.0',
         ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Operating System :: OS Independent',
+        'Topic :: Software Development :: Interpreters',
+        'Topic :: Utilities',
+        ],
     )
