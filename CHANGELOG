@@ -1,0 +1,12 @@
+## *Rhubarb* [0.6.0] 2022-08-13
+
+* Updated to Qt6 and PySide6.
+* Source and output folding.
+* Application themes and syntax styles.
+* Service-only package on PyPI (telepythy-service).
+* Windows installer.
+* General system stability improvements to enhance the user's experience.
+
+## *Balsalm* [0.1.0] 2021-08-26
+
+* Initial release.
