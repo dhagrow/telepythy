@@ -28,6 +28,10 @@ def main():
 
     logs.init(args.verbose, mode='svc', filename=args.log_file)
 
+    # fix for race condition related to getaddrinfo
+    # https://bugs.python.org/issue29288
+    u''.encode('idna')
+
     # enable reception of ctrl+c events as part of a new console group (win)
     utils.set_console_ctrl_handler()
 
