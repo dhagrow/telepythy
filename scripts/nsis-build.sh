@@ -1,1 +1,0 @@
-makensis setup/telepythy.nsi
