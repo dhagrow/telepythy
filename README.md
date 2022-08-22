@@ -61,7 +61,7 @@ $ pipx install telepythy
 
 This will install **Telepythy** in an isolated environment for the current user, and should work on Windows, Linux, and OSX (untested).
 
-# For Windows users, you can download an installer [here]
+For Windows users, you can download an installer [here][13].
 
 ## Usage
 
@@ -192,3 +192,4 @@ If you experience bugs or have additional feature suggestions, please don't hesi
 [10]: https://bpython-interpreter.org
 [11]: https://github.com/prompt-toolkit/ptpython
 [12]: https://docs.python.org/3/library/idle.html
+[13]: https://github.com/dhagrow/telepythy/releases/download/0.5.1/telepythy-0.5.1-setup-x64.exe
