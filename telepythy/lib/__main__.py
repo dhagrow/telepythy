@@ -20,12 +20,13 @@ def main():
         help='<host>:<port> to connect to (default: {})'.format(
             utils.DEFAULT_ADDR))
 
+    parser.add_argument('--log-file', help='output logs to the specified file')
     parser.add_argument('-v', '--verbose', action='count',
         default=0, help='enable verbose output (-vv for more)')
 
     args = parser.parse_args()
 
-    logs.init(args.verbose, mode='svc')
+    logs.init(args.verbose, mode='svc', filename=args.log_file)
 
     # enable reception of ctrl+c events as part of a new console group (win)
     utils.set_console_ctrl_handler()

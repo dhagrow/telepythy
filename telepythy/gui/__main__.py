@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--config', default=config.get_config_file_path(),
         help='path to the config file (default: %(default)s)')
 
+    parser.add_argument('--log-file', help='output logs to the specified file')
     parser.add_argument('-v', '--verbose', action='count', default=0,
         help='enable verbose output (-vv for more)')
 
@@ -36,7 +37,8 @@ def main():
     app = QtWidgets.QApplication()
     app.setWindowIcon(QtGui.QIcon(':icon'))
 
-    logs.init(args.verbose, mode='ctl', color=True, set_excepthook=True)
+    logs.init(args.verbose, mode='ctl', filename=args.log_file, color=True,
+        set_excepthook=True)
     cfg = config.init(args.config)
 
     if args.debug:

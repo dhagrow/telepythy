@@ -10,7 +10,6 @@ from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
 from .settings import SettingsWidget
-from .profiles import Profiles
 
 # required to make resources available
 from . import resources_rc

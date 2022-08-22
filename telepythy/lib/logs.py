@@ -6,7 +6,8 @@ iswindows = sys.platform == 'win32'
 get = getLogger
 log = get(__name__)
 
-def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
+def init(verbose=0, mode=None, filename=None, format=None, color=False,
+        set_excepthook=False):
     """Initializes simple logging defaults."""
 
     level = {
@@ -25,16 +26,17 @@ def init(verbose=0, mode=None, format=None, color=False, set_excepthook=False):
     tele_log.setLevel(level)
 
     fmt = format or '%(levelname).1s %(asctime)s [%(mode)s:%(name)s] %(message)s'
+    formatter = Formatter(fmt)
 
-    if sys.stderr is None:
+    if filename:
+        handler = FileHandler(filename)
+    elif sys.stderr is None:
         if not iswindows:
             # TODO: maybe try syslog on linux?
             return
         handler = DbgViewHandler()
-        formatter = Formatter(fmt)
     else:
         handler = StreamHandler()
-        formatter = Formatter(fmt)
 
         if color:
             # try to enable color formatting
