@@ -139,12 +139,12 @@ class OutputEdit(textedit.TextEdit):
         self.addAction(self.action_unfold_block)
 
         self.action_fold_last_block = QtWidgets.QAction('Fold Last Block')
-        self.action_fold_last_block.setShortcut('Ctrl+-')
+        self.action_fold_last_block.setShortcut('Ctrl+[')
         self.action_fold_last_block.triggered.connect(lambda: self.fold_block(last=True))
         self.addAction(self.action_fold_last_block)
 
         self.action_unfold_last_block = QtWidgets.QAction('Unfold Last Block')
-        self.action_unfold_last_block.setShortcut('Ctrl+=')
+        self.action_unfold_last_block.setShortcut('Ctrl+]')
         self.action_unfold_last_block.triggered.connect(lambda: self.unfold_block(last=True))
         self.addAction(self.action_unfold_last_block)
 
