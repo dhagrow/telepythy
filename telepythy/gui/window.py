@@ -10,6 +10,7 @@ from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
 from .settings import SettingsWidget
+from . import utils
 
 # required to make resources available
 from . import resources_rc
@@ -264,6 +265,38 @@ class Window(QtWidgets.QMainWindow):
         self.status_disconnected.connect(self._set_disconnected)
 
     ## events ##
+
+    def showEvent(self, event):
+        # slight delay allows main window to pop up
+        QtCore.QTimer.singleShot(1, self.show_tips)
+
+    def show_tips(self):
+        def next_tip():
+            edit.clear()
+            edit.appendHtml(utils.get_tip())
+
+        box = QtWidgets.QDialog(self)
+        box.setWindowTitle('Tips')
+
+        layout = QtWidgets.QVBoxLayout()
+        box.setLayout(layout)
+
+        edit = QtWidgets.QPlainTextEdit()
+        edit.setReadOnly(True)
+        layout.addWidget(edit)
+
+        buttons = QtWidgets.QDialogButtonBox()
+
+        buttons.addButton(buttons.Ok)
+        buttons.accepted.connect(box.accept)
+
+        next_button = buttons.addButton('Next', buttons.ActionRole)
+        next_button.clicked.connect(next_tip)
+
+        layout.addWidget(buttons)
+
+        next_tip()
+        box.show()
 
     def contextMenuEvent(self, event):
         self.view_menu.exec_(event.globalPos())

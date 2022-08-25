@@ -2,6 +2,7 @@
 appdirs==1.4.4
 colorama==0.4.5
 colorlog==6.6.0
+mistune==2.0.4
 packaging==21.3
 Pygments==2.13.0
 pyparsing==3.0.9

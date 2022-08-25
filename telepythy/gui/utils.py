@@ -1,13 +1,16 @@
 import os
 import sys
 import glob
+import random
 import signal
 import traceback
 import contextlib
 
+import mistune
 from qtpy import QtCore, QtWidgets
 
 from ..lib import logs
+from ..lib import utils
 
 IS_WINDOWS = sys.platform == 'win32'
 
@@ -38,6 +41,15 @@ def hook_exceptions():
 
 def unhook_exceptions():
     sys.excepthook = sys.__excepthook__
+
+_tips = []
+def get_tip(index=None):
+    if not _tips:
+        with open(utils.get_path('docs/tips.txt')) as f:
+            _tips.extend(filter(None, (line.strip() for line in f)))
+    if index is None:
+        index = random.randint(0, len(_tips)-1)
+    return mistune.html(_tips[index])
 
 class ErrorBox(QtWidgets.QMessageBox):
     def __init__(self, parent=None):
