@@ -9,16 +9,6 @@ from ..lib import utils
 
 log = logs.get(__name__)
 
-def get_config_path(*names):
-    cfg_dir = appdirs.user_config_dir('telepythy', False)
-    return os.path.join(cfg_dir, *names)
-
-def get_config_file_path():
-    return get_config_path('telepythy.cfg')
-
-def expand_path(path):
-    return os.path.expanduser(os.path.expandvars(path))
-
 def init(path=None):
     path = expand_path(path or get_config_file_path())
 
@@ -31,14 +21,14 @@ def init(path=None):
     cfg = snekcfg.Config(path)
     register_types(cfg)
 
-    cfg.register_type('path', None, expand_path)
-
     sct = cfg.section('profiles', strict=False)
     sct.define('default.command', utils.DEFAULT_COMMAND)
     sct.define('connect.connect', utils.DEFAULT_ADDR)
     sct.define('serve.serve', utils.DEFAULT_ADDR)
 
-    cfg.define('startup.source_path', get_config_path('startup.py'), 'path')
+    sct = cfg.section('startup')
+    sct.define('source_path', get_config_path('startup.py'), 'path')
+    sct.define('show_tips', True)
 
     sct = cfg.section('style')
     sct.define('theme', 'dark')
@@ -58,7 +48,16 @@ def init(path=None):
 
     return cfg
 
+def get_config_path(*names):
+    cfg_dir = appdirs.user_config_dir('telepythy', False)
+    return os.path.join(cfg_dir, *names)
+
+def get_config_file_path():
+    return get_config_path('telepythy.cfg')
+
 def register_types(cfg):
+    cfg.register_type('path', None, expand_path)
+
     def str2font(v):
         family, size = v.split(',')
         return QtGui.QFont(family.strip(), int(size.strip()))
@@ -66,3 +65,6 @@ def register_types(cfg):
         lambda v: f'{v.family()},{v.pointSize()}',
         str2font,
         )
+
+def expand_path(path):
+    return os.path.expanduser(os.path.expandvars(path))

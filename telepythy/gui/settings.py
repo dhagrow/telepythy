@@ -20,8 +20,8 @@ class SettingsWidget(QtWidgets.QWidget):
         ## styles
 
         style_box = QtWidgets.QGroupBox('Styles')
-        layout = QtWidgets.QFormLayout()
-        style_box.setLayout(layout)
+        style_layout = QtWidgets.QFormLayout()
+        style_box.setLayout(style_layout)
 
         self.theme_combo = combo = QtWidgets.QComboBox()
         combo.addItem('dark')
@@ -29,16 +29,16 @@ class SettingsWidget(QtWidgets.QWidget):
         for style in sorted(QtWidgets.QStyleFactory.keys()):
             combo.addItem(style)
         combo.currentTextChanged.connect(self.to_config)
-        layout.addRow('Theme', combo)
+        style_layout.addRow('Theme', combo)
 
         self.syntax_combo = combo = QtWidgets.QComboBox()
         for style in sorted(styles.get_styles()):
             combo.addItem(style)
         combo.currentTextChanged.connect(self.to_config)
-        layout.addRow('Syntax', combo)
+        style_layout.addRow('Syntax', combo)
 
         font_layout = QtWidgets.QHBoxLayout()
-        layout.addRow('Font', font_layout)
+        style_layout.addRow('Font', font_layout)
 
         self.font_combo = combo = QtWidgets.QFontComboBox()
         combo.setFontFilters(combo.MonospacedFonts)
@@ -57,7 +57,17 @@ class SettingsWidget(QtWidgets.QWidget):
             self.font_combo.clear()
             self.font_combo.setFontFilters(flt)
         all_font_toggle.stateChanged.connect(state_changed)
-        layout.addRow('', all_font_toggle)
+        style_layout.addRow('', all_font_toggle)
+
+        ## startup
+
+        startup_box = QtWidgets.QGroupBox('Startup')
+        startup_layout = QtWidgets.QFormLayout()
+        startup_box.setLayout(startup_layout)
+
+        self.tips_checkbox = box = QtWidgets.QCheckBox()
+        box.stateChanged.connect(self.to_config)
+        startup_layout.addRow('Show tips', box)
 
         ## profiles
 
@@ -67,6 +77,7 @@ class SettingsWidget(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(style_box)
+        layout.addWidget(startup_box)
         self.setLayout(layout)
 
     def from_config(self):
@@ -77,31 +88,40 @@ class SettingsWidget(QtWidgets.QWidget):
         self.set_syntax_style()
         self.set_font()
 
-        window = config.section('window')
+        # startup
+        sct = config.section('startup')
+        self.tips_checkbox.setChecked(sct['show_tips'])
 
-        # menus
-        view_menu = window['view.menu']
+        # window
+        sct = config.section('window')
+
+        view_menu = sct['view.menu']
         self._window.menuBar().setVisible(view_menu)
         self._window.action_toggle_menu.setChecked(view_menu)
 
         self._window.action_toggle_source_title.setChecked(False)
 
-        self._window.resize(*window['size'])
+        self._window.resize(*sct['size'])
 
     def to_config(self):
         config = self._config
 
-        style = config.section('style')
-        style['theme'] = self.theme_combo.currentText()
-        style['syntax'] = self.syntax_combo.currentText()
+        # styles
+        sct = config.section('style')
+        sct['theme'] = self.theme_combo.currentText()
+        sct['syntax'] = self.syntax_combo.currentText()
 
         font = self.font_combo.currentFont()
         font.setPointSize(self.font_size_box.value())
-        style['font'] = font
+        sct['font'] = font
 
         self.set_theme()
         self.set_syntax_style()
         self.set_font()
+
+        # startup
+        sct = config.section('startup')
+        sct['show_tips'] = self.tips_checkbox.isChecked()
 
         config.write()
 
@@ -143,4 +163,5 @@ class SettingsWidget(QtWidgets.QWidget):
 
         with utils.block_signals(self.font_combo):
             self.font_combo.setCurrentFont(font)
+        with utils.block_signals(self.font_size_box):
             self.font_size_box.setValue(font.pointSize())

@@ -267,8 +267,9 @@ class Window(QtWidgets.QMainWindow):
     ## events ##
 
     def showEvent(self, event):
-        # slight delay allows main window to pop up
-        QtCore.QTimer.singleShot(1, self.show_tips)
+        if self._config['startup.show_tips']:
+            # slight delay allows main window to pop up
+            QtCore.QTimer.singleShot(1, self.show_tips)
 
     def show_tips(self):
         def next_tip():
@@ -285,6 +286,17 @@ class Window(QtWidgets.QMainWindow):
         edit.setReadOnly(True)
         layout.addWidget(edit)
 
+        button_layout = QtWidgets.QHBoxLayout()
+        layout.addLayout(button_layout)
+
+        checkbox = QtWidgets.QCheckBox()
+        checkbox.setText('Do not show again')
+        def toggle_tips(state):
+            self._config['startup.show_tips'] = state == Qt.Unchecked
+            self._config.write()
+        checkbox.stateChanged.connect(toggle_tips)
+        button_layout.addWidget(checkbox)
+
         buttons = QtWidgets.QDialogButtonBox()
 
         buttons.addButton(buttons.Ok)
@@ -293,7 +305,7 @@ class Window(QtWidgets.QMainWindow):
         next_button = buttons.addButton('Next', buttons.ActionRole)
         next_button.clicked.connect(next_tip)
 
-        layout.addWidget(buttons)
+        button_layout.addWidget(buttons)
 
         next_tip()
         box.show()

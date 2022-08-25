@@ -10,7 +10,7 @@ A profile can be selected on startup using the `--profile` command-line option. 
 
 The Telepythy service has no dependencies and supports Python 2.7+.
 
-Connect to a remote profile by `pip` installing `telepythy-service`, and running the `telepythy-svc` command. Use `-h` for help and `-v`, or `-vv` for verbose output.
+Start a remote service using `pip install telepythy-service`, then run the `telepythy-svc` command. Use `-h` for help and `-v`, or `-vv` for verbose output.
 
 Save a copy of `telepythy_service.pyz`, and copy it anywhere. It can be run directly using `python telepythy_service.pyz`.
 
