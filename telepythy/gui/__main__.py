@@ -1,17 +1,15 @@
 import sys
 import argparse
 
-# absolute imports to support PyInstaller
-# https://github.com/pyinstaller/pyinstaller/issues/2560
-from PySide6 import QtGui, QtWidgets
+from qtpy import QtGui, QtWidgets
 
-from telepythy import pack
-from telepythy.lib import logs
+from .. import pack
+from ..lib import logs
 
-from telepythy.gui.window import Window
-from telepythy.gui.profiles import Profiles
-from telepythy.gui import config
-from telepythy.gui import utils
+from .window import Window
+from .profiles import Profiles
+from . import config
+from . import utils
 
 def main():
     parser = argparse.ArgumentParser()
