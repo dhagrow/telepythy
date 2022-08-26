@@ -4,7 +4,6 @@ import glob
 import random
 import signal
 import traceback
-import contextlib
 
 import mistune
 from qtpy import QtCore, QtWidgets
@@ -69,14 +68,6 @@ class ErrorBox(QtWidgets.QMessageBox):
         txt.setFixedSize(txt.sizeHint())
 
         return result
-
-@contextlib.contextmanager
-def block_signals(widget):
-    widget.blockSignals(True)
-    try:
-        yield
-    finally:
-        widget.blockSignals(False)
 
 def virtualenvs(home_path=None):
     home_path = home_path or os.path.expanduser('~')

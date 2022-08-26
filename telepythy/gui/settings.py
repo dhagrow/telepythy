@@ -3,7 +3,6 @@ from qtpy import QtCore, QtWidgets
 from ..lib import logs
 
 from . import styles
-from . import utils
 
 log = logs.get(__name__)
 
@@ -13,6 +12,9 @@ class SettingsWidget(QtWidgets.QWidget):
 
         self._config = config
         self._window = window
+
+        # set to prevent sync loops
+        self._reading = False
 
         self.setup()
 
@@ -28,13 +30,13 @@ class SettingsWidget(QtWidgets.QWidget):
         combo.addItem('light')
         for style in sorted(QtWidgets.QStyleFactory.keys()):
             combo.addItem(style)
-        combo.currentTextChanged.connect(self.to_config)
+        combo.currentTextChanged.connect(self.sync)
         style_layout.addRow('Theme', combo)
 
         self.syntax_combo = combo = QtWidgets.QComboBox()
         for style in sorted(styles.get_styles()):
             combo.addItem(style)
-        combo.currentTextChanged.connect(self.to_config)
+        combo.currentTextChanged.connect(self.sync)
         style_layout.addRow('Syntax', combo)
 
         font_layout = QtWidgets.QHBoxLayout()
@@ -42,12 +44,12 @@ class SettingsWidget(QtWidgets.QWidget):
 
         self.font_combo = combo = QtWidgets.QFontComboBox()
         combo.setFontFilters(combo.MonospacedFonts)
-        combo.currentFontChanged.connect(self.to_config)
+        combo.currentFontChanged.connect(self.sync)
         font_layout.addWidget(combo)
 
         self.font_size_box = box = QtWidgets.QSpinBox()
         box.setMinimum(1)
-        box.valueChanged.connect(self.to_config)
+        box.valueChanged.connect(self.sync)
         font_layout.addWidget(box)
 
         all_font_toggle = QtWidgets.QCheckBox('Show all fonts')
@@ -66,12 +68,12 @@ class SettingsWidget(QtWidgets.QWidget):
         startup_box.setLayout(startup_layout)
 
         self.tips_checkbox = box = QtWidgets.QCheckBox()
-        box.stateChanged.connect(self.to_config)
+        box.stateChanged.connect(self.sync)
         startup_layout.addRow('Show tips', box)
 
         ## profiles
 
-        pass
+        # TODO
 
         ##
 
@@ -80,34 +82,17 @@ class SettingsWidget(QtWidgets.QWidget):
         layout.addWidget(startup_box)
         self.setLayout(layout)
 
-    def from_config(self):
-        config = self._config
+    def sync(self):
+        if self._reading:
+            return
+        self.write_config()
+        self.read_config()
+
+    def write_config(self):
+        cfg = self._config
 
         # styles
-        self.set_theme()
-        self.set_syntax_style()
-        self.set_font()
-
-        # startup
-        sct = config.section('startup')
-        self.tips_checkbox.setChecked(sct['show_tips'])
-
-        # window
-        sct = config.section('window')
-
-        view_menu = sct['view.menu']
-        self._window.menuBar().setVisible(view_menu)
-        self._window.action_toggle_menu.setChecked(view_menu)
-
-        self._window.action_toggle_source_title.setChecked(False)
-
-        self._window.resize(*sct['size'])
-
-    def to_config(self):
-        config = self._config
-
-        # styles
-        sct = config.section('style')
+        sct = cfg.section('style')
         sct['theme'] = self.theme_combo.currentText()
         sct['syntax'] = self.syntax_combo.currentText()
 
@@ -115,53 +100,68 @@ class SettingsWidget(QtWidgets.QWidget):
         font.setPointSize(self.font_size_box.value())
         sct['font'] = font
 
-        self.set_theme()
-        self.set_syntax_style()
-        self.set_font()
-
         # startup
-        sct = config.section('startup')
+        sct = cfg.section('startup')
         sct['show_tips'] = self.tips_checkbox.isChecked()
 
-        config.write()
+        cfg.write()
 
-    ## styles ##
+    def read_config(self):
+        cfg = self._config
+        cfg.read()
 
-    def set_theme(self):
-        name = self._config['style.theme']
-        app = QtWidgets.QApplication.instance()
+        win = self._window
 
-        if name in ('dark', 'light'):
-            stylesheet = styles.get_theme_stylesheet(name)
-        else:
-            stylesheet = ''
-            if not app.setStyle(name):
-                log.error('unknown theme: %s', name)
+        self._reading = True
+        try:
+            # theme
+            name = cfg['style.theme']
+            app = QtWidgets.QApplication.instance()
 
-        app.setStyleSheet(stylesheet)
-        self._window.output_edit.highlighter.rehighlight()
-        self._window.source_edit.highlighter.rehighlight()
+            if name in ('dark', 'light'):
+                stylesheet = styles.get_theme_stylesheet(name)
+            else:
+                stylesheet = ''
+                if not app.setStyle(name):
+                    log.error('unknown theme: %s', name)
 
-        with utils.block_signals(self.theme_combo):
+            app.setStyleSheet(stylesheet)
+            win.output_edit.highlighter.rehighlight()
+            win.source_edit.highlighter.rehighlight()
+
             self.theme_combo.setCurrentText(name)
 
-    def set_syntax_style(self):
-        name = self._config['style.syntax']
-        style = styles.get_style(name)
+            # syntax
+            name = cfg['style.syntax']
+            style = styles.get_style(name)
 
-        self._window.output_edit.set_style(style)
-        self._window.source_edit.set_style(style)
+            win.output_edit.set_style(style)
+            win.source_edit.set_style(style)
 
-        with utils.block_signals(self.syntax_combo):
             self.syntax_combo.setCurrentText(name)
 
-    def set_font(self):
-        font = self._config['style.font']
+            # font
+            font = cfg['style.font']
 
-        self._window.output_edit.setFont(font)
-        self._window.source_edit.setFont(font)
+            win.output_edit.setFont(font)
+            win.source_edit.setFont(font)
 
-        with utils.block_signals(self.font_combo):
             self.font_combo.setCurrentFont(font)
-        with utils.block_signals(self.font_size_box):
             self.font_size_box.setValue(font.pointSize())
+
+            # startup
+            sct = cfg.section('startup')
+            self.tips_checkbox.setChecked(sct['show_tips'])
+
+            # window
+            sct = cfg.section('window')
+
+            view_menu = sct['view.menu']
+            win.menuBar().setVisible(view_menu)
+            win.action_toggle_menu.setChecked(view_menu)
+
+            win.action_toggle_source_title.setChecked(False)
+
+            win.resize(*sct['size'])
+        finally:
+            self._reading = False

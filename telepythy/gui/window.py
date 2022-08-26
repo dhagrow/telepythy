@@ -62,7 +62,7 @@ class Window(QtWidgets.QMainWindow):
         self.setup_statusbar()
         self.setup_signals()
 
-        self.settings.from_config()
+        self.settings.read_config()
 
         self.source_edit.setFocus()
 
@@ -271,6 +271,14 @@ class Window(QtWidgets.QMainWindow):
             # slight delay allows main window to pop up
             QtCore.QTimer.singleShot(1, self.show_tips)
 
+    def contextMenuEvent(self, event):
+        self.view_menu.exec_(event.globalPos())
+
+    def closeEvent(self, event):
+        self._control.stop()
+
+    ## actions ##
+
     def show_tips(self):
         def next_tip():
             edit.clear()
@@ -309,14 +317,6 @@ class Window(QtWidgets.QMainWindow):
 
         next_tip()
         box.show()
-
-    def contextMenuEvent(self, event):
-        self.view_menu.exec_(event.globalPos())
-
-    def closeEvent(self, event):
-        self._control.stop()
-
-    ## actions ##
 
     def set_profile(self, name):
         if self._control:
