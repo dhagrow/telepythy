@@ -43,12 +43,18 @@ def unhook_exceptions():
     sys.excepthook = sys.__excepthook__
 
 _tips = []
+_current_tip = 0
 def get_tip(index=None):
+    global _current_tip
     if not _tips:
         with open(utils.get_path('docs/tips.txt')) as f:
-            _tips.extend(filter(None, (line.strip() for line in f)))
+            car, *cdr = list(filter(None, (line.strip() for line in f)))
+            random.shuffle(cdr)
+            _tips.append(car)
+            _tips.extend(cdr)
     if index is None:
-        index = random.randint(0, len(_tips)-1)
+        index = _current_tip % len(_tips)
+    _current_tip += 1
     return mistune.html(_tips[index])
 
 class ErrorBox(QtWidgets.QMessageBox):
