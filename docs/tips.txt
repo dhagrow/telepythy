@@ -1,5 +1,7 @@
 `Ctrl+[` and `Ctrl+]` fold and unfold output sections, respectively. In each case, the most recent folded/unfolded section will be toggled.
 
+`Ctrl+-` and `Ctrl+=` can be used to quickly zoom in and out.
+
 Even if you hide the menu bar, the menu is always available by clicking on the hamburger menu on the bottom-left of the UI.
 
 The bottom-right of the UI displays your connection status to the currently selected profile. Click the button at the bottom-right to select a different profile. You can also use the "Profiles" menu.
@@ -14,4 +16,8 @@ Start a remote service using `pip install telepythy-service`, then run the `tele
 
 Save a copy of `telepythy_service.pyz`, and copy it anywhere. It can be run directly using `python telepythy_service.pyz`.
 
-`Enter` or `Ctrl+Return` always executes your code. `Return` will only execute your code if there is only one line. You can prevent execution for one line of code by adding a `space` to the end of of the line.
+`Ctrl+Return` or `Enter` (on the keypad) will always execute your code. If there is only one line, just `Return` is enough. Add a `space` to the end of the line to avoid executing.
+
+Hit `F12` to popup the settings pane.
+
+You can run a startup script for every new session. Just add your code to `<config-dir>/startup.py`. This is convenient for common imports and utility functions.
