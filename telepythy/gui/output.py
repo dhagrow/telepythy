@@ -5,8 +5,7 @@ import collections
 from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
-from pygments.lexers import PythonConsoleLexer
-
+from . import lexer
 from . import textedit
 from .highlighter import BlockState
 
@@ -110,7 +109,7 @@ class BlockChain:
 
 class OutputEdit(textedit.TextEdit):
     def __init__(self, parent=None):
-        super().__init__(PythonConsoleLexer(), parent)
+        super().__init__(lexer.ConsoleLexer(), parent)
 
         self._buffer = []
         # timer used to flush the buffer at regular intervals
@@ -198,6 +197,7 @@ class OutputEdit(textedit.TextEdit):
 
     @QtCore.Slot()
     def append_prompt(self):
+        self.highlighter.reset()
         self.append(PS1, BlockState.source)
 
     def append_source(self, source):

@@ -8,7 +8,6 @@ import enum
 from qtpy import QtGui
 
 from pygments import styles
-from pygments import lexers
 
 class BlockState(enum.IntEnum):
     source = 0
@@ -45,12 +44,14 @@ class BlockData(QtGui.QTextBlockUserData):
 class Highlighter(QtGui.QSyntaxHighlighter):
     """Syntax highlighter that uses Pygments for parsing."""
 
-    def __init__(self, parent, lexer=None):
+    def __init__(self, lexer, parent):
         super().__init__(parent)
 
-        self._lexer = lexer or lexers.PythonLexer()
-        self._lexer._stack = ('root',)
+        self._lexer = lexer
         self.set_style(styles.get_style_by_name('default'))
+
+    def reset(self):
+        self._lexer.reset()
 
     def highlightBlock(self, string):
         """Highlight a block of text."""
@@ -76,8 +77,7 @@ class Highlighter(QtGui.QSyntaxHighlighter):
             return
 
         prev_data = block.previous().userData()
-        if prev_data is not None:
-            self._lexer._stack = prev_data.syntax_stack
+        self._lexer.stack = prev_data and prev_data.syntax_stack
 
         # Lex the text using Pygments
         index = 0
@@ -87,7 +87,7 @@ class Highlighter(QtGui.QSyntaxHighlighter):
             index += length
 
         BlockData.update_block(block, state=state,
-            syntax_stack=self._lexer._stack)
+            syntax_stack=self._lexer.stack)
 
     def set_style(self, style):
         """Sets the style to the specified Pygments style."""
@@ -141,73 +141,3 @@ class Highlighter(QtGui.QSyntaxHighlighter):
         if color and not color.startswith('#'):
             color = '#' + color
         return QtGui.QBrush(color)
-
-## Monkeypatched lexers to preserve end statestack ##
-
-from pygments.lexer import RegexLexer
-from pygments.token import Text, Error, _TokenType
-
-def get_tokens_unprocessed(self, text, stack=('root',)):
-    """
-    Split ``text`` into (tokentype, text) pairs.
-
-    ``stack`` is the initial stack (default: ``['root']``)
-    """
-    pos = 0
-    tokendefs = self._tokens
-    statestack = list(self._stack or stack)
-    statetokens = tokendefs[statestack[-1]]
-    while 1:
-        for rexmatch, action, new_state in statetokens:
-            m = rexmatch(text, pos)
-            if m:
-                if action is not None:
-                    if type(action) is _TokenType:
-                        yield pos, action, m.group()
-                    else:
-                        yield from action(self, m)
-                pos = m.end()
-                if new_state is not None:
-                    # state transition
-                    if isinstance(new_state, tuple):
-                        for state in new_state:
-                            if state == '#pop':
-                                if len(statestack) > 1:
-                                    statestack.pop()
-                            elif state == '#push':
-                                statestack.append(statestack[-1])
-                            else:
-                                statestack.append(state)
-                    elif isinstance(new_state, int):
-                        # pop, but keep at least one state on the stack
-                        # (random code leading to unexpected pops should
-                        # not allow exceptions)
-                        if abs(new_state) >= len(statestack):
-                            del statestack[1:]
-                        else:
-                            del statestack[new_state:]
-                    elif new_state == '#push':
-                        statestack.append(statestack[-1])
-                    else:
-                        assert False, "wrong state def: %r" % new_state
-                    statetokens = tokendefs[statestack[-1]]
-                break
-        else:
-            # We are here only if all state tokens have been considered
-            # and there was not a match on any of them.
-            try:
-                if text[pos] == '\n':
-                    # at EOL, reset state to "root"
-                    statestack = ['root']
-                    statetokens = tokendefs['root']
-                    yield pos, Text, '\n'
-                    pos += 1
-                    continue
-                yield pos, Error, text[pos]
-                pos += 1
-            except IndexError:
-                break
-
-    self._stack = tuple(statestack)
-RegexLexer._stack = ('root',)
-RegexLexer.get_tokens_unprocessed = get_tokens_unprocessed

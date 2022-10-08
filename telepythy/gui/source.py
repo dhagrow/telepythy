@@ -4,6 +4,7 @@ import contextlib
 from qtpy.QtCore import Qt
 from qtpy import QtCore, QtGui, QtWidgets
 
+from . import lexer
 from . import textedit
 from .history import History
 
@@ -20,7 +21,7 @@ class SourceEdit(textedit.TextEdit):
     completion_requested = QtCore.Signal(str)
 
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super().__init__(lexer.Lexer(), parent)
 
         self._history = History()
         # keep track of the last text entered by the user
@@ -141,6 +142,8 @@ class SourceEdit(textedit.TextEdit):
         cur.movePosition(cur.Start)
         cur.movePosition(cur.End, cur.KeepAnchor)
         cur.deleteChar()
+
+        self.highlighter.reset()
 
     def next_cell(self):
         self.history_reset()

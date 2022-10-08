@@ -9,13 +9,13 @@ DEFAULT_STYLESHEET = 'QPlainTextEdit:focus { border: none; }'
 class TextEdit(QtWidgets.QPlainTextEdit):
     interrupt_requested = QtCore.Signal()
 
-    def __init__(self, lexer=None, parent=None):
+    def __init__(self, lexer, parent=None):
         super().__init__(parent)
 
         doc = document.TextDocument(self)
         self.setDocument(doc)
 
-        self.highlighter = Highlighter(doc, lexer)
+        self.highlighter = Highlighter(lexer, doc)
 
         self.setWordWrapMode(QtGui.QTextOption.WrapAnywhere)
         self.setStyleSheet(DEFAULT_STYLESHEET)
