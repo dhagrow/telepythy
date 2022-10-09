@@ -12,8 +12,9 @@ from pygments import styles
 class BlockState(enum.IntEnum):
     source = 0
     output = 1
-    session = 2
-    fold = 3
+    error = 2
+    session = 3
+    fold = 4
 
 class BlockData(QtGui.QTextBlockUserData):
     """Storage for the user data associated with each line."""
@@ -66,7 +67,9 @@ class Highlighter(QtGui.QSyntaxHighlighter):
         if state is None:
             state = doc.context.get('state')
 
-        if state in (BlockState.session, BlockState.fold):
+        if state == BlockState.output:
+            return
+        elif state in (BlockState.session, BlockState.fold):
             style = self._style
             fmt = QtGui.QTextCharFormat()
             fmt.setForeground(QtGui.QBrush(style.highlight_text_color))

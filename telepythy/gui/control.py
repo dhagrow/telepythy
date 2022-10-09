@@ -88,7 +88,7 @@ class Control:
         except Exception as e:
             log.debug('_handle_events error: %s', repr(e))
             stop.set()
-            call_handlers('error', repr(e))
+            call_handlers('exception', repr(e))
 
     def _handle_commands(self, sock):
         stop = self._stop
@@ -108,7 +108,7 @@ class Control:
         except Exception as e:
             log.debug('_handle_commands error: %s', repr(e))
             stop.set()
-            self._call_handlers('error', repr(e))
+            self._call_handlers('exception', repr(e))
 
     def _call_handlers(self, name, event=None):
         for handler in self._handlers.get(name, []):

@@ -96,7 +96,7 @@ class Service(object):
         try:
             self._inter.evaluate(source)
         except (Exception, KeyboardInterrupt):
-            traceback.print_exc()
+            self.add_event('error', text=traceback.format_exc())
         finally:
             self._is_evaluating = False
             if notify:
@@ -127,6 +127,10 @@ class Service(object):
         self._events.put(event)
 
     def register_event_handler(self, handler):
+        """Registers a handler for an external event loop.
+
+        The handler will be called once for every loop in the telepythy event
+        handler."""
         self._event_handlers.append(handler)
 
     def _handle(self, sock):

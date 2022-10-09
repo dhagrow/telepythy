@@ -195,6 +195,10 @@ class OutputEdit(textedit.TextEdit):
         state = BlockState.output if state is None else state
         self._buffer.append((text, state))
 
+    @QtCore.Slot(str)
+    def append_error(self, text):
+        self.append(text, BlockState.error)
+
     @QtCore.Slot()
     def append_prompt(self):
         self.highlighter.reset()

@@ -20,6 +20,7 @@ log = logs.get(__name__)
 class Window(QtWidgets.QMainWindow):
     output_started = QtCore.Signal(str)
     output_stopped = QtCore.Signal()
+    error_received = QtCore.Signal(str)
     stdout_received = QtCore.Signal(str)
     stderr_received = QtCore.Signal(str)
     completion_received = QtCore.Signal(list)
@@ -256,6 +257,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.output_started.connect(self.start_session)
         self.output_stopped.connect(self.output_edit.append_prompt)
+        self.error_received.connect(self.output_edit.append_error)
         self.stdout_received.connect(self.output_edit.append)
         self.stderr_received.connect(self.output_edit.append)
 
@@ -333,6 +335,11 @@ class Window(QtWidgets.QMainWindow):
         ctl.register('start', start)
         ctl.register('done', lambda _: self.output_stopped.emit())
 
+        def error(event):
+            text = event['data']['text']
+            self.error_received.emit(text)
+        ctl.register('error', error)
+
         def stdout(event):
             text = event['data']['text']
             self.stdout_received.emit(text)
@@ -348,10 +355,10 @@ class Window(QtWidgets.QMainWindow):
             self.completion_received.emit(matches)
         ctl.register('completion', completion)
 
-        def error(err):
+        def exception(err):
             log.debug('totally normal events error: %s', err)
             self.status_disconnected.emit(err)
-        ctl.register('error', error)
+        ctl.register('exception', exception)
 
         ctl.start()
 
