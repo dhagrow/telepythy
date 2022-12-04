@@ -90,7 +90,7 @@ class BlockChain:
 
         # set state context for the highlighter
         with self._doc.using_context(state=BlockState.fold):
-            tpl = '[{} more lines. Double-click to unfold)]'
+            tpl = '[{} more lines. Double-click to unfold]'
             cur.insertText(tpl.format(self.count() - 2))
 
     def unfold(self):
