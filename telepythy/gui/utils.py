@@ -93,6 +93,9 @@ def get_interrupt_handler(win):
         win.close()
     return handler
 
+def is_i3():
+    return 'I3SOCK' in os.environ
+
 if IS_WINDOWS:
     import ctypes as ct
     from ctypes import wintypes as wt

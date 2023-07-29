@@ -3,6 +3,7 @@ from qtpy import QtCore, QtWidgets
 from ..lib import logs
 
 from . import styles
+from . import utils
 
 log = logs.get(__name__)
 
@@ -162,6 +163,7 @@ class SettingsWidget(QtWidgets.QWidget):
 
             win.action_toggle_source_title.setChecked(False)
 
-            win.resize(*sct['size'])
+            if not utils.is_i3():
+                win.resize(*sct['size'])
         finally:
             self._reading = False
