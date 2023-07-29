@@ -1,13 +1,14 @@
 ## The following requirements were added by pip freeze:
 appdirs==1.4.4
-colorama==0.4.5
-colorlog==6.6.0
-mistune==2.0.4
-packaging==21.3
-Pygments==2.13.0
-pyparsing==3.0.9
-pyqtdarktheme==1.1.0
-PySide6-Essentials==6.3.1
-QtPy==2.2.0
-shiboken6==6.3.1
+colorama==0.4.6
+colorlog==6.7.0
+darkdetect==0.7.1
+mistune==3.0.1
+packaging==23.1
+Pygments==2.15.1
+pyparsing==3.1.0
+pyqtdarktheme==2.1.0
+PySide6-Essentials==6.5.2
+QtPy==2.3.1
+shiboken6==6.5.2
 snekcfg==0.1.1
