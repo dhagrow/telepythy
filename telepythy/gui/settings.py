@@ -56,9 +56,10 @@ class SettingsWidget(QtWidgets.QWidget):
         all_font_toggle = QtWidgets.QCheckBox('Show all fonts')
         def state_changed(state):
             flt = (combo.FontFilter.AllFonts
-                if state == QtCore.Qt.Checked else combo.FontFilter.MonospacedFonts)
-            self.font_combo.clear()
+                if state == QtCore.Qt.CheckState.Checked.value
+                else combo.FontFilter.MonospacedFonts)
             self.font_combo.setFontFilters(flt)
+            self.font_combo.view().reset()
         all_font_toggle.stateChanged.connect(state_changed)
         style_layout.addRow('', all_font_toggle)
 
