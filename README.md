@@ -79,7 +79,7 @@ $ python -m telepythy.gui
 
 Style and font options can be configured with the UI. Manually editing the config file is currently the only way to persist any other options.
 
-The config file is located according to the results of `appdirs.user_config_dir()` (e.g. `~/.config/telepythy/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy\telepythy.cfg` on Windows).
+The config file is located according to the results of `platformdirs.user_config_dir()` (e.g. `~/.config/telepythy/telepythy.cfg` on Linux, `C:\Users\<username>\AppData\Local\telepythy\telepythy.cfg` on Windows).
 
 ### Virtual Environments
 

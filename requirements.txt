@@ -1,10 +1,10 @@
 ## The following requirements were added by pip freeze:
-appdirs==1.4.4
 colorama==0.4.6
 colorlog==6.7.0
 darkdetect==0.7.1
 mistune==3.0.1
 packaging==23.1
+platformdirs==3.9.1
 Pygments==2.15.1
 pyparsing==3.1.0
 pyqtdarktheme==2.1.0

@@ -1,6 +1,6 @@
 import os
 
-import appdirs
+import platformdirs
 import snekcfg
 from qtpy import QtGui, QtWidgets
 
@@ -49,7 +49,7 @@ def init(path=None):
     return cfg
 
 def get_config_path(*names):
-    cfg_dir = appdirs.user_config_dir('telepythy', False)
+    cfg_dir = platformdirs.user_config_dir('telepythy', False)
     return os.path.join(cfg_dir, *names)
 
 def get_config_file_path():

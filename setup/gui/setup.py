@@ -29,9 +29,9 @@ setup(
             ]
         },
     install_requires=[
-        'appdirs>=1.4.4',
         'colorlog>=6.7.0',
         'mistune>=3.0.1',
+        'platformdirs>=3.9.1',
         'Pygments>=2.15.1',
         'pyqtdarktheme>=2.1.0',
         'PySide6-Essentials>=6.5.2',
