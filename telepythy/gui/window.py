@@ -10,7 +10,7 @@ from .about import AboutDialog
 from .source import SourceEdit
 from .output import OutputEdit
 from .settings import SettingsWidget
-from . import utils
+from . import tips
 
 # required to make resources available
 from . import resources_rc
@@ -284,7 +284,7 @@ class Window(QtWidgets.QMainWindow):
     def show_tips(self):
         def next_tip():
             edit.clear()
-            edit.appendHtml(utils.get_tip())
+            edit.appendHtml(tips.get())
 
         box = QtWidgets.QDialog(self)
         box.setWindowTitle('Tips')
