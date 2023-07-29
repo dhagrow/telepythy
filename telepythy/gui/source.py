@@ -27,12 +27,12 @@ class SourceEdit(textedit.TextEdit):
         # keep track of the last text entered by the user
         self._user_source = None
 
-        self.setLineWrapMode(self.NoWrap)
+        self.setLineWrapMode(self.LineWrapMode.NoWrap)
 
         self.completer_model = QtGui.QStandardItemModel()
         self.completer = QtWidgets.QCompleter(self.completer_model, self)
         self.completer.setWidget(self)
-        self.completer.setCompletionMode(self.completer.PopupCompletion)
+        self.completer.setCompletionMode(self.completer.CompletionMode.PopupCompletion)
         self.completer.activated[str].connect(self.complete)
 
         self.textChanged.connect(self.refresh_completer)
@@ -94,7 +94,7 @@ class SourceEdit(textedit.TextEdit):
 
     def completion_context(self):
         cur = self.textCursor()
-        cur.movePosition(cur.StartOfLine, cur.KeepAnchor)
+        cur.movePosition(cur.MoveOperation.StartOfLine, cur.MoveMode.KeepAnchor)
         sel = cur.selectedText()
 
         return get_completion_context(sel)
@@ -139,8 +139,8 @@ class SourceEdit(textedit.TextEdit):
     def clear(self):
         """Clears source edit."""
         cur = self.textCursor()
-        cur.movePosition(cur.Start)
-        cur.movePosition(cur.End, cur.KeepAnchor)
+        cur.movePosition(cur.MoveOperation.Start)
+        cur.movePosition(cur.MoveOperation.End, cur.MoveMode.KeepAnchor)
         cur.deleteChar()
 
         self.highlighter.reset()
@@ -232,8 +232,8 @@ class SourceEdit(textedit.TextEdit):
             cursor = self.textCursor()
             text = cursor.block().text()[:cursor.positionInBlock()]
             if text.startswith(' ') and not text.strip(' '):
-                cursor.movePosition(cursor.PreviousCharacter,
-                    cursor.KeepAnchor, 4)
+                cursor.movePosition(cursor.MoveOperation.PreviousCharacter,
+                    cursor.MoveMode.KeepAnchor, 4)
                 cursor.deleteChar()
                 return
 
@@ -274,7 +274,7 @@ class SourceEdit(textedit.TextEdit):
                 cur.setPosition(block.position() + block_indent)
                 # don't go past the beginning of the line
                 n = min(cur.columnNumber(), indent - offset)
-                cur.movePosition(cur.PreviousCharacter, cur.KeepAnchor, n)
+                cur.movePosition(cur.MoveOperation.PreviousCharacter, cur.MoveMode.KeepAnchor, n)
                 cur.removeSelectedText()
 
     def move_cursor(self, position):

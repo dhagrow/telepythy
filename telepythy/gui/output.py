@@ -233,7 +233,7 @@ class OutputEdit(textedit.TextEdit):
 
         doc = self.document()
         cur = self.textCursor()
-        cur.movePosition(cur.End)
+        cur.movePosition(cur.MoveOperation.End)
 
         is_prompt = lambda state, text: (
             state == BlockState.source and text.startswith(PS1))

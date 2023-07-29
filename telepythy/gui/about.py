@@ -29,7 +29,7 @@ class AboutDialog(QtWidgets.QDialog):
         title_label.setAlignment(Qt.AlignCenter)
         font = title_label.font()
         font.setPointSize(16)
-        font.setWeight(font.Bold)
+        font.setWeight(font.Weight.Bold)
         title_label.setFont(font)
 
         version_label = QtWidgets.QLabel(f'Version {__version__}')
@@ -41,15 +41,15 @@ class AboutDialog(QtWidgets.QDialog):
         title_layout.setColumnStretch(2, 2)
 
         frame = QtWidgets.QFrame()
-        frame.setFrameShape(frame.StyledPanel)
-        frame.setFrameShadow(frame.Raised)
+        frame.setFrameShape(frame.Shape.StyledPanel)
+        frame.setFrameShadow(frame.Shadow.Raised)
         frame.setLayout(title_layout)
 
         desc_label = QtWidgets.QLabel(DESCRIPTION)
         desc_label.setOpenExternalLinks(True)
 
         buttons = QtWidgets.QDialogButtonBox()
-        buttons.setStandardButtons(buttons.Close)
+        buttons.setStandardButtons(buttons.StandardButton.Close)
         buttons.rejected.connect(self.accept)
 
         layout = QtWidgets.QVBoxLayout()

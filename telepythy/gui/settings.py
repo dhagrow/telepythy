@@ -43,7 +43,7 @@ class SettingsWidget(QtWidgets.QWidget):
         style_layout.addRow('Font', font_layout)
 
         self.font_combo = combo = QtWidgets.QFontComboBox()
-        combo.setFontFilters(combo.MonospacedFonts)
+        combo.setFontFilters(combo.FontFilter.MonospacedFonts)
         combo.currentFontChanged.connect(self.sync)
         font_layout.addWidget(combo)
 
@@ -54,8 +54,8 @@ class SettingsWidget(QtWidgets.QWidget):
 
         all_font_toggle = QtWidgets.QCheckBox('Show all fonts')
         def state_changed(state):
-            flt = (combo.AllFonts
-                if state == QtCore.Qt.Checked else combo.MonospacedFonts)
+            flt = (combo.FontFilter.AllFonts
+                if state == QtCore.Qt.Checked else combo.FontFilter.MonospacedFonts)
             self.font_combo.clear()
             self.font_combo.setFontFilters(flt)
         all_font_toggle.stateChanged.connect(state_changed)

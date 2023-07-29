@@ -71,7 +71,7 @@ class Window(QtWidgets.QMainWindow):
         # set default link color to something a little more light/dark friendly
         app = QtWidgets.QApplication.instance()
         pal = app.palette()
-        pal.setColor(pal.Link, 'cadetblue')
+        pal.setColor(pal.ColorRole.Link, 'cadetblue')
         app.setPalette(pal)
 
     def setup_actions(self):
