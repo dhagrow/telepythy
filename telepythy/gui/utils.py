@@ -47,10 +47,9 @@ def get_tip(index=None):
     global _current_tip
     if not _tips:
         with open(utils.get_path('docs/tips.txt')) as f:
-            car, *cdr = list(filter(None, (line.strip() for line in f)))
-            random.shuffle(cdr)
-            _tips.append(car)
-            _tips.extend(cdr)
+            tips = list(filter(None, (line.strip() for line in f)))
+            random.shuffle(tips)
+            _tips.extend(tips)
     if index is None:
         index = _current_tip % len(_tips)
     _current_tip += 1
