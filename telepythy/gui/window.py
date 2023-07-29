@@ -302,17 +302,17 @@ class Window(QtWidgets.QMainWindow):
         checkbox = QtWidgets.QCheckBox()
         checkbox.setText('Do not show again')
         def toggle_tips(state):
-            self._config['startup.show_tips'] = state == Qt.Unchecked
+            self._config['startup.show_tips'] = state == Qt.Unchecked.value
             self._config.write()
         checkbox.stateChanged.connect(toggle_tips)
         button_layout.addWidget(checkbox)
 
         buttons = QtWidgets.QDialogButtonBox()
 
-        buttons.addButton(buttons.Ok)
+        buttons.addButton(buttons.StandardButton.Ok)
         buttons.accepted.connect(box.accept)
 
-        next_button = buttons.addButton('Next', buttons.ActionRole)
+        next_button = buttons.addButton('Next', buttons.ButtonRole.ActionRole)
         next_button.clicked.connect(next_tip)
 
         button_layout.addWidget(buttons)
