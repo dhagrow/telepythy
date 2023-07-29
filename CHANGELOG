@@ -1,3 +1,11 @@
+## *Donkey* [0.5.2] 2023-07-29
+
+### Fixed
+
+* Python 3.11/PySide6 enum access changed
+* Window resizing weirdness on i3 window manager
+* Various others
+
 ## *Rhubarb* [0.5.1] 2022-08-22
 
 * Updated to Qt6 and PySide6.
