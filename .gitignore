@@ -7,3 +7,4 @@ build/
 tasks.todo
 setup/gui/telepythy
 setup/lib/telepythy
+.python-version
