@@ -1,3 +1,9 @@
+## *Gumpas* [0.5.3] 2023-08-12
+
+### Fixed
+
+* Missed some 3.11/PySide6 enums
+
 ## *Donkey* [0.5.2] 2023-07-29
 
 ### Fixed
