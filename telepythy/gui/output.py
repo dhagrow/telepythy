@@ -60,8 +60,8 @@ class BlockChain:
         fold_block = self._fold_block
         if fold_block:
             cur = QtGui.QTextCursor(fold_block)
-            cur.movePosition(cur.NextCharacter)
-            cur.movePosition(cur.NextWord, cur.KeepAnchor)
+            cur.movePosition(cur.MoveOperation.NextCharacter)
+            cur.movePosition(cur.MoveOperation.NextWord, cur.MoveMode.KeepAnchor)
             cur.removeSelectedText()
             cur.insertText(f'{self.count() - 2} ')
 
@@ -83,7 +83,7 @@ class BlockChain:
 
         # add a fold info block
         cur = QtGui.QTextCursor(first_block)
-        cur.movePosition(cur.EndOfBlock)
+        cur.movePosition(cur.MoveOperation.EndOfBlock)
         cur.insertBlock()
         self._fold_block = fold_block = cur.block()
         fold_block.setUserState(self.id)
@@ -99,7 +99,7 @@ class BlockChain:
 
         # remove the fold info block
         cur = QtGui.QTextCursor(self._fold_block)
-        cur.select(cur.BlockUnderCursor)
+        cur.select(cur.SelectionType.BlockUnderCursor)
         cur.removeSelectedText()
 
         for block in self.blocks():
@@ -235,11 +235,10 @@ class OutputEdit(textedit.TextEdit):
         cur = self.textCursor()
         cur.movePosition(cur.MoveOperation.End)
 
-        is_prompt = lambda state, text: (
-            state == BlockState.source and text.startswith(PS1))
+        def is_prompt(state, text):
+            return state == BlockState.source and text.startswith(PS1)
 
-        key = lambda item: item[1]
-        for state, items in itertools.groupby(buf, key):
+        for state, items in itertools.groupby(buf, lambda item: item[1]):
             start_block = cur.block()
 
             text = ''.join(item[0] for item in items)
@@ -277,10 +276,10 @@ class OutputEdit(textedit.TextEdit):
         end = cur.selectionEnd()
 
         # find selected blocks
-        cur.movePosition(cur.Start)
-        cur.movePosition(cur.Right, cur.MoveAnchor, start)
+        cur.movePosition(cur.MoveOperation.Start)
+        cur.movePosition(cur.MoveOperation.Right, cur.MoveMode.MoveAnchor, start)
         start_block = cur.block()
-        cur.movePosition(cur.Right, cur.KeepAnchor, end - cur.position())
+        cur.movePosition(cur.MoveOperation.Right, cur.MoveMode.KeepAnchor, end - cur.position())
         end_block = cur.block()
 
         # find source blocks
