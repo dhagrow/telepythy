@@ -4,10 +4,9 @@ from pygments.lexers.python import (
     PythonLexer,
     PythonConsoleLexer,
     PythonTracebackLexer,
-    line_re,
     )
 from pygments.token import Text, Error, Generic, Name, _TokenType
-from pygments.lexer import do_insertions
+from pygments.lexer import do_insertions, line_re
 
 class Lexer(PythonLexer):
     def __init__(self, **options):
