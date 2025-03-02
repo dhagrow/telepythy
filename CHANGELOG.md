@@ -1,3 +1,9 @@
+## *Zelly* [0.5.4] 2025-03-01
+
+### Changed
+
+* Updated all dependencies
+
 ## *Gumpas* [0.5.3] 2023-08-12
 
 ### Fixed
